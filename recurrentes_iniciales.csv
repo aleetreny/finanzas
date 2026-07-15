@@ -1,0 +1,3 @@
+﻿nombre;importe_eur;frecuencia;dia_del_mes;vigente_desde;vigente_hasta;categoria_principal;subcategoria;contexto;generar_automaticamente;nota
+Ingreso parking subarrendado;130.00;Mensual;1;2026-08-01;;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;Sí;El ingreso mensual continúa en 130 €.
+Coste parking subarrendado;-95.00;Mensual;1;2026-08-01;;Parking subarrendado;Coste alquiler;Parking subarrendado;Sí;Nuevo coste mensual desde agosto de 2026. No modificar movimientos históricos.
