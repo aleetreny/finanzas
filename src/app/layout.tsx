@@ -1,28 +1,43 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { FinanceProvider } from "@/components/finance-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Fraunces da el carácter de "cuaderno": serif de contraste alto, cálida, nada
+// que ver con la Geist por defecto de create-next-app.
+const serif = Fraunces({
+  variable: "--font-serif",
   subsets: ["latin"],
+  display: "swap",
+  style: ["normal", "italic"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = IBM_Plex_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Cifras y etiquetas: monoespaciada, para que las columnas de importes cuadren
+// como en una libreta de contabilidad.
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Finanzas personales",
-    template: "%s · Finanzas",
+    default: "Cuaderno de cuentas",
+    template: "%s · Cuaderno",
   },
-  description: "Panel privado para registrar, revisar y analizar tus finanzas.",
-  applicationName: "Finanzas",
+  description: "Libreta privada para anotar y revisar tus finanzas.",
+  applicationName: "Cuaderno",
   manifest: "/manifest.webmanifest",
   icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
 };
@@ -33,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="es" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
       <body>
         <FinanceProvider>
           <PwaRegister />

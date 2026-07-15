@@ -21,14 +21,29 @@ import { useState, type ReactNode } from "react";
 import { useFinance } from "@/components/finance-provider";
 
 const navigation = [
-  { href: "/dashboard", label: "Resumen", icon: ChartNoAxesCombined },
-  { href: "/movimientos", label: "Movimientos", icon: ReceiptText },
-  { href: "/piso-malaga", label: "Piso Málaga", icon: Building2 },
-  { href: "/reservas", label: "Reservas", icon: CalendarClock },
-  { href: "/recurrentes", label: "Recurrentes", icon: WalletCards },
-  { href: "/inmovilizado", label: "Inmovilizado", icon: Landmark },
-  { href: "/importar-exportar", label: "Importar / exportar", icon: FileUp },
-  { href: "/ajustes", label: "Ajustes", icon: Settings },
+  {
+    section: null,
+    items: [
+      { href: "/dashboard", label: "Resumen", icon: ChartNoAxesCombined },
+      { href: "/movimientos", label: "Movimientos", icon: ReceiptText },
+    ],
+  },
+  {
+    section: "El piso",
+    items: [
+      { href: "/piso-malaga", label: "Piso Málaga", icon: Building2 },
+      { href: "/reservas", label: "Reservas", icon: CalendarClock },
+      { href: "/inmovilizado", label: "Inmovilizado", icon: Landmark },
+    ],
+  },
+  {
+    section: "Herramientas",
+    items: [
+      { href: "/recurrentes", label: "Recurrentes", icon: WalletCards },
+      { href: "/importar-exportar", label: "Importar / exportar", icon: FileUp },
+      { href: "/ajustes", label: "Ajustes", icon: Settings },
+    ],
+  },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -40,8 +55,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="app-frame">
       <header className="mobile-header">
         <Link href="/dashboard" className="brand compact" aria-label="Ir al resumen">
-          <span className="brand-mark">F</span>
-          <span>Finanzas</span>
+          <span className="brand-mark">C</span>
+          <span><strong>Cuaderno</strong></span>
         </Link>
         <button className="icon-button" onClick={() => setMenuOpen((open) => !open)} aria-label="Abrir menú">
           {menuOpen ? <X /> : <Menu />}
@@ -50,29 +65,34 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <Link href="/dashboard" className="brand" onClick={() => setMenuOpen(false)}>
-          <span className="brand-mark">F</span>
+          <span className="brand-mark">C</span>
           <span>
-            <strong>Finanzas</strong>
-            <small>Panel personal</small>
+            <strong>Cuaderno</strong>
+            <small>de cuentas</small>
           </span>
         </Link>
         <nav className="nav-list" aria-label="Navegación principal">
-          {navigation.map((item) => {
-            const active = pathname === item.href || (pathname === "/" && item.href === "/dashboard");
-            const Icon = item.icon;
-            return (
-              <Link
-                href={item.href}
-                key={item.href}
-                className={active ? "active" : ""}
-                onClick={() => setMenuOpen(false)}
-              >
-                <Icon size={19} />
-                <span>{item.label}</span>
-                {active ? <ChevronRight className="nav-arrow" size={16} /> : null}
-              </Link>
-            );
-          })}
+          {navigation.map((group) => (
+            <div key={group.section ?? "principal"} style={{ display: "contents" }}>
+              {group.section ? <p className="nav-section">{group.section}</p> : null}
+              {group.items.map((item) => {
+                const active = pathname === item.href || (pathname === "/" && item.href === "/dashboard");
+                const Icon = item.icon;
+                return (
+                  <Link
+                    href={item.href}
+                    key={item.href}
+                    className={active ? "active" : ""}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                    {active ? <ChevronRight className="nav-arrow" size={15} /> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         {session ? (
           <div className="sidebar-account">
@@ -92,8 +112,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="main-content">{children}</main>
       {session ? (
         <Link href="/movimientos/nuevo" className="floating-action">
-          <Plus size={21} />
-          <span>Añadir</span>
+          <Plus size={20} />
+          <span>Anotar</span>
         </Link>
       ) : null}
     </div>

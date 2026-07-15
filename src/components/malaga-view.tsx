@@ -59,7 +59,7 @@ export function MalagaView() {
           <div className="card-header"><div><h2>Resultado por mes</h2><p>Ingresos y gastos del inmueble</p></div></div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthly}><CartesianGrid vertical={false} stroke="#e9ebe6" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} width={38} /><Tooltip formatter={(value) => formatCurrency(Number(value))} /><Bar dataKey="income" name="Ingresos" fill="#2f6256" radius={[4,4,0,0]} /><Bar dataKey="expenses" name="Gastos" fill="#d59586" radius={[4,4,0,0]} /></BarChart>
+              <BarChart data={monthly}><CartesianGrid vertical={false} stroke="var(--rule-2)" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} width={38} /><Tooltip formatter={(value) => formatCurrency(Number(value))} cursor={{ fill: "rgba(33,29,22,.05)" }} /><Bar dataKey="income" name="Ingresos" fill="#3a5a49" radius={[3,3,0,0]} maxBarSize={30} /><Bar dataKey="expenses" name="Gastos" fill="#a54322" radius={[3,3,0,0]} maxBarSize={30} /></BarChart>
             </ResponsiveContainer>
           </div>
         </article>
