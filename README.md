@@ -2,6 +2,12 @@
 
 Aplicación responsive y PWA para gestionar el histórico financiero personal, el Piso Málaga, el parking subarrendado, reservas turísticas e inmovilizado. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS.
 
+## Entornos
+
+- Web: [aleetreny.github.io/finanzas](https://aleetreny.github.io/finanzas/)
+- Código: [github.com/aleetreny/finanzas](https://github.com/aleetreny/finanzas) (repositorio privado)
+- Supabase: proyecto `Finanzas`, región París (`eu-west-3`), referencia `lshuotnvmxxvistppuzx`
+
 ## Datos incluidos
 
 - `movimientos_financieros_corregidos.csv`: 1.068 movimientos históricos, suma auditada de **15.296,66 €**.
@@ -48,6 +54,7 @@ Las migraciones versionadas están en `supabase/migrations`:
 
 1. `initial_schema`: tablas, restricciones, índices, triggers, grants y políticas RLS.
 2. `initial_data`: cuenta principal, Piso Málaga, taxonomía, recurrentes y 1.068 movimientos.
+3. `harden_security_and_indexes`: permisos mínimos, función de reclamación restringida e índices de claves foráneas.
 
 El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico.
 
