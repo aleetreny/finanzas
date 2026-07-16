@@ -106,8 +106,6 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .nb-account .who { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .main-content { min-height: 60vh; padding: 26px clamp(18px, 5vw, 60px) 120px; }
-.mobile-header { display: none; }
-.sidebar, .menu-backdrop, .nav-list, .brand, .sidebar-account { display: none; }
 
 .page { width: 100%; max-width: 1080px; margin: 0 auto; }
 
@@ -159,8 +157,9 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .grid { display: grid; gap: 20px; }
 .two-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
+/* Los ingresos se subrayan en verde; los gastos van en tinta normal,
+   como en una libreta de verdad (el rojo queda para avisos puntuales). */
 .positive { color: var(--green-pen); }
-.negative { color: var(--red-pen); }
 
 /* ---------------------------------------------------------------------------
    Barra de herramientas y campos (estilo "rellenar sobre la línea")
@@ -269,7 +268,6 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .chip.active { background: var(--ink); color: var(--paper); }
 .chip.sub { min-height: 36px; font-size: 15px; }
 .chip.sub.active { background: var(--blue-pen); border-color: var(--blue-pen); }
-.chip .dot { width: 9px; height: 9px; border-radius: 50% 46% 54% 48%; flex: 0 0 9px; }
 
 .q-date { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .q-date .date-chip { min-height: 42px; border: 2px solid var(--ink); border-radius: 14px 180px 16px 180px / 180px 14px 160px 16px; background: transparent; padding: 2px 15px; font-family: var(--font-hand), cursive; font-size: 16px; }
@@ -291,6 +289,15 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .evo-head p { margin: 2px 0 0; color: var(--pencil); font-size: 17px; }
 
 .evo-ask { font-family: var(--font-display), cursive; font-size: 26px; margin: 22px 0 10px; }
+.evo-ask.small { font-size: 21px; margin: 12px 0 6px; color: var(--ink-soft); }
+
+/* Resumen del mes: la primera anotación de la página */
+.hero-month { margin: 10px 0 4px; }
+.hero-line { margin: 0; font-family: var(--font-display), cursive; font-size: clamp(26px, 5vw, 34px); font-weight: 700; }
+.hero-line strong { font-size: clamp(34px, 7vw, 46px); border-bottom: 3px solid var(--ink); padding: 0 2px; }
+.hero-note { margin: 6px 0 0; font-family: var(--font-hand), cursive; font-size: 16px; color: var(--pencil); }
+.hero-note .up { color: var(--red-pen); font-weight: 700; }
+.hero-note .down { color: var(--green-pen); font-weight: 700; }
 
 /* Lista de categorías para marcar (casillas hechas a mano) */
 .pick-list { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 4px; }
@@ -316,7 +323,9 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cpath d='M5 15 C 9 20, 11 23, 13 24 C 16 18, 21 10, 27 4' fill='none' stroke='%2324211a' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 .pick .stroke { width: 26px; height: 0; border-top: 3px solid var(--ink); border-radius: 2px; }
-.pick .amt { color: var(--pencil); font-size: 14px; }
+.pick.small { font-size: 15.5px; padding: 3px 4px; }
+.pick.small .box { width: 18px; height: 18px; flex: 0 0 18px; }
+.pick.small .stroke { width: 20px; }
 
 /* Botones de rango (cuántos meses) */
 .range-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
@@ -327,30 +336,48 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 /* Marco del gráfico */
 .chart-card { border: 2px solid var(--ink); border-radius: 10px 240px 14px 240px / 240px 12px 220px 14px; background: var(--paper-solid); padding: 14px 12px 8px; margin-top: 10px; }
 .evo-chart { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
-.evo-chart text { font-family: var(--font-hand), cursive; fill: var(--pencil); }
-.evo-chart .axis-num { font-size: 13px; }
-.evo-chart .month-lab { font-size: 14px; }
+/* Ojo: sin `fill` genérico aquí — pisaría los colores de cada tinta */
+.evo-chart text { font-family: var(--font-hand), cursive; }
+.evo-chart .axis-num { font-size: 13px; fill: var(--pencil); }
+.evo-chart .month-lab { font-size: 14px; fill: var(--pencil); }
 .evo-chart .series-lab { font-size: 15px; font-weight: 700; }
+.evo-chart .hover-month { font-size: 15px; font-weight: 700; fill: var(--ink); }
+.evo-chart .hover-val { font-size: 13px; font-weight: 700; }
+/* En pantallas estrechas el lienzo es más pequeño: letra mayor para que se lea */
+.evo-chart.compact .axis-num { font-size: 21px; }
+.evo-chart.compact .month-lab { font-size: 22px; }
+.evo-chart.compact .hover-month { font-size: 25px; }
+.evo-chart.compact .hover-val { font-size: 21px; }
 .chart-empty { display: grid; min-height: 220px; place-items: center; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 18px; }
 
-/* Este mes vs. lo habitual */
-.budget-list { display: grid; gap: 16px; margin-top: 12px; }
+/* Este mes vs. lo habitual — todas las barras a la misma escala */
+.budget-list { display: grid; gap: 18px; margin-top: 12px; }
 .budget-row { display: grid; gap: 5px; }
 .budget-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.budget-top .name { font-family: var(--font-hand), cursive; font-size: 18px; font-weight: 700; }
+.budget-top .name { border: 0; background: transparent; padding: 0; font-family: var(--font-hand), cursive; font-size: 18px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.budget-top .name:hover { text-decoration: underline wavy var(--pencil-faint) 1.5px; text-underline-offset: 5px; }
 .budget-top .note { font-family: var(--font-hand), cursive; font-size: 14px; color: var(--pencil); }
 .budget-top .note.over { color: var(--red-pen); }
 .budget-top .note.under { color: var(--green-pen); }
 .budget-track { position: relative; height: 22px; }
 .budget-track .base { position: absolute; inset: 0; border-bottom: 2px solid var(--rule-ink); }
+/* la barra siempre en grafito: el color queda para las notas, como en una libreta */
 .budget-track .fill { position: absolute; left: 0; top: 3px; bottom: 3px; border: 2px solid var(--ink); border-radius: 6px 40px 6px 40px / 40px 6px 40px 6px; background: repeating-linear-gradient(45deg, transparent 0 4px, color-mix(in srgb, var(--ink) 14%, transparent) 4px 6px); }
-.budget-track .fill.over { border-color: var(--red-pen); background: repeating-linear-gradient(45deg, transparent 0 4px, color-mix(in srgb, var(--red-pen) 16%, transparent) 4px 6px); }
-/* marca de "lo habitual" */
+/* marca de "lo habitual"; la etiqueta solo en la primera fila para no repetirla */
 .budget-track .usual { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--pencil); }
-.budget-track .usual::after { content: "lo normal"; position: absolute; top: -16px; left: 4px; font-family: var(--font-hand), cursive; font-size: 11px; color: var(--pencil); white-space: nowrap; }
+.budget-track .usual.lbl::after { content: "lo normal"; position: absolute; top: -17px; left: 4px; font-family: var(--font-hand), cursive; font-size: 12px; color: var(--pencil); white-space: nowrap; }
 .budget-amt { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-hand), cursive; }
 .budget-amt .now { font-size: 20px; font-weight: 700; }
 .budget-amt .of { font-size: 14px; color: var(--pencil); }
+
+/* Últimos apuntes */
+.last-list { display: grid; margin-top: 10px; }
+.last-row { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 6px 14px; border-bottom: 1px solid var(--rule-ink); padding: 9px 2px; font-family: var(--font-hand), cursive; font-size: 16px; }
+.last-row .what { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.last-row .when { color: var(--pencil); font-size: 14px; }
+.last-row .amount { font-weight: 700; }
+.see-all { justify-self: end; margin-top: 10px; font-family: var(--font-hand), cursive; font-size: 15px; color: var(--pencil); }
+.see-all:hover { color: var(--ink); text-decoration: underline wavy var(--pencil-faint) 1.5px; text-underline-offset: 5px; }
 
 /* separador dibujado a mano entre secciones */
 .hand-rule { height: 12px; margin: 30px 0; background: no-repeat center/100% 10px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='10' viewBox='0 0 600 10'%3E%3Cpath d='M2 5 C 80 2, 140 8, 220 5 S 380 2, 460 6 S 560 4, 598 5' fill='none' stroke='%23cfc7b2' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); }
@@ -376,17 +403,10 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Utilidades varias reutilizadas por ajustes / importar */
-.category-list { display: grid; gap: 12px; padding: 16px 20px 20px; }
-.category-row { display: grid; grid-template-columns: minmax(96px, 1fr) 2.4fr auto; align-items: center; gap: 12px; }
-.category-row strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.progress { height: 8px; overflow: hidden; border-radius: 40px; border: 1.5px solid var(--ink); background: transparent; }
-.progress span { display: block; height: 100%; background: repeating-linear-gradient(45deg, transparent 0 3px, var(--ink) 3px 5px); }
-.category-row small { font-family: var(--font-hand), cursive; color: var(--pencil); font-size: 14px; }
 
 .stat-strip { display: flex; flex-wrap: wrap; gap: 8px 22px; border: 2px solid var(--ink); border-radius: 12px 200px 14px 200px / 200px 12px 180px 14px; padding: 14px 18px; }
 .stat-strip span { color: var(--pencil); font-size: 15px; }
 .stat-strip strong { margin-left: 5px; color: var(--ink); }
-.calculator-results { display: grid; gap: 10px; }
 .result-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--rule-ink); padding: 8px 2px; }
 .result-row span { color: var(--pencil); font-size: 15px; }
 .result-row.total { border-bottom: 0; border-top: 2px solid var(--ink); }
@@ -427,9 +447,11 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .modal-card { width: 100%; max-height: 94vh; border-radius: 20px 20px 0 0; }
   .toolbar > * { flex: 1 1 150px; }
   .toolbar .search-field { flex-basis: 100%; }
-  .category-row { grid-template-columns: minmax(90px, 1fr) 1.4fr; }
-  .category-row small { grid-column: 2; text-align: right; }
-  .nb-top { position: static; padding: 12px 16px 10px; row-gap: 2px; }
+  /* Cabecera móvil: marca en su línea y navegación en UNA sola línea */
+  .nb-top { position: relative; padding: 10px 14px 9px; row-gap: 0; }
   .nb-brand { font-size: 23px; flex-basis: 100%; }
+  .nb-nav { gap: 2px 13px; }
+  .nb-nav a { font-size: 15.5px; padding-bottom: 3px; }
+  .nb-account { position: absolute; top: 8px; right: 8px; }
   .nb-account .who { display: none; }
 }

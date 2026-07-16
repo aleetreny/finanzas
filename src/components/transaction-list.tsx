@@ -34,15 +34,14 @@ export function TransactionList({ transactions }: { transactions: Transaction[] 
       {deleteError ? <p className="notice error">{deleteError}</p> : null}
       <div className="card data-card">
         <table className="data-table">
-          <thead><tr><th>Fecha</th><th>Movimiento</th><th>Categoría</th><th>Contexto</th><th style={{ textAlign: "right" }}>Importe</th><th aria-label="Acciones" /></tr></thead>
+          <thead><tr><th>Fecha</th><th>Apunte</th><th>Categoría</th><th style={{ textAlign: "right" }}>Importe</th><th aria-label="Acciones" /></tr></thead>
           <tbody>
             {visible.map((row) => (
               <tr key={row.id}>
                 <td>{formatDate(row.transaction_date)}</td>
-                <td><span className="transaction-name">{row.name}</span>{row.notes ? <span className="transaction-note">{row.notes}</span> : null}</td>
+                <td><span className="transaction-name">{row.name}</span>{row.notes || row.context ? <span className="transaction-note">{row.notes ?? row.context}</span> : null}</td>
                 <td><span className="badge">{categoryById.get(row.category_id ?? "") ?? "Sin categoría"}</span>{row.subcategory_id ? <span className="transaction-note">{subcategoryById.get(row.subcategory_id)}</span> : null}</td>
-                <td>{row.context ?? "—"}</td>
-                <td className={`amount ${row.amount >= 0 ? "positive" : "negative"}`}>{formatCurrency(row.amount)}</td>
+                <td className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</td>
                 <td><div className="row-actions"><button className="icon-button" title="Editar" onClick={() => setEditing(row)}><Pencil size={15} /></button><button className="icon-button" title="Eliminar" onClick={() => void remove(row)}><Trash2 size={15} /></button></div></td>
               </tr>
             ))}
@@ -52,12 +51,12 @@ export function TransactionList({ transactions }: { transactions: Transaction[] 
           {visible.map((row) => (
             <button type="button" className="mobile-transaction" key={row.id} onClick={() => setEditing(row)}>
               <strong>{row.name}</strong>
-              <span className={`amount ${row.amount >= 0 ? "positive" : "negative"}`}>{formatCurrency(row.amount)}</span>
+              <span className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</span>
               <span className="meta">{formatDate(row.transaction_date)} · {categoryById.get(row.category_id ?? "") ?? "Sin categoría"}</span>
             </button>
           ))}
         </div>
-        {transactions.length > visible.length ? <p className="table-note">Se muestran los 250 primeros resultados. Usa los filtros para acotar la búsqueda.</p> : null}
+        {transactions.length > visible.length ? <p className="table-note">Se muestran los 250 apuntes más recientes; con los filtros encuentras el resto.</p> : null}
       </div>
 
       {editing ? (

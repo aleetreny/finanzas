@@ -130,7 +130,7 @@ export function ImportExportView() {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Portabilidad" title="Importar y exportar" description="Vista previa antes de guardar, errores por fila e idempotencia por hash e identificador externo." />
+      <PageHeader eyebrow="" title="Importar y exportar" description="Trae tu histórico en CSV o llévate una copia de todo cuando quieras." />
       <section className="grid two-column">
         <article className="card">
           <div className="card-header"><div><h2><FileUp size={16} style={{ display: "inline", marginRight: 7 }} />Importar CSV</h2><p>UTF-8 con BOM, separador punto y coma</p></div></div>
@@ -139,7 +139,7 @@ export function ImportExportView() {
               <input type="file" accept=".csv,text/csv" onChange={(event) => selectFile(event.target.files?.[0])} />
               <FileCheck2 size={26} />
               <strong>{file?.name ?? "Selecciona un archivo CSV"}</strong>
-              <small>{rows.length ? `${rows.length} filas detectadas` : "Se mostrará una vista previa antes de importar"}</small>
+              <small>{rows.length ? `${rows.length} filas detectadas` : "Verás una vista previa antes de guardar nada"}</small>
             </label>
             {rows.length ? <div className="preview-table"><table className="data-table" style={{ display: "table" }}><thead><tr>{Object.keys(rows[0]).slice(0, 4).map((key) => <th key={key}>{key}</th>)}</tr></thead><tbody>{rows.slice(0, 5).map((row, index) => <tr key={index}>{Object.keys(rows[0]).slice(0, 4).map((key) => <td key={key}>{row[key]}</td>)}</tr>)}</tbody></table></div> : null}
             <div className="form-actions"><button className="button primary" disabled={!rows.length || working || parseErrors.length > 0} onClick={() => void importCsv()}>{working ? <LoaderCircle className="spin" size={16} /> : <FileUp size={16} />}Confirmar importación</button></div>
@@ -149,7 +149,7 @@ export function ImportExportView() {
           <div className="card-header"><div><h2><Download size={16} style={{ display: "inline", marginRight: 7 }} />Exportación completa</h2><p>Una copia portátil de todos tus movimientos</p></div></div>
           <div className="card-body">
             <div className="stat-strip"><span>Movimientos<strong>{transactions.length.toLocaleString("es-ES")}</strong></span><span>Formato<strong>CSV</strong></span><span>Codificación<strong>UTF-8 BOM</strong></span></div>
-            <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6 }}>Incluye fechas, importes, categorías, contexto, plataforma y metadatos relevantes. No depende de Numbers ni de iCloud.</p>
+            <p style={{ color: "var(--pencil)", fontSize: 14, lineHeight: 1.6 }}>Incluye fechas, importes, categorías y notas. El mismo archivo vale para volver a importarlo aquí.</p>
             <button className="button primary" onClick={exportCsv}><Download size={16} />Descargar todos los datos</button>
           </div>
         </article>

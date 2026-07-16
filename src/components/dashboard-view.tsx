@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFinance } from "@/components/finance-provider";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MES_LARGO = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-// Tintas de boli: negro por defecto; el resto para distinguir varias series.
+// Tintas de boli: negro primero; el resto solo para distinguir series.
 const PENS = ["#24211a", "#33518c", "#b23a2b", "#4c6b39", "#9a6d1f"];
 function penFor(order: number) {
   return { color: PENS[order % PENS.length], dashed: order >= PENS.length };
@@ -35,7 +35,7 @@ function euroShort(v: number) {
   return `${Math.round(v)}€`;
 }
 
-// Generador pseudoaleatorio con semilla, para que el temblor sea estable entre
+// Generador pseudoaleatorio con semilla: el temblor del trazo es estable entre
 // renders (si no, las líneas "bailarían" al pasar el ratón).
 function mulberry32(seed: number) {
   return function () {
@@ -46,7 +46,7 @@ function mulberry32(seed: number) {
   };
 }
 
-// Convierte una polilínea recta en un trazo tembloroso, como hecho a lápiz.
+// Convierte una polilínea en un trazo tembloroso, como hecho a lápiz.
 // Los extremos de cada segmento quedan exactos para que las líneas conecten.
 function roughPath(pts: [number, number][], rand: () => number, jitter = 1.4): string {
   let d = "";
@@ -68,10 +68,31 @@ function roughPath(pts: [number, number][], rand: () => number, jitter = 1.4): s
   return d;
 }
 
+function truncate(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
 export function DashboardView() {
-  const { transactions, categories } = useFinance();
+  const { transactions, categories, subcategories } = useFinance();
 
   const categoryName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
+  const subcategoryName = useMemo(() => new Map(subcategories.map((s) => [s.id, s.name])), [subcategories]);
+
+  // ¿Pantalla estrecha? El gráfico usa una geometría más compacta y legible.
+  // Se escucha también `resize` (giro del móvil, emuladores que no disparan
+  // el evento `change` del matchMedia…) para no quedarse con un valor viejo.
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 720px)");
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    window.addEventListener("resize", update);
+    return () => {
+      mq.removeEventListener("change", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
 
   // Total de gasto por categoría (para ordenar y elegir por defecto)
   const catTotals = useMemo(() => {
@@ -107,7 +128,7 @@ export function DashboardView() {
     return months;
   }, [transactions]);
 
-  // gasto[categoria][mes]
+  // gasto[categoría][mes] y gasto[subcategoría][mes]
   const byCatMonth = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     transactions.forEach((t) => {
@@ -120,9 +141,21 @@ export function DashboardView() {
     return map;
   }, [transactions]);
 
+  const bySubMonth = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    transactions.forEach((t) => {
+      if (t.amount >= 0 || !t.subcategory_id) return;
+      const key = t.transaction_date.slice(0, 7);
+      let inner = map.get(t.subcategory_id);
+      if (!inner) { inner = new Map(); map.set(t.subcategory_id, inner); }
+      inner.set(key, (inner.get(key) ?? 0) + Math.abs(t.amount));
+    });
+    return map;
+  }, [transactions]);
+
   const rangeOptions = useMemo(() => {
     const opts: { label: string; value: number | "all" }[] = [];
-    [6, 12, 24].forEach((n) => { if (allMonths.length > n) opts.push({ label: String(n), value: n }); });
+    [6, 12, 24].forEach((v) => { if (allMonths.length > v) opts.push({ label: String(v), value: v }); });
     opts.push({ label: "Todo", value: "all" });
     return opts;
   }, [allMonths.length]);
@@ -134,8 +167,10 @@ export function DashboardView() {
     const top = [...catTotals.entries()].sort((a, b) => b[1] - a[1])[0];
     return top ? [top[0]] : [];
   });
+  const [subSelected, setSubSelected] = useState<string[]>([]);
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
 
   const visibleMonths = useMemo(
     () => (range === "all" ? allMonths : allMonths.slice(Math.max(0, allMonths.length - range))),
@@ -143,46 +178,91 @@ export function DashboardView() {
   );
 
   function toggle(id: string) {
+    setSubSelected([]);
+    setHover(null);
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
+  function toggleSub(id: string) {
+    setHover(null);
+    setSubSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  }
+  function pickRange(v: number | "all") {
+    setRange(v);
+    setHover(null); // el índice de hover deja de ser válido al cambiar el rango
+  }
 
-  // Series a dibujar
-  const series = useMemo(
-    () =>
-      selected.map((id, i) => ({
-        id,
-        name: categoryName.get(id) ?? "—",
-        pen: penFor(i),
-        points: visibleMonths.map((mk) => byCatMonth.get(id)?.get(mk) ?? 0),
-      })),
-    [selected, visibleMonths, byCatMonth, categoryName],
-  );
+  // Desglose: con una sola categoría marcada se pueden añadir sus subcategorías
+  const drillSubs = useMemo(() => {
+    if (selected.length !== 1) return [];
+    return subcategories.filter((s) => s.category_id === selected[0] && bySubMonth.has(s.id));
+  }, [selected, subcategories, bySubMonth]);
+
+  // Series a dibujar: categorías marcadas + subcategorías desglosadas
+  const series = useMemo(() => {
+    const cats = selected.map((id, i) => ({
+      id,
+      name: categoryName.get(id) ?? "—",
+      pen: penFor(i),
+      points: visibleMonths.map((mk) => byCatMonth.get(id)?.get(mk) ?? 0),
+    }));
+    const subs = selected.length === 1
+      ? subSelected.map((id, i) => ({
+          id: `sub-${id}`,
+          name: subcategoryName.get(id) ?? "—",
+          pen: penFor(selected.length + i),
+          points: visibleMonths.map((mk) => bySubMonth.get(id)?.get(mk) ?? 0),
+        }))
+      : [];
+    return [...cats, ...subs];
+  }, [selected, subSelected, visibleMonths, byCatMonth, bySubMonth, categoryName, subcategoryName]);
 
   const yMax = useMemo(() => niceCeil(Math.max(1, ...series.flatMap((s) => s.points))), [series]);
 
-  // Geometría del lienzo
-  const W = 1000, H = 460, padL = 58, padR = 96, padT = 22, padB = 42;
+  // Geometría del lienzo (compacta en pantallas estrechas para que se lea)
+  const W = compact ? 620 : 1000;
+  const H = compact ? 470 : 460;
+  const padL = compact ? 66 : 58;
+  const padR = compact ? 26 : 112;
+  const padT = compact ? 40 : 26;
+  const padB = compact ? 52 : 42;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const n = visibleMonths.length;
   const xAt = (i: number) => (n <= 1 ? padL + plotW / 2 : padL + (i / (n - 1)) * plotW);
   const yAt = (v: number) => padT + (1 - v / yMax) * plotH;
   const yTicks = [0, yMax / 2, yMax];
-  const monthEvery = n > 14 ? 2 : 1;
+  const monthEvery = compact ? (n > 9 ? 3 : n > 6 ? 2 : 1) : n > 14 ? 2 : 1;
+  const hi = hover !== null && hover >= 0 && hover < n ? hover : null;
 
-  // Trazos a lápiz (temblor determinista por semilla → estable entre renders)
+  // Trazos temblorosos (semilla estable) — recalculados si cambia la geometría
   const roughSeries = useMemo(
     () =>
       series.map((s, si) => {
         const rand = mulberry32(101 + si * 97 + n * 7 + Math.round(yMax));
         const pts = s.points.map((v, i) => [xAt(i), yAt(v)] as [number, number]);
-        return { id: s.id, pen: s.pen, d: roughPath(pts, rand, 1.3), pts };
+        return { ...s, d: roughPath(pts, rand, compact ? 1.1 : 1.3), pts };
       }),
-    // xAt/yAt dependen de n y yMax; incluir series cubre los cambios de datos
+    // xAt/yAt derivan de n, yMax y compact (geometría); series cubre los datos
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [series, n, yMax],
+    [series, n, yMax, compact],
   );
   const roughAxis = roughPath([[padL, padT], [padL, padT + plotH], [padL + plotW, padT + plotH]], mulberry32(7), 1.1);
+
+  // Etiquetas al final de cada línea (solo escritorio): recortadas y separadas
+  const endLabels = useMemo(() => {
+    if (compact) return [];
+    const labels = roughSeries.map((s) => ({
+      id: s.id,
+      name: truncate(s.name, 13),
+      color: s.pen.color,
+      y: Math.max(padT + 10, Math.min(padT + plotH - 4, s.pts[s.pts.length - 1]?.[1] ?? padT)),
+    })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labels.length; i += 1) {
+      if (labels[i].y - labels[i - 1].y < 19) labels[i].y = labels[i - 1].y + 19;
+    }
+    return labels;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roughSeries, compact]);
 
   function onMove(e: React.PointerEvent<SVGSVGElement>) {
     const svg = svgRef.current;
@@ -194,23 +274,47 @@ export function DashboardView() {
     setHover(i);
   }
 
-  // Este mes vs. lo habitual (media de los últimos meses completos)
+  // Este mes vs. lo habitual (media de los últimos 6 meses completos)
   const now = new Date();
   const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const budget = useMemo(() => {
+  const budgetAll = useMemo(() => {
     const completeMonths = allMonths.filter((m) => m < currentKey).slice(-6);
     return expenseCategories
       .map((c) => {
         const inner = byCatMonth.get(c.id);
         const nowVal = inner?.get(currentKey) ?? 0;
-        const usualSamples = completeMonths.map((m) => inner?.get(m) ?? 0);
-        const usual = usualSamples.length ? usualSamples.reduce((a, b) => a + b, 0) / usualSamples.length : 0;
+        const samples = completeMonths.map((m) => inner?.get(m) ?? 0);
+        const usual = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
         const pct = usual > 0 ? (nowVal - usual) / usual : null;
         return { id: c.id, name: c.name, now: nowVal, usual, pct };
       })
       .filter((r) => r.now > 0 || r.usual > 0)
       .sort((a, b) => b.now - a.now);
   }, [expenseCategories, byCatMonth, allMonths, currentKey]);
+  const budget = budgetAll.slice(0, 10);
+
+  // La misma escala para todas las barras: si Comida es el triple, se ve el triple
+  const budgetMax = Math.max(1, ...budget.map((r) => Math.max(r.now, r.usual))) * 1.08;
+
+  // Resumen del mes (sobre TODAS las categorías, no solo las diez dibujadas)
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthTotal = budgetAll.reduce((s, r) => s + r.now, 0);
+  const usualFullMonth = budgetAll.reduce((s, r) => s + r.usual, 0);
+  const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
+  const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
+
+  function addToChart(id: string) {
+    if (!selected.includes(id)) toggle(id);
+    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  const lastEntries = useMemo(
+    () =>
+      [...transactions]
+        .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date) || (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+        .slice(0, 4),
+    [transactions],
+  );
 
   if (!transactions.length) {
     return (
@@ -225,7 +329,21 @@ export function DashboardView() {
     <div className="evo">
       <div className="evo-head">
         <h1>Mis gastos, mes a mes</h1>
-        <p>Marca lo que quieras mirar y observa cómo cambia. Hoy es {now.getDate()} de {MES_LARGO[now.getMonth()]} de {now.getFullYear()}.</p>
+      </div>
+
+      {/* Lo primero: cuánto llevo este mes */}
+      <div className="hero-month">
+        <p className="hero-line">
+          En {MES_LARGO[now.getMonth()]} llevo <strong>{formatCurrency(monthTotal)}</strong>
+        </p>
+        {heroPct !== null ? (
+          <p className="hero-note">
+            lo normal a día {now.getDate()} serían ~{formatCurrency(usualToDate)} →{" "}
+            {Math.abs(heroPct) < 0.05
+              ? <span>vas como siempre</span>
+              : <span className={heroPct > 0 ? "up" : "down"}>{heroPct > 0 ? "+" : ""}{Math.round(heroPct * 100)}% {heroPct > 0 ? "por encima" : "por debajo"}</span>}
+          </p>
+        ) : null}
       </div>
 
       <p className="evo-ask">¿Qué quiero mirar?</p>
@@ -244,67 +362,80 @@ export function DashboardView() {
         })}
       </div>
 
+      {/* Desglose de una categoría en sus subcategorías */}
+      {drillSubs.length ? (
+        <>
+          <p className="evo-ask small">Desglosar {categoryName.get(selected[0])?.toLowerCase()} en…</p>
+          <div className="pick-list">
+            {drillSubs.map((s) => {
+              const idx = subSelected.indexOf(s.id);
+              const on = idx >= 0;
+              const pen = on ? penFor(selected.length + idx) : null;
+              return (
+                <button type="button" key={s.id} className={`pick small ${on ? "on" : ""}`} onClick={() => toggleSub(s.id)} aria-pressed={on}>
+                  <span className="box" />
+                  {on && pen ? <span className="stroke" style={{ borderTopColor: pen.color, borderTopStyle: pen.dashed ? "dashed" : "solid" }} /> : null}
+                  {s.name}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
       <div className="range-row">
         <span className="lbl">Meses:</span>
         {rangeOptions.map((o) => (
-          <button type="button" key={o.label} className={`range-btn ${range === o.value ? "on" : ""}`} onClick={() => setRange(o.value)}>{o.label}</button>
+          <button type="button" key={o.label} className={`range-btn ${range === o.value ? "on" : ""}`} onClick={() => pickRange(o.value)}>{o.label}</button>
         ))}
       </div>
 
-      <div className="chart-card">
+      <div className="chart-card" ref={chartRef}>
         {series.length && n > 0 ? (
           <svg
             ref={svgRef}
-            className="evo-chart"
+            className={`evo-chart ${compact ? "compact" : ""}`}
             viewBox={`0 0 ${W} ${H}`}
             role="img"
             aria-label="Evolución del gasto por categoría"
             onPointerMove={onMove}
+            onPointerDown={onMove}
             onPointerLeave={() => setHover(null)}
           >
-            {/* Trazos a lápiz (temblor generado por JS, sin filtros caros) */}
             <g>
-              {/* rejilla horizontal tenue */}
               {yTicks.map((v, ti) => (
                 <path key={`g${v}`} d={roughPath([[padL, yAt(v)], [padL + plotW, yAt(v)]], mulberry32(31 + ti * 13), 1)} fill="none" stroke="#cfc7b2" strokeWidth={1.2} strokeDasharray="2 6" />
               ))}
-              {/* ejes */}
               <path d={roughAxis} fill="none" stroke="#24211a" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-              {/* líneas de cada serie */}
               {roughSeries.map((s) => (
-                <path key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
+                <path key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={compact ? 3.4 : 2.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
               ))}
-              {/* puntos */}
               {roughSeries.map((s) => s.pts.map(([cx, cy], i) => (
-                <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={2.7} fill={s.pen.color} />
+                <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={compact ? 3.6 : 2.7} fill={s.pen.color} />
               )))}
-              {/* guía vertical al pasar el ratón */}
-              {hover !== null ? <line x1={xAt(hover)} y1={padT} x2={xAt(hover)} y2={padT + plotH} stroke="#24211a" strokeWidth={1.4} strokeDasharray="3 4" /> : null}
+              {hi !== null ? <line x1={xAt(hi)} y1={padT} x2={xAt(hi)} y2={padT + plotH} stroke="#24211a" strokeWidth={1.4} strokeDasharray="3 4" /> : null}
+              {hi !== null ? roughSeries.map((s) => (
+                <circle key={`hi-${s.id}`} cx={s.pts[hi][0]} cy={s.pts[hi][1]} r={compact ? 6.5 : 5} fill="none" stroke={s.pen.color} strokeWidth={2} />
+              )) : null}
             </g>
 
-            {/* Texto (sin temblor, para que se lea) */}
             <g>
               {yTicks.map((v) => (
                 <text key={`t${v}`} className="axis-num" x={padL - 8} y={yAt(v) + 4} textAnchor="end">{euroShort(v)}</text>
               ))}
               {visibleMonths.map((mk, i) => (
                 i % monthEvery === 0 ? (
-                  <text key={mk} className="month-lab" x={xAt(i)} y={padT + plotH + 22} textAnchor="middle">{monthLabel(mk, mk.endsWith("-01") || i === 0)}</text>
+                  <text key={mk} className="month-lab" x={xAt(i)} y={padT + plotH + (compact ? 30 : 22)} textAnchor="middle">{monthLabel(mk, mk.endsWith("-01") || i === 0)}</text>
                 ) : null
               ))}
-              {/* etiqueta de cada serie al final de su línea */}
-              {series.map((s) => {
-                const li = s.points.length - 1;
-                return (
-                  <text key={`lab${s.id}`} className="series-lab" x={xAt(li) + 8} y={yAt(s.points[li]) + 4} fill={s.pen.color}>{s.name}</text>
-                );
-              })}
-              {/* valores al pasar el ratón */}
-              {hover !== null ? (
+              {endLabels.map((l) => (
+                <text key={`lab${l.id}`} className="series-lab" x={padL + plotW + 9} y={l.y + 4} style={{ fill: l.color }}>{l.name}</text>
+              ))}
+              {hi !== null ? (
                 <>
-                  <text x={xAt(hover)} y={padT - 6} textAnchor="middle" className="month-lab" fill="#24211a">{monthLabel(visibleMonths[hover], true)}</text>
-                  {series.map((s) => (
-                    <text key={`hv${s.id}`} x={xAt(hover)} y={yAt(s.points[hover]) - 8} textAnchor="middle" className="axis-num" fill={s.pen.color}>{euroShort(s.points[hover])}</text>
+                  <text x={Math.max(padL + 30, Math.min(padL + plotW - 30, xAt(hi)))} y={padT - 10} textAnchor="middle" className="hover-month">{monthLabel(visibleMonths[hi], true)}</text>
+                  {roughSeries.map((s) => (
+                    <text key={`hv${s.id}`} x={Math.max(padL + 22, Math.min(padL + plotW - 22, xAt(hi)))} y={s.pts[hi][1] - (compact ? 12 : 9)} textAnchor="middle" className="hover-val" style={{ fill: s.pen.color }}>{euroShort(s.points[hi])}</text>
                   ))}
                 </>
               ) : null}
@@ -317,27 +448,26 @@ export function DashboardView() {
 
       <div className="hand-rule" />
 
-      <p className="section-title">Este mes ({MES_LARGO[now.getMonth()]})</p>
-      <p className="section-sub">Cuánto llevas de cada categoría comparado con lo que sueles gastar.</p>
+      <p className="section-title">Este mes, por categoría</p>
+      <p className="section-sub">Cuánto llevas de cada una comparado con lo que sueles gastar. La rayita es “lo normal”.</p>
       <div className="budget-list">
-        {budget.map((r) => {
-          const scaleMax = Math.max(r.now, r.usual) * 1.35 || 1;
-          const usualPos = (r.usual / scaleMax) * 100;
-          const nowW = Math.min(100, (r.now / scaleMax) * 100);
+        {budget.map((r, i) => {
+          const nowW = Math.min(100, (r.now / budgetMax) * 100);
+          const usualPos = Math.min(100, (r.usual / budgetMax) * 100);
           const over = r.pct !== null && r.pct > 0.05;
           const under = r.pct !== null && r.pct < -0.05;
           return (
             <div className="budget-row" key={r.id}>
               <div className="budget-top">
-                <button type="button" className="name" style={{ border: 0, background: "transparent", cursor: "pointer" }} onClick={() => toggle(r.id)} title="Ver su evolución">{r.name}</button>
+                <button type="button" className="name" onClick={() => addToChart(r.id)} title="Ver su evolución arriba">{r.name}</button>
                 <span className={`note ${over ? "over" : under ? "under" : ""}`}>
                   {r.pct === null ? "primer mes" : Math.abs(r.pct) < 0.05 ? "≈ como siempre" : `${r.pct > 0 ? "+" : ""}${Math.round(r.pct * 100)}% de lo normal`}
                 </span>
               </div>
               <div className="budget-track">
                 <span className="base" />
-                <span className={`fill ${over ? "over" : ""}`} style={{ width: `${Math.max(1.5, nowW)}%` }} />
-                {r.usual > 0 ? <span className="usual" style={{ left: `${usualPos}%` }} /> : null}
+                <span className="fill" style={{ width: `${Math.max(1.2, nowW)}%` }} />
+                {r.usual > 0 ? <span className={`usual ${i === 0 ? "lbl" : ""}`} style={{ left: `${usualPos}%` }} /> : null}
               </div>
               <div className="budget-amt">
                 <span className="now">{formatCurrency(r.now)}</span>
@@ -347,6 +477,20 @@ export function DashboardView() {
           );
         })}
         {!budget.length ? <p className="chart-empty">Sin gastos este mes todavía.</p> : null}
+      </div>
+
+      <div className="hand-rule" />
+
+      <p className="section-title">Últimos apuntes</p>
+      <div className="last-list">
+        {lastEntries.map((t) => (
+          <div className="last-row" key={t.id}>
+            <span className="what">{t.name}</span>
+            <span className="when">{formatDate(t.transaction_date)}</span>
+            <span className={`amount ${t.amount >= 0 ? "positive" : ""}`}>{formatCurrency(t.amount)}</span>
+          </div>
+        ))}
+        <Link className="see-all" href="/movimientos">ver todos los apuntes →</Link>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronDown, LoaderCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useFinance } from "@/components/finance-provider";
@@ -78,6 +78,21 @@ export function TransactionForm({
 
   const today = todayIso();
   const yesterday = shiftDay(-1);
+
+  // Al pasar a "Ingreso" sin categoría elegida, marca "Ingresos" directamente
+  // (un toque menos en el caso típico); al volver a "Gasto" se desmarca para
+  // no guardar un gasto en esa categoría sin querer.
+  useEffect(() => {
+    const ingresos = activeCategories.find((c) => /^ingres/i.test(c.name));
+    if (!ingresos) return;
+    if (direction === "income" && !categoryId) {
+      setValue("category_id", ingresos.id, { shouldValidate: true });
+      setValue("subcategory_id", "");
+    } else if (direction === "expense" && categoryId === ingresos.id) {
+      setValue("category_id", "");
+      setValue("subcategory_id", "");
+    }
+  }, [direction, categoryId, activeCategories, setValue]);
 
   function pickCategory(id: string) {
     setValue("category_id", id, { shouldValidate: true });
