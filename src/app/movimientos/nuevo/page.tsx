@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Anotar movimiento" };
 export default function NewMovementPage() {
   return (
     <div className="page" style={{ maxWidth: 560 }}>
-      <PageHeader eyebrow="Registro rápido" title="Anotar" description="Importe, categoría y listo. El resto es opcional." action={<Link href="/movimientos" className="button"><ArrowLeft size={16} />Volver</Link>} />
+      <PageHeader eyebrow="" title="Anotar un gasto" description="Importe, categoría y listo. Lo demás es opcional." action={<Link href="/movimientos" className="button"><ArrowLeft size={16} />Volver</Link>} />
       <TransactionForm />
     </div>
   );

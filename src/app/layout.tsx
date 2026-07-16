@@ -1,43 +1,33 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Caveat, Kalam } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { FinanceProvider } from "@/components/finance-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 
-// Fraunces da el carácter de "cuaderno": serif de contraste alto, cálida, nada
-// que ver con la Geist por defecto de create-next-app.
-const serif = Fraunces({
-  variable: "--font-serif",
+// Todo escrito a mano. Caveat para los grandes trazos (títulos, cifras), Kalam
+// para el texto que hay que leer del tirón (etiquetas, datos).
+const display = Caveat({
+  variable: "--font-display",
   subsets: ["latin"],
-  display: "swap",
-  style: ["normal", "italic"],
-});
-
-const sans = IBM_Plex_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// Cifras y etiquetas: monoespaciada, para que las columnas de importes cuadren
-// como en una libreta de contabilidad.
-const mono = IBM_Plex_Mono({
-  variable: "--font-mono",
+const hand = Kalam({
+  variable: "--font-hand",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Cuaderno de cuentas",
-    template: "%s · Cuaderno",
+    default: "Mis gastos",
+    template: "%s · Mis gastos",
   },
-  description: "Libreta privada para anotar y revisar tus finanzas.",
-  applicationName: "Cuaderno",
+  description: "Mi libreta de gastos, escrita a mano.",
+  applicationName: "Mis gastos",
   manifest: "/manifest.webmanifest",
   icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
 };
@@ -48,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="es" className={`${display.variable} ${hand.variable}`}>
       <body>
         <FinanceProvider>
           <PwaRegister />

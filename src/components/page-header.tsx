@@ -14,9 +14,9 @@ export function PageHeader({
   return (
     <header className="page-header">
       <div className="page-title">
-        <p className="eyebrow">{eyebrow}</p>
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description ? <p>{description}</p> : null}
       </div>
       {action}
     </header>

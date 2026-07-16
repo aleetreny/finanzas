@@ -5,14 +5,14 @@ export const dynamic = "force-static";
 export default function manifest(): MetadataRoute.Manifest {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   return {
-    name: "Cuaderno de cuentas",
-    short_name: "Cuaderno",
-    description: "Libreta privada de finanzas personales y del Piso Málaga.",
+    name: "Mis gastos",
+    short_name: "Mis gastos",
+    description: "Mi libreta de gastos, escrita a mano.",
     start_url: `${basePath}/dashboard/`,
     scope: `${basePath}/`,
     display: "standalone",
-    background_color: "#f3ece0",
-    theme_color: "#211d16",
+    background_color: "#f4f0e4",
+    theme_color: "#24211a",
     orientation: "portrait-primary",
     icons: [
       {
