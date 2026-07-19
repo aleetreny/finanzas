@@ -89,7 +89,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         propertiesResult,
       ] = await Promise.all([
         supabase.from("accounts").select("id,name,currency,is_default").order("name"),
-        supabase.from("categories").select("id,name,sort_order,is_active").order("sort_order"),
+        supabase.from("categories").select("id,name,sort_order,is_active,category_scope").order("sort_order"),
         supabase.from("subcategories").select("id,category_id,name,sort_order,is_active").order("sort_order"),
         supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).range(0, 4999),
         supabase.from("recurring_rules").select("*").order("effective_from", { ascending: false }),

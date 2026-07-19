@@ -1,6 +1,6 @@
 # Finanzas personales
 
-Aplicación responsive y PWA para gestionar el histórico financiero personal, el Piso Málaga, el parking subarrendado, reservas turísticas e inmovilizado. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS.
+Aplicación responsive y PWA para gestionar el histórico financiero personal y, en una pestaña independiente, el Piso Málaga. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS.
 
 ## Entornos
 
@@ -10,23 +10,23 @@ Aplicación responsive y PWA para gestionar el histórico financiero personal, e
 
 ## Datos incluidos
 
-- `movimientos_financieros_corregidos.csv`: 1.068 movimientos históricos, suma auditada de **15.296,66 €**.
-- `catalogo_categorias.csv`: 14 categorías y 73 combinaciones categoría/subcategoría.
-- `recurrentes_iniciales.csv`: ingreso mensual de parking de +130 € y coste mensual de -95 € desde agosto de 2026.
+- `movimientos_financieros_corregidos.csv`: 1.024 movimientos históricos, suma auditada de **14.276,66 €**.
+- `catalogo_categorias.csv`: 12 categorías y 71 combinaciones categoría/subcategoría.
+- `recurrentes_iniciales.csv`: catálogo vacío, listo para añadir reglas recurrentes futuras.
 - `macro_prompt_agente.md`: especificación funcional original.
 
-Los importes y fechas históricos no se modifican. `Noel +500 €` se conserva como reembolso; los cobros de Airbnb y Booking se guardan como importes bancarios reales sin inventar desgloses.
+Los importes y fechas de los movimientos conservados no se modifican. Los gastos de cuidado personal están migrados a `Salud / Cuidado personal`; `Noel +500 €` se conserva como reembolso y los cobros de Airbnb y Booking se guardan como importes bancarios reales sin inventar desgloses.
 
 ## Funcionalidad
 
-- Dashboard con ingresos, gastos, saldo, evolución mensual y categorías.
+- Dashboard personal sin mezclar los movimientos del Piso Málaga.
 - Alta rápida, edición, eliminación, búsqueda y filtros de movimientos.
 - Vista independiente del Piso Málaga y candidatos a inmovilizado.
 - Calculadoras conciliadas de Airbnb y Booking.
 - Reglas recurrentes idempotentes y vigencias futuras.
 - Calculadora de amortización lineal prorrateada por días.
 - Importación CSV con vista previa, hash e informe por fila; exportación completa.
-- Categorías, subcategorías y porcentajes configurables.
+- CRUD completo de categorías y subcategorías, con ámbitos separados para gastos, ingresos y Piso Málaga.
 - Autenticación por enlace mágico, PWA instalable y diseño móvil.
 
 ## Desarrollo local
@@ -53,8 +53,9 @@ La clave publicable está diseñada para el navegador y queda protegida por RLS.
 Las migraciones versionadas están en `supabase/migrations`:
 
 1. `initial_schema`: tablas, restricciones, índices, triggers, grants y políticas RLS.
-2. `initial_data`: cuenta principal, Piso Málaga, taxonomía, recurrentes y 1.068 movimientos.
+2. `initial_data`: cuenta principal, Piso Málaga, taxonomía y 1.024 movimientos.
 3. `harden_security_and_indexes`: permisos mínimos, función de reclamación restringida e índices de claves foráneas.
+4. `reorganize_finance_categories`: separación por ámbitos, migración de cuidado personal y retirada del dominio eliminado.
 
 El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico.
 
@@ -80,7 +81,7 @@ npm run build
 npx playwright test
 ```
 
-Los tests cubren los ejemplos de Airbnb y Booking, 1.068 filas y su suma, idempotencia, vigencia del parking, amortización y presencia de RLS.
+Los tests cubren los ejemplos de Airbnb y Booking, las 1.024 filas y su suma, idempotencia, separación del Piso Málaga, taxonomía, amortización y presencia de RLS.
 
 ## Despliegue en GitHub Pages
 

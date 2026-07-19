@@ -1,4 +1,4 @@
-﻿categoria_principal;subcategoria;activa
+categoria_principal;subcategoria;activa
 Piso Málaga;Ingreso alquiler residencial;Sí
 Piso Málaga;Ingreso Airbnb;Sí
 Piso Málaga;Ingreso Booking;Sí
@@ -13,8 +13,6 @@ Piso Málaga;Impuestos y tasas;Sí
 Piso Málaga;Reembolsos e indemnizaciones;Sí
 Piso Málaga;Mobiliario y equipamiento;Sí
 Piso Málaga;Otros ingresos/gastos;Sí
-Parking subarrendado;Ingreso subarriendo;Sí
-Parking subarrendado;Coste alquiler;Sí
 Vivienda personal;Alquiler Madrid;Sí
 Vivienda personal;Depósitos y reservas;Sí
 Vivienda personal;Suministros;Sí
@@ -51,9 +49,8 @@ Salud;Médico y tratamientos;Sí
 Salud;Vacunas;Sí
 Salud;Seguro médico;Sí
 Salud;Seguro de viaje;Sí
+Salud;Cuidado personal;Sí
 Salud;Otros;Sí
-Cuidado personal;Peluquería;Sí
-Cuidado personal;Otros;Sí
 Educación;Matrícula y tasas;Sí
 Educación;Cursos y certificaciones;Sí
 Educación;Exámenes e idiomas;Sí
@@ -67,8 +64,9 @@ Tasas y obligaciones;Otros;Sí
 Ingresos;Trabajo;Sí
 Ingresos;Becas y ayudas;Sí
 Ingresos;Reembolsos;Sí
-Ingresos;Venta de bienes;Sí
+Ingresos;Venta de artículos;Sí
 Ingresos;Voluntariado y colaboraciones;Sí
 Ingresos;Transporte compartido;Sí
+Ingresos;Inversiones;Sí
 Ingresos;Otros;Sí
 Otros;Otros;Sí

@@ -59,16 +59,16 @@ const movements = readCsv('movimientos_financieros_corregidos.csv')
 const taxonomy = readCsv('catalogo_categorias.csv')
 const recurring = readCsv('recurrentes_iniciales.csv')
 
-if (movements.length !== 1068) {
-  throw new Error(`Expected 1068 movements, found ${movements.length}`)
+if (movements.length !== 1024) {
+  throw new Error(`Expected 1024 movements, found ${movements.length}`)
 }
 
 const totalCents = movements.reduce(
   (sum, row) => sum + Math.round(Number(row.importe_eur) * 100),
   0,
 )
-if (totalCents !== 1_529_666) {
-  throw new Error(`Expected total 15296.66, found ${(totalCents / 100).toFixed(2)}`)
+if (totalCents !== 1_427_666) {
+  throw new Error(`Expected total 14276.66, found ${(totalCents / 100).toFixed(2)}`)
 }
 
 const externalIds = new Set(movements.map((row) => row.id_origen))
@@ -207,11 +207,11 @@ begin
   from public.transactions
   where import_batch_id = ${sqlText(importBatchId)};
 
-  if movement_count <> 1068 then
-    raise exception 'Seed validation failed: expected 1068 movements, found %', movement_count;
+  if movement_count <> 1024 then
+    raise exception 'Seed validation failed: expected 1024 movements, found %', movement_count;
   end if;
-  if movement_total <> 15296.66 then
-    raise exception 'Seed validation failed: expected 15296.66, found %', movement_total;
+  if movement_total <> 14276.66 then
+    raise exception 'Seed validation failed: expected 14276.66, found %', movement_total;
   end if;
 end;
 $$;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFinance } from "@/components/finance-provider";
+import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -74,6 +75,11 @@ function truncate(text: string, max: number) {
 
 export function DashboardView() {
   const { transactions, categories, subcategories } = useFinance();
+  const categoriesById = useMemo(() => categoryById(categories), [categories]);
+  const personalTransactions = useMemo(
+    () => transactions.filter((transaction) => !isMalagaTransaction(transaction, categoriesById)),
+    [categoriesById, transactions],
+  );
 
   const categoryName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const subcategoryName = useMemo(() => new Map(subcategories.map((s) => [s.id, s.name])), [subcategories]);
@@ -97,11 +103,11 @@ export function DashboardView() {
   // Total de gasto por categoría (para ordenar y elegir por defecto)
   const catTotals = useMemo(() => {
     const map = new Map<string, number>();
-    transactions.forEach((t) => {
+    personalTransactions.forEach((t) => {
       if (t.amount < 0 && t.category_id) map.set(t.category_id, (map.get(t.category_id) ?? 0) + Math.abs(t.amount));
     });
     return map;
-  }, [transactions]);
+  }, [personalTransactions]);
 
   const expenseCategories = useMemo(
     () =>
@@ -113,7 +119,7 @@ export function DashboardView() {
 
   // Línea temporal continua desde el primer gasto hasta el mes actual
   const allMonths = useMemo(() => {
-    const withData = transactions.filter((t) => t.amount < 0).map((t) => t.transaction_date.slice(0, 7));
+    const withData = personalTransactions.filter((t) => t.amount < 0).map((t) => t.transaction_date.slice(0, 7));
     if (!withData.length) return [] as string[];
     const first = withData.reduce((a, b) => (a < b ? a : b));
     const now = new Date();
@@ -126,12 +132,12 @@ export function DashboardView() {
       cur = addMonths(cur, 1);
     }
     return months;
-  }, [transactions]);
+  }, [personalTransactions]);
 
   // gasto[categoría][mes] y gasto[subcategoría][mes]
   const byCatMonth = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    transactions.forEach((t) => {
+    personalTransactions.forEach((t) => {
       if (t.amount >= 0 || !t.category_id) return;
       const key = t.transaction_date.slice(0, 7);
       let inner = map.get(t.category_id);
@@ -139,11 +145,11 @@ export function DashboardView() {
       inner.set(key, (inner.get(key) ?? 0) + Math.abs(t.amount));
     });
     return map;
-  }, [transactions]);
+  }, [personalTransactions]);
 
   const bySubMonth = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    transactions.forEach((t) => {
+    personalTransactions.forEach((t) => {
       if (t.amount >= 0 || !t.subcategory_id) return;
       const key = t.transaction_date.slice(0, 7);
       let inner = map.get(t.subcategory_id);
@@ -151,7 +157,7 @@ export function DashboardView() {
       inner.set(key, (inner.get(key) ?? 0) + Math.abs(t.amount));
     });
     return map;
-  }, [transactions]);
+  }, [personalTransactions]);
 
   const rangeOptions = useMemo(() => {
     const opts: { label: string; value: number | "all" }[] = [];
@@ -310,13 +316,13 @@ export function DashboardView() {
 
   const lastEntries = useMemo(
     () =>
-      [...transactions]
+      [...personalTransactions]
         .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date) || (b.created_at ?? "").localeCompare(a.created_at ?? ""))
         .slice(0, 4),
-    [transactions],
+    [personalTransactions],
   );
 
-  if (!transactions.length) {
+  if (!personalTransactions.length) {
     return (
       <div className="evo">
         <div className="evo-head"><h1>Mis gastos</h1><p>Aún no hay nada anotado.</p></div>

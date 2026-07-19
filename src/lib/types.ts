@@ -1,10 +1,13 @@
 export type Direction = "income" | "expense" | "neutral";
 
+export type CategoryScope = "expense" | "income" | "property";
+
 export type Category = {
   id: string;
   name: string;
   sort_order: number;
   is_active: boolean;
+  category_scope: CategoryScope;
 };
 
 export type Subcategory = {

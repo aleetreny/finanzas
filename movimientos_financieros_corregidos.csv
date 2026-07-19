@@ -1,4 +1,4 @@
-﻿id_origen;fila_original;fecha;nombre;importe_eur;tipo;categoria_principal;subcategoria;contexto;plataforma;viaje_proyecto;recurrente;fiscal_piso_malaga;categoria_original;nota_migracion
+id_origen;fila_original;fecha;nombre;importe_eur;tipo;categoria_principal;subcategoria;contexto;plataforma;viaje_proyecto;recurrente;fiscal_piso_malaga;categoria_original;nota_migracion
 mov-000001;2;2026-05-15;Nuddles;-7.12;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000002;3;2026-07-14;Seguro reembolso;442.96;Ingreso;Piso Málaga;Reembolsos e indemnizaciones;Piso Málaga;;;No;Indemnización vinculada al inmueble;Utilities;Compensación por daños de agua en el marco de una puerta
 mov-000003;4;2026-07-14;Gpt;-22.99;Gasto;Suscripciones;IA y software;Personal;;;Sí;No aplica;Suscripciones;
@@ -20,9 +20,7 @@ mov-000018;19;2026-06-25;Aire acondicionado;-1389.00;Gasto;Piso Málaga;Mantenim
 mov-000019;20;2026-06-26;Sushi;-49.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000020;21;2026-06-28;Bbq;-16.84;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000021;22;2026-06-29;Renta;-1749.03;Gasto;Tasas y obligaciones;Impuestos personales;Personal;;;No;No aplica;Utilities;IRPF personal. No imputar automáticamente como gasto deducible del piso.
-mov-000022;23;2026-06-30;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000023;24;2026-07-01;Llaves;-68.53;Gasto;Piso Málaga;Mantenimiento y reparaciones;Piso Málaga;;;No;Gasto del inmueble - revisar deducibilidad;Shopping;
-mov-000024;25;2026-07-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000025;26;2026-07-01;Piso;-710.00;Gasto;Vivienda personal;Alquiler Madrid;Vivienda personal;;;Sí;No aplica;Alquiler;
 mov-000026;27;2026-07-01;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000027;28;2026-07-02;Butano;-23.35;Gasto;Piso Málaga;Gas y butano;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
@@ -82,12 +80,10 @@ mov-000080;81;2026-05-29;Cine;-17.80;Gasto;Ocio;Cultura y eventos;Personal;;;No;
 mov-000081;82;2026-05-30;Carne;-2.75;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000082;83;2026-05-31;Uber eats;-24.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000083;84;2026-06-02;Alquiler;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000084;85;2026-05-29;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000085;86;2026-06-05;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000086;87;2026-06-06;Icloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-000087;88;2026-05-25;Compra;-0.90;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000088;89;2026-06-01;Piso;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000089;90;2026-05-25;Mac;975.00;Ingreso;Ingresos;Venta de bienes;Personal;;;No;No aplica;Sueldo;Venta de un Mac
+mov-000089;90;2026-05-25;Mac;975.00;Ingreso;Ingresos;Venta de artículos;Personal;;;No;No aplica;Sueldo;Venta de un Mac
 mov-000090;91;2026-05-13;Pickeball;-5.00;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
 mov-000091;92;2026-05-13;Ocu;-14.00;Gasto;Suscripciones;Medios y asociaciones;Personal;;;Sí;No aplica;Suscripciones;
 mov-000092;93;2026-05-11;Trenes;-46.75;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
@@ -103,12 +99,10 @@ mov-000101;102;2026-05-07;Comida uber;-6.30;Gasto;Comida;Comer fuera;Personal;;;
 mov-000102;103;2026-05-06;Pago alquiler ucl deposito;-473.00;Gasto;Vivienda personal;Depósitos y reservas;Vivienda personal;;;No;No aplica;Alquiler;Depósito de alojamiento en Londres/UCL
 mov-000103;104;2026-05-06;Tacos;-11.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000104;105;2026-05-06;Tools;-14.15;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;
-mov-000105;106;2026-05-05;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Alquiler;
-mov-000106;107;2026-05-05;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000107;108;2026-05-05;Comida noruega;-121.52;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000108;109;2026-05-05;Carga coche;-35.86;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000109;110;2026-05-05;Kayak;-60.00;Gasto;Ocio;Excursiones y experiencias;Personal;;;No;No aplica;Actividades;
-mov-000110;111;2026-05-05;Parking;-5.76;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;"Aparcamiento ocasional; no pertenece al parking subarrendado"
+mov-000110;111;2026-05-05;Parking;-5.76;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;Aparcamiento ocasional
 mov-000111;112;2026-05-05;Tren malaga;-30.00;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
 mov-000112;113;2026-05-05;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000113;114;2026-05-05;Compra;-54.55;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
@@ -117,7 +111,7 @@ mov-000115;116;2026-05-05;Icloud;-9.99;Gasto;Suscripciones;Almacenamiento y serv
 mov-000116;117;2026-05-04;Alquiler;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000117;118;2026-05-01;Alquiler;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000118;119;2026-04-28;Alojamiento noruega;-53.12;Gasto;Vivienda personal;Alojamiento temporal;Vivienda personal;;;No;No aplica;Actividades;
-mov-000119;120;2026-04-27;Pelu;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000119;120;2026-04-27;Pelu;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000120;121;2026-04-25;Acuarius;-3.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000121;122;2026-04-23;Vacuna;-30.44;Gasto;Salud;Vacunas;Personal;;;No;No aplica;Salud;
 mov-000122;123;2026-04-23;Cine;-5.50;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
@@ -157,9 +151,7 @@ mov-000155;156;2026-04-03;Comida finlandia;-129.35;Gasto;Comida;Comer fuera;Pers
 mov-000156;157;2026-04-03;Entradas;-25.00;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000157;158;2026-04-02;Piso;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000158;159;2026-04-02;Piso;-740.00;Gasto;Vivienda personal;Alquiler Madrid;Vivienda personal;;;Sí;No aplica;Alquiler;
-mov-000159;160;2026-04-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000160;161;2026-04-01;Alquiler;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000161;162;2026-04-01;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Alquiler;
 mov-000162;163;2026-03-31;Noruega coche;-120.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000163;164;2026-03-31;Alojamiento noruega;-168.33;Gasto;Vivienda personal;Alojamiento temporal;Vivienda personal;;;No;No aplica;Actividades;
 mov-000164;165;2026-03-31;Bus arlanda;-29.35;Gasto;Transporte;Bus y metro;Personal;;;No;No aplica;Transporte;
@@ -199,8 +191,6 @@ mov-000197;198;2026-03-02;Kebap;-3.80;Gasto;Comida;Comer fuera;Personal;;;No;No 
 mov-000198;199;2026-03-01;Alquiler;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000199;200;2026-03-01;Rinomer;-28.15;Gasto;Salud;Medicamentos;Personal;;;No;No aplica;Sueldo;
 mov-000200;201;2026-03-01;Compra;-3.34;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
-mov-000201;202;2026-03-01;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000202;203;2026-03-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000203;204;2026-02-28;Libro;-24.00;Gasto;Compras;Libros y papelería;Personal;;;No;No aplica;Shopping;
 mov-000204;205;2026-02-28;Compra;-8.95;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000205;206;2026-02-25;Medicamentos;-39.24;Gasto;Salud;Medicamentos;Personal;;;No;No aplica;Salud;
@@ -229,8 +219,6 @@ mov-000227;228;2026-02-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y serv
 mov-000228;229;2026-02-05;Juego tele;-30.00;Gasto;Ocio;Otros;Personal;;;No;No aplica;Actividades;
 mov-000229;230;2026-02-04;Bocata;-4.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000230;231;2026-02-04;Buffet;-40.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000231;232;2026-02-01;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Alquiler;
-mov-000232;233;2026-02-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000233;234;2026-02-01;Piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000234;235;2026-02-01;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000235;236;2026-02-01;Alquiler piso mad;-725.00;Gasto;Vivienda personal;Alquiler Madrid;Vivienda personal;;;Sí;No aplica;Alquiler;
@@ -248,7 +236,7 @@ mov-000246;247;2026-01-23;Tren;-3.60;Gasto;Transporte;Tren;Personal;;;No;No apli
 mov-000247;248;2026-01-20;Bus;-21.00;Gasto;Transporte;Bus y metro;Personal;;;No;No aplica;Transporte;
 mov-000248;249;2026-01-20;Tagliatela;-46.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000249;250;2026-01-20;Devolucion laura;6.24;Ingreso;Ingresos;Reembolsos;Personal;;;No;No aplica;Actividades;Reembolso de una actividad
-mov-000250;251;2026-01-20;Pelu;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000250;251;2026-01-20;Pelu;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000251;252;2026-01-18;Churros;-6.30;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000252;253;2026-01-16;Griego;-7.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000253;254;2026-01-16;Cerveza;-3.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
@@ -265,11 +253,9 @@ mov-000263;264;2026-01-07;Noel;500.00;Ingreso;Ingresos;Reembolsos;Personal;;Tail
 mov-000264;265;2026-01-07;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000265;266;2026-01-06;Alojamiento sn;-56.12;Gasto;Vivienda personal;Alojamiento temporal;Vivienda personal;;;No;No aplica;Actividades;
 mov-000266;267;2026-01-06;Transporte sn;-60.20;Gasto;Transporte;Otros;Personal;;;No;No aplica;Transporte;
-mov-000267;268;2026-01-06;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000268;269;2026-01-06;Icloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-000269;270;2026-01-06;Alquiler equipo;-19.49;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
 mov-000270;271;2026-01-06;Fortfait;-86.00;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
-mov-000271;272;2026-01-06;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000272;273;2026-01-05;Sierra nevada;-80.00;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
 mov-000273;274;2026-01-05;Hamburguesa;-8.25;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000274;275;2026-01-05;Parking y gaso;-15.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
@@ -309,8 +295,6 @@ mov-000307;308;2025-12-02;Too good;-10.19;Gasto;Comida;Comer fuera;Personal;;;No
 mov-000308;309;2025-12-01;Compra;-26.62;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000309;310;2025-12-01;Alquiler madri;-700.00;Gasto;Vivienda personal;Alquiler Madrid;Vivienda personal;;;Sí;No aplica;Alquiler;
 mov-000310;311;2025-12-01;Alquiler;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000311;312;2025-12-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000312;313;2025-12-01;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Alquiler;
 mov-000313;314;2025-12-01;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Comida;
 mov-000314;315;2025-11-30;Burguer;-17.42;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000315;316;2025-11-29;Cluedo;-7.67;Gasto;Ocio;Otros;Personal;;;No;No aplica;Actividades;
@@ -343,7 +327,6 @@ mov-000341;342;2025-11-06;Pan;-1.58;Gasto;Comida;Supermercado;Personal;;;No;No a
 mov-000342;343;2025-11-06;Limpieza;-3.00;Gasto;Piso Málaga;Limpieza;Piso Málaga;;;No;Gasto del inmueble - revisar deducibilidad;Shopping;"Asignación al piso inferida por contexto; se puede editar."
 mov-000343;344;2025-11-06;Pescao;-4.99;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000344;345;2025-11-06;Piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000345;346;2025-11-06;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Comida;
 mov-000346;347;2025-11-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-000347;348;2025-11-05;Luz madrid;-35.50;Gasto;Vivienda personal;Suministros;Vivienda personal;;;Sí;No aplica;Utilities;
 mov-000348;349;2025-11-04;Tren;-39.51;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
@@ -375,7 +358,7 @@ mov-000373;374;2025-10-23;Adri;-50.00;Gasto;Transporte;Taxi y VTC;Personal;;;No;
 mov-000374;375;2025-10-22;Cerveza;-3.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000375;376;2025-10-20;Uber;-10.91;Gasto;Transporte;Taxi y VTC;Personal;;;No;No aplica;Transporte;
 mov-000376;377;2025-10-20;Setas;-12.99;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
-mov-000377;378;2025-10-18;Peluqueria;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000377;378;2025-10-18;Peluqueria;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000378;379;2025-10-17;Festival;-127.00;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000379;380;2025-10-17;Cerveza;-4.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000380;381;2025-10-14;Tren;-15.00;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
@@ -397,8 +380,6 @@ mov-000395;396;2025-10-05;Pickleball;-9.50;Gasto;Ocio;Deporte;Personal;;;No;No a
 mov-000396;397;2025-10-04;Birra;-12.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000397;398;2025-10-02;Piso;-730.00;Gasto;Vivienda personal;Alquiler Madrid;Vivienda personal;;;Sí;No aplica;Alquiler;
 mov-000398;399;2025-10-02;Piso;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000399;400;2025-10-02;Parking;-85.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Alquiler;
-mov-000400;401;2025-10-02;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000401;402;2025-10-02;Birra;-3.80;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000402;403;2025-10-01;Alquiler;600.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000403;404;2025-10-01;Compra;-52.63;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
@@ -476,7 +457,7 @@ mov-000474;475;2025-09-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y serv
 mov-000475;476;2025-09-05;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000476;477;2025-09-05;Camiseta py;-6.00;Gasto;Compras;Ropa y accesorios;Personal;;;No;No aplica;Shopping;
 mov-000477;478;2025-09-05;Chino;-6.60;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000478;479;2025-09-03;Pelu;-4.73;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000478;479;2025-09-03;Pelu;-4.73;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000479;480;2025-09-03;Compra;-3.48;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000480;481;2025-09-02;Medicamento;-4.23;Gasto;Salud;Medicamentos;Personal;;;No;No aplica;Salud;
 mov-000481;482;2025-09-02;Bolt;-3.18;Gasto;Transporte;Taxi y VTC;Personal;;;No;No aplica;Transporte;
@@ -484,8 +465,6 @@ mov-000482;483;2025-09-02;Bolt;-1.50;Gasto;Transporte;Taxi y VTC;Personal;;;No;N
 mov-000483;484;2025-09-01;Tren;-19.85;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
 mov-000484;485;2025-09-01;Comida;-0.90;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000485;486;2025-09-01;Compra;-2.54;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
-mov-000486;487;2025-09-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000487;488;2025-09-01;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000488;489;2025-08-31;Bizco;-1.19;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000489;490;2025-08-30;Cristo redentor;-20.30;Gasto;Ocio;Excursiones y experiencias;Personal;;;No;No aplica;Actividades;
 mov-000490;491;2025-08-30;Cerveza;-1.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
@@ -571,8 +550,6 @@ mov-000569;570;2025-08-02;Buffet;-3.52;Gasto;Comida;Comer fuera;Personal;;;No;No
 mov-000570;571;2025-08-02;Frutilla;-2.43;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000571;572;2025-08-02;Compra;-6.14;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000572;573;2025-08-01;Peaje;-1.15;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;
-mov-000573;574;2025-08-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000574;575;2025-08-01;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000575;576;2025-07-31;Bolt;-3.19;Gasto;Transporte;Taxi y VTC;Personal;;;No;No aplica;Transporte;
 mov-000576;577;2025-07-31;Foood;-3.93;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000577;578;2025-07-31;Alquiler;62.94;Ingreso;Piso Málaga;Ingreso alquiler turístico - directo/otro;Piso Málaga;Directo/Otro;;No;Ingreso del inmueble;Alquiler;
@@ -648,8 +625,6 @@ mov-000646;647;2025-07-03;Cosass del piso;-8.90;Gasto;Piso Málaga;Mobiliario y 
 mov-000647;648;2025-07-03;Bebidas;-3.74;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000648;649;2025-07-02;Tren;-12.48;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
 mov-000649;650;2025-07-01;Regalo clara;-4.78;Gasto;Compras;Regalos;Personal;;;No;No aplica;Shopping;
-mov-000650;651;2025-07-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000651;652;2025-07-01;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000652;653;2025-07-01;Airbnb;200.00;Ingreso;Piso Málaga;Ingreso Airbnb;Piso Málaga;Airbnb;;No;Ingreso del inmueble;Alquiler;Importe bancario neto. No reconstruir el desglose histórico sin los datos de la reserva.
 mov-000653;654;2025-07-01;Caña;-2.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000654;655;2025-06-30;Sushi;-24.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
@@ -659,14 +634,14 @@ mov-000657;658;2025-06-28;Cerveza;-3.50;Gasto;Comida;Comer fuera;Personal;;;No;N
 mov-000658;659;2025-06-27;Entrada graduacion;-10.50;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000659;660;2025-06-27;Butano;-23.80;Gasto;Piso Málaga;Gas y butano;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Transporte;
 mov-000660;661;2025-06-27;Entrada graduacion;-10.00;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
-mov-000661;662;2025-06-26;Cepillo;-4.95;Gasto;Cuidado personal;Otros;Personal;;;No;No aplica;Salud;
-mov-000662;663;2025-06-25;Parking;-1.35;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;"Aparcamiento ocasional; no pertenece al parking subarrendado"
+mov-000661;662;2025-06-26;Cepillo;-4.95;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
+mov-000662;663;2025-06-25;Parking;-1.35;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;Aparcamiento ocasional
 mov-000663;664;2025-06-25;Food;-9.24;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000664;665;2025-06-24;Churros;-7.20;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000665;666;2025-06-23;Kebap;-6.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000666;667;2025-06-19;Graduacion;-86.50;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000667;668;2025-06-17;Renta;-1457.75;Gasto;Tasas y obligaciones;Impuestos personales;Personal;;;No;No aplica;Utilities;IRPF personal. No imputar automáticamente como gasto deducible del piso.
-mov-000668;669;2025-06-17;Parking;-1.15;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;"Aparcamiento ocasional; no pertenece al parking subarrendado"
+mov-000668;669;2025-06-17;Parking;-1.15;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;Aparcamiento ocasional
 mov-000669;670;2025-06-17;Libro;-23.10;Gasto;Compras;Libros y papelería;Personal;;;No;No aplica;Shopping;
 mov-000670;671;2025-06-17;Tortilla;-5.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000671;672;2025-06-17;Vacunas;-19.46;Gasto;Salud;Vacunas;Personal;;;No;No aplica;Salud;
@@ -685,13 +660,11 @@ mov-000683;684;2025-06-09;Comida uk;-60.00;Gasto;Comida;Comer fuera;Personal;;;N
 mov-000684;685;2025-06-09;Underground y bus;-20.00;Gasto;Transporte;Bus y metro;Personal;;;No;No aplica;Transporte;
 mov-000685;686;2025-06-09;Antibioticos;-21.79;Gasto;Salud;Medicamentos;Personal;;;No;No aplica;Salud;
 mov-000686;687;2025-06-06;Alquiler;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000687;688;2025-06-06;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000688;689;2025-06-06;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000689;690;2025-06-05;Ramen;-20.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000690;691;2025-06-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-000691;692;2025-06-05;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000692;693;2025-06-05;Visa Uk;-19.70;Gasto;Tasas y obligaciones;Visados y documentación;Personal;;;No;No aplica;Utilities;
-mov-000693;694;2025-06-03;Pelu;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000693;694;2025-06-03;Pelu;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000694;695;2025-06-02;Cine;-9.80;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000695;696;2025-06-01;Tren cambridge;-52.00;Gasto;Transporte;Tren;Personal;;;No;No aplica;Transporte;
 mov-000696;697;2025-05-31;Socarrat;-5.47;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
@@ -728,9 +701,7 @@ mov-000726;727;2025-05-04;Carbonara;-7.80;Gasto;Comida;Comer fuera;Personal;;;No
 mov-000727;728;2025-05-03;Cercanias;-10.00;Gasto;Transporte;Bus y metro;Personal;;;No;No aplica;Transporte;
 mov-000728;729;2025-05-03;Uber;-11.58;Gasto;Transporte;Taxi y VTC;Personal;;;No;No aplica;Transporte;
 mov-000729;730;2025-05-03;Cerveza;-6.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000730;731;2025-05-03;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000731;732;2025-05-03;Alquiler piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000732;733;2025-05-03;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000733;734;2025-05-03;Cine;-11.80;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000734;735;2025-05-01;Chatgpt;-22.99;Gasto;Suscripciones;IA y software;Personal;;;Sí;No aplica;Suscripciones;
 mov-000735;736;2025-05-01;Karting;-14.00;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
@@ -763,8 +734,6 @@ mov-000761;762;2025-04-11;Maria;-9.00;Gasto;Comida;Comer fuera;Personal;;;No;No 
 mov-000762;763;2025-04-10;Orla;-13.00;Gasto;Educación;Otros;Personal;;;No;No aplica;Utilities;
 mov-000763;764;2025-04-09;Cerveza;-2.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000764;765;2025-04-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
-mov-000765;766;2025-04-04;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000766;767;2025-04-04;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000767;768;2025-04-04;Comia;-30.80;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000768;769;2025-04-03;Cerve;-2.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000769;770;2025-04-02;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
@@ -798,13 +767,11 @@ mov-000796;797;2025-03-07;Park;-0.76;Gasto;Transporte;Parking y peajes;Personal;
 mov-000797;798;2025-03-06;Comida uni;-5.75;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000798;799;2025-03-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-000799;800;2025-03-04;Viaje;-144.00;Gasto;Transporte;Avión;Personal;;;No;No aplica;Actividades;Concepto probable: vuelo
-mov-000800;801;2025-03-04;Pelu;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
+mov-000800;801;2025-03-04;Pelu;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000801;802;2025-03-03;Gaso;-20.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000802;803;2025-03-02;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000803;804;2025-03-02;Comida presentación ainhoa;-13.88;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000804;805;2025-03-02;Burger;-15.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000805;806;2025-03-01;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
-mov-000806;807;2025-03-01;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000807;808;2025-03-01;Alquiler;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000808;809;2025-03-01;Comida;-6.05;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000809;810;2025-02-28;Chagpt;-22.99;Gasto;Suscripciones;IA y software;Personal;;;Sí;No aplica;Suscripciones;
@@ -830,8 +797,6 @@ mov-000828;829;2025-02-05;Carne;-3.70;Gasto;Comida;Supermercado;Personal;;;No;No
 mov-000829;830;2025-02-04;Cerveza y brava;-5.15;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000830;831;2025-02-04;Piso granada;-13.08;Gasto;Vivienda personal;Alojamiento temporal;Vivienda personal;;;No;No aplica;Actividades;
 mov-000831;832;2025-02-03;Alquiler piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000832;833;2025-02-01;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000833;834;2025-02-01;Parking;120.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000834;835;2025-02-01;Gasofa;-20.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000835;836;2025-01-31;Suelo tropical;1034.90;Ingreso;Ingresos;Trabajo;Personal;;;Sí;No aplica;Sueldo;
 mov-000836;837;2025-01-27;Pizarra y bolis;-13.00;Gasto;Compras;Libros y papelería;Personal;;;No;No aplica;Shopping;
@@ -862,10 +827,8 @@ mov-000860;861;2025-01-06;ICloud;-9.99;Gasto;Suscripciones;Almacenamiento y serv
 mov-000861;862;2025-01-05;Gasofa;-70.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000862;863;2025-01-05;Carne;-2.69;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-000863;864;2025-01-04;Cerveza;-3.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000864;865;2025-01-02;Pelu;-10.00;Gasto;Cuidado personal;Peluquería;Personal;;;No;No aplica;Salud;
-mov-000865;866;2025-01-02;Parking;120.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
+mov-000864;865;2025-01-02;Pelu;-10.00;Gasto;Salud;Cuidado personal;Personal;;;No;No aplica;Salud;
 mov-000866;867;2025-01-02;Alquiler piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000867;868;2025-01-02;Alquiler parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-000868;869;2025-01-02;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000869;870;2024-12-31;Hamburguesa;-8.46;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000870;871;2024-12-31;Tm;828.00;Ingreso;Ingresos;Trabajo;Personal;;;Sí;No aplica;Sueldo;
@@ -903,8 +866,6 @@ mov-000901;902;2024-12-04;Segunda parte multa suiza;-109.00;Gasto;Tasas y obliga
 mov-000902;903;2024-12-03;Hamburguesa;-6.25;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000903;904;2024-12-03;Comunidad;-70.80;Gasto;Piso Málaga;Comunidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-000904;905;2024-12-03;Piso;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
-mov-000905;906;2024-12-02;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000906;907;2024-12-01;Alquiler parking;120.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000907;908;2024-12-01;Envio devolución mac;-7.00;Gasto;Compras;Tecnología;Personal;;;No;No aplica;Shopping;
 mov-000908;909;2024-11-29;Cena y cervezas;-5.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000909;910;2024-11-29;Billar;-1.00;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
@@ -941,8 +902,6 @@ mov-000939;940;2024-11-04;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y serv
 mov-000940;941;2024-11-04;Alquiler chicas;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-000941;942;2024-11-02;Cerve;-5.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000942;943;2024-11-02;Burrito;-7.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000943;944;2024-11-02;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
-mov-000944;945;2024-11-02;parking;120.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000945;946;2024-10-31;Cervezas;-8.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000946;947;2024-10-31;Bus;-4.50;Gasto;Transporte;Bus y metro;Personal;;;No;No aplica;Transporte;
 mov-000947;948;2024-10-30;entrada gold hallowen;-13.10;Gasto;Ocio;Vida nocturna;Personal;;;No;No aplica;Actividades;
@@ -979,13 +938,12 @@ mov-000977;978;2024-09-29;Copa;-6.00;Gasto;Comida;Comer fuera;Personal;;;No;No a
 mov-000978;979;2024-09-29;Vino;-1.40;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000979;980;2024-09-29;Cine;-11.00;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-000980;981;2024-09-29;Gasofa;-60.59;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
-mov-000981;982;2024-09-28;Parking;130.00;Ingreso;Parking subarrendado;Ingreso subarriendo;Parking subarrendado;;;Sí;Ingreso del parking;Alquiler;
 mov-000982;983;2024-09-23;Comia anca el mejillon;-8.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000983;984;2024-09-21;Semillas;-2.89;Gasto;Compras;Hogar y jardín;Personal;;;No;No aplica;Shopping;
 mov-000984;985;2024-09-20;Hamburguer;-15.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000985;986;2024-09-19;Gaso;-50.00;Gasto;Transporte;Coche;Personal;;;No;No aplica;Transporte;
 mov-000986;987;2024-09-19;Gambrinus cena todos;-10.70;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
-mov-000987;988;2024-09-19;Parking;-2.00;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;"Aparcamiento ocasional; no pertenece al parking subarrendado"
+mov-000987;988;2024-09-19;Parking;-2.00;Gasto;Transporte;Parking y peajes;Personal;;;No;No aplica;Transporte;Aparcamiento ocasional
 mov-000988;989;2024-09-18;Cerveza;-3.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000989;990;2024-09-17;Cerveza;-3.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-000990;991;2024-09-17;Otra cerveza;-2.00;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
@@ -1019,7 +977,6 @@ mov-001017;1018;2024-09-03;Abono;-7.39;Gasto;Compras;Hogar y jardín;Personal;;;
 mov-001018;1019;2024-09-02;Llaves duplicado;-6.00;Gasto;Piso Málaga;Mantenimiento y reparaciones;Piso Málaga;;;No;Gasto del inmueble - revisar deducibilidad;Utilities;
 mov-001019;1020;2024-09-02;Libros de huerto y de un plumazo;-40.81;Gasto;Compras;Libros y papelería;Personal;;;No;No aplica;Shopping;
 mov-001020;1021;2024-09-02;Luz agosto;-73.61;Gasto;Piso Málaga;Electricidad;Piso Málaga;;;Sí;Gasto del inmueble - revisar deducibilidad;Utilities;
-mov-001021;1022;2024-09-02;Parking;-80.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-001022;1023;2024-09-01;Septiembre alquiler;1200.00;Ingreso;Piso Málaga;Ingreso alquiler residencial;Piso Málaga;Residencial;;Sí;Ingreso del inmueble;Alquiler;
 mov-001023;1024;2024-08-28;Teatro Masi;-19.00;Gasto;Ocio;Cultura y eventos;Personal;;;No;No aplica;Actividades;
 mov-001024;1025;2024-08-28;Furbo amigos;-1.60;Gasto;Ocio;Deporte;Personal;;;No;No aplica;Actividades;
@@ -1062,7 +1019,6 @@ mov-001060;1061;2024-08-06;Helado Benalmadena;-3.50;Gasto;Comida;Comer fuera;Per
 mov-001061;1062;2024-08-05;iCloud;-9.99;Gasto;Suscripciones;Almacenamiento y servicios digitales;Personal;;;Sí;No aplica;Suscripciones;
 mov-001062;1063;2024-08-05;Compra eroski;-4.66;Gasto;Comida;Supermercado;Personal;;;No;No aplica;Comida;
 mov-001063;1064;2024-08-05;Ibi fraccionado;-41.47;Gasto;Piso Málaga;Impuestos y tasas;Piso Málaga;;;No;Gasto del inmueble - revisar deducibilidad;Utilities;
-mov-001064;1065;2024-08-02;Parking pago;-75.00;Gasto;Parking subarrendado;Coste alquiler;Parking subarrendado;;;Sí;Gasto del parking;Utilities;
 mov-001065;1066;2024-08-01;Bizum a Marta Negredo;-1.60;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-001066;1067;2024-08-01;Bizum Celia;-2.50;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;
 mov-001067;1068;2024-08-01;Refresco;-1.20;Gasto;Comida;Comer fuera;Personal;;;No;No aplica;Comida;

@@ -238,7 +238,6 @@ Los porcentajes deben ser configurables. No presentes una tasa como una conclusi
 Carga el archivo `catalogo_categorias.csv`. Las categorías principales son:
 
 - Piso Málaga
-- Parking subarrendado
 - Vivienda personal
 - Comida
 - Transporte
@@ -246,7 +245,6 @@ Carga el archivo `catalogo_categorias.csv`. Las categorías principales son:
 - Compras
 - Suscripciones
 - Salud
-- Cuidado personal
 - Educación
 - Tasas y obligaciones
 - Ingresos
@@ -264,7 +262,7 @@ Requisitos:
 2. Usa punto decimal en `importe_eur`.
 3. La fecha está en ISO `YYYY-MM-DD`.
 4. El separador es punto y coma.
-5. Hay 1.068 movimientos.
+5. Hay 1.024 movimientos.
 6. No existen las dos filas vacías del CSV original.
 7. Conserva `fila_original`, `categoria_original` y `nota_migracion` como metadatos o dentro de un JSON de importación si no quieres añadir columnas permanentes.
 8. Muestra una vista previa antes de confirmar.
@@ -423,12 +421,7 @@ Los movimientos históricos contienen principalmente el importe bancario neto, p
 
 ## 13. Movimientos recurrentes
 
-Importa `recurrentes_iniciales.csv`.
-
-Crea inicialmente:
-
-- Ingreso del parking: +130 € mensuales.
-- Coste del parking: -95 € mensuales desde agosto de 2026.
+Importa `recurrentes_iniciales.csv`, que inicialmente solo contiene la cabecera.
 
 Requisitos:
 
@@ -537,7 +530,6 @@ Implementa gráficos básicos, sin dedicar tiempo al diseño:
 - Ingresos y gastos por mes.
 - Gastos por categoría.
 - Resultado del Piso Málaga por mes y año.
-- Resultado del parking.
 - Comparación de periodos.
 
 Los filtros deben compartir estado y afectar a las métricas y gráficos.
@@ -565,10 +557,10 @@ Los movimientos del aire acondicionado y la cerradura deben aparecer como candid
 Debes incluir:
 
 - Tests unitarios de los dos ejemplos de Airbnb y Booking.
-- Test de importación de 1.068 filas.
+- Test de importación de 1.024 filas.
 - Test de idempotencia del CSV.
 - Test de generación de recurrentes sin duplicados.
-- Test de cambio de vigencia del parking.
+- Test de separación de los movimientos del Piso Málaga.
 - Test de RLS o comprobación equivalente.
 - Validación Zod en formularios y endpoints.
 - Estados de carga y errores comprensibles.
@@ -586,11 +578,11 @@ Sigue estas fases:
 
 ### Fase 2
 - Importador CSV.
-- Importar y validar los 1.068 movimientos.
+- Importar y validar los 1.024 movimientos.
 - CRUD de movimientos.
 
 ### Fase 3
-- Recurrentes y parking.
+- Recurrentes configurables.
 - Calculadoras Airbnb y Booking con tests.
 
 ### Fase 4
@@ -607,11 +599,10 @@ Sigue estas fases:
 La primera versión se considera lista cuando:
 
 - El proyecto usa un Supabase nuevo.
-- El histórico contiene exactamente 1.068 movimientos sin duplicados.
-- La suma total de importes coincide con 15.296,66 €.
+- El histórico contiene exactamente 1.024 movimientos sin duplicados.
+- La suma total de importes coincide con 14.276,66 €.
 - Se puede añadir, editar y eliminar un movimiento desde móvil y escritorio.
 - Las categorías coinciden con el catálogo.
-- El parking genera +130 € y -95 € desde agosto de 2026 sin duplicados.
 - Los ejemplos de Airbnb y Booking cuadran dentro de 0,02 €.
 - El piso de Málaga tiene una vista separada.
 - Los candidatos a inmovilizado se pueden revisar.

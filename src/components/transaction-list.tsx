@@ -7,7 +7,13 @@ import { TransactionForm } from "@/components/transaction-form";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Transaction } from "@/lib/types";
 
-export function TransactionList({ transactions }: { transactions: Transaction[] }) {
+export function TransactionList({
+  transactions,
+  formScope = "general",
+}: {
+  transactions: Transaction[];
+  formScope?: "general" | "property";
+}) {
   const { categories, subcategories, deleteTransaction } = useFinance();
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -63,7 +69,7 @@ export function TransactionList({ transactions }: { transactions: Transaction[] 
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}>
           <section className="modal-card" role="dialog" aria-modal="true" aria-label="Editar movimiento">
             <div className="card-header"><div><p className="eyebrow">Edición</p><h2>Modificar movimiento</h2></div></div>
-            <div className="card-body"><TransactionForm initial={editing} onSaved={() => setEditing(null)} onCancel={() => setEditing(null)} /></div>
+            <div className="card-body"><TransactionForm initial={editing} scope={formScope} onSaved={() => setEditing(null)} onCancel={() => setEditing(null)} /></div>
           </section>
         </div>
       ) : null}

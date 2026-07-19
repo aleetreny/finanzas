@@ -419,6 +419,32 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .settings-list { display: grid; gap: 1px; overflow-y: auto; max-height: 540px; border: 2px solid var(--ink); border-radius: 12px 200px 14px 200px / 200px 12px 180px 14px; background: var(--rule-ink); }
 .settings-list button.badge { border: 0; }
 
+/* Editor completo de categorías y subcategorías */
+.settings-page { max-width: 860px; }
+.settings-add { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .55fr) auto; align-items: end; gap: 14px; padding: 16px 18px; margin-bottom: 22px; }
+.settings-categories { display: grid; }
+.settings-category { border-bottom: 1px solid var(--rule-ink); }
+.settings-category-main { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 64px; padding: 7px 0; }
+.settings-category-name { display: grid; min-width: 0; }
+.settings-category-name strong { overflow: hidden; text-overflow: ellipsis; font-size: 18px; white-space: nowrap; }
+.settings-category-name span { color: var(--pencil); font-size: 13px; }
+.settings-actions { display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.settings-actions .badge { border: 1.5px solid var(--pencil); background: transparent; }
+.danger-icon { color: var(--red-pen); }
+.settings-inline-edit { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(150px, .65fr); gap: 10px; }
+.settings-inline-edit input, .settings-inline-edit select, .settings-subcategory input, .settings-add-subcategory input { min-height: 40px; border: 0; border-bottom: 2px solid var(--ink); outline: 0; background: transparent; }
+.settings-subcategories { display: grid; margin: 0 0 14px 50px; padding-left: 14px; border-left: 2px solid var(--rule-ink); }
+.settings-subcategory { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px dashed var(--rule-ink); }
+.settings-add-subcategory { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding-top: 12px; }
+.settings-help { margin-top: 18px; }
+
+/* Pestaña independiente del Piso Málaga */
+.property-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+.property-summary > div { display: grid; gap: 2px; border-bottom: 2px solid var(--ink); padding: 4px 4px 10px; }
+.property-summary span { color: var(--pencil); font-size: 14px; }
+.property-summary strong { font-family: var(--font-display), cursive; font-size: clamp(28px, 5vw, 38px); line-height: 1; }
+.property-toolbar { margin-bottom: 14px; }
+
 .mobile-list { display: none; }
 .floating-action {
   position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 28;
@@ -447,11 +473,20 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .modal-card { width: 100%; max-height: 94vh; border-radius: 20px 20px 0 0; }
   .toolbar > * { flex: 1 1 150px; }
   .toolbar .search-field { flex-basis: 100%; }
+  .settings-add { grid-template-columns: 1fr; }
+  .settings-category-main { grid-template-columns: 36px minmax(0, 1fr); }
+  .settings-category-main > .settings-actions { grid-column: 2; justify-content: flex-start; }
+  .settings-inline-edit { grid-template-columns: 1fr; }
+  .settings-subcategories { margin-left: 18px; }
+  .settings-subcategory { grid-template-columns: 1fr; padding: 8px 0; }
+  .settings-subcategory .settings-actions { justify-content: flex-start; }
+  .property-summary { grid-template-columns: 1fr; gap: 8px; }
   /* Cabecera móvil: marca en su línea y navegación en UNA sola línea */
   .nb-top { position: relative; padding: 10px 14px 9px; row-gap: 0; }
   .nb-brand { font-size: 23px; flex-basis: 100%; }
-  .nb-nav { gap: 2px 13px; }
-  .nb-nav a { font-size: 15.5px; padding-bottom: 3px; }
+  .nb-nav { width: 100%; flex-wrap: nowrap; gap: 2px 13px; overflow-x: auto; scrollbar-width: none; }
+  .nb-nav::-webkit-scrollbar { display: none; }
+  .nb-nav a { flex: 0 0 auto; font-size: 15.5px; padding-bottom: 3px; }
   .nb-account { position: absolute; top: 8px; right: 8px; }
   .nb-account .who { display: none; }
 }

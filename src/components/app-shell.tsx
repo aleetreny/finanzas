@@ -10,6 +10,7 @@ const navigation = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/movimientos", label: "Apuntes" },
   { href: "/movimientos/nuevo", label: "Anotar" },
+  { href: "/piso-malaga", label: "Piso Málaga" },
   { href: "/importar-exportar", label: "Importar" },
   { href: "/ajustes", label: "Ajustes" },
 ];
