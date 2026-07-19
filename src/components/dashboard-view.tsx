@@ -280,6 +280,8 @@ export function DashboardView() {
     setHover(i);
   }
 
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+
   // Este mes vs. lo habitual (media de los últimos 6 meses completos)
   const now = new Date();
   const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -298,6 +300,49 @@ export function DashboardView() {
       .sort((a, b) => b.now - a.now);
   }, [expenseCategories, byCatMonth, allMonths, currentKey]);
   const budget = budgetAll.slice(0, 10);
+
+  // Desglose de subcategorías para cada categoría principal
+  const categorySubcategories = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; name: string; now: number; usual: number; pct: number | null }>>();
+    const completeMonths = allMonths.filter((m) => m < currentKey).slice(-6);
+
+    categories.forEach((cat) => {
+      const subs = subcategories.filter((s) => s.category_id === cat.id);
+      const subList = subs
+        .map((s) => {
+          const inner = bySubMonth.get(s.id);
+          const nowVal = inner?.get(currentKey) ?? 0;
+          const samples = completeMonths.map((m) => inner?.get(m) ?? 0);
+          const usual = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
+          const pct = usual > 0 ? (nowVal - usual) / usual : null;
+          return { id: s.id, name: s.name, now: nowVal, usual, pct };
+        })
+        .filter((sub) => sub.now > 0 || sub.usual > 0)
+        .sort((a, b) => b.now - a.now);
+
+      const catNow = byCatMonth.get(cat.id)?.get(currentKey) ?? 0;
+      const subNowSum = subList.reduce((acc, sub) => acc + sub.now, 0);
+      const diffNow = catNow - subNowSum;
+
+      if (diffNow > 0.5) {
+        const catSamples = completeMonths.map((m) => byCatMonth.get(cat.id)?.get(m) ?? 0);
+        const catUsual = catSamples.length ? catSamples.reduce((a, b) => a + b, 0) / catSamples.length : 0;
+        const subUsualSum = subList.reduce((acc, sub) => acc + sub.usual, 0);
+        const diffUsual = Math.max(0, catUsual - subUsualSum);
+        const pct = diffUsual > 0 ? (diffNow - diffUsual) / diffUsual : null;
+        subList.push({
+          id: `unassigned-${cat.id}`,
+          name: "Sin subcategoría",
+          now: diffNow,
+          usual: diffUsual,
+          pct,
+        });
+      }
+
+      map.set(cat.id, subList);
+    });
+    return map;
+  }, [categories, subcategories, bySubMonth, byCatMonth, allMonths, currentKey]);
 
   // La misma escala para todas las barras: si Comida es el triple, se ve el triple
   const budgetMax = Math.max(1, ...budget.map((r) => Math.max(r.now, r.usual))) * 1.08;
@@ -398,55 +443,70 @@ export function DashboardView() {
 
       <div className="chart-card" ref={chartRef}>
         {series.length && n > 0 ? (
-          <svg
-            ref={svgRef}
-            className={`evo-chart ${compact ? "compact" : ""}`}
-            viewBox={`0 0 ${W} ${H}`}
-            role="img"
-            aria-label="Evolución del gasto por categoría"
-            onPointerMove={onMove}
-            onPointerDown={onMove}
-            onPointerLeave={() => setHover(null)}
-          >
-            <g>
-              {yTicks.map((v, ti) => (
-                <path key={`g${v}`} d={roughPath([[padL, yAt(v)], [padL + plotW, yAt(v)]], mulberry32(31 + ti * 13), 1)} fill="none" stroke="#cfc7b2" strokeWidth={1.2} strokeDasharray="2 6" />
-              ))}
-              <path d={roughAxis} fill="none" stroke="#24211a" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-              {roughSeries.map((s) => (
-                <path key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={compact ? 3.4 : 2.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
-              ))}
-              {roughSeries.map((s) => s.pts.map(([cx, cy], i) => (
-                <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={compact ? 3.6 : 2.7} fill={s.pen.color} />
-              )))}
-              {hi !== null ? <line x1={xAt(hi)} y1={padT} x2={xAt(hi)} y2={padT + plotH} stroke="#24211a" strokeWidth={1.4} strokeDasharray="3 4" /> : null}
-              {hi !== null ? roughSeries.map((s) => (
-                <circle key={`hi-${s.id}`} cx={s.pts[hi][0]} cy={s.pts[hi][1]} r={compact ? 6.5 : 5} fill="none" stroke={s.pen.color} strokeWidth={2} />
-              )) : null}
-            </g>
-
-            <g>
-              {yTicks.map((v) => (
-                <text key={`t${v}`} className="axis-num" x={padL - 8} y={yAt(v) + 4} textAnchor="end">{euroShort(v)}</text>
-              ))}
-              {visibleMonths.map((mk, i) => (
-                i % monthEvery === 0 ? (
-                  <text key={mk} className="month-lab" x={xAt(i)} y={padT + plotH + (compact ? 30 : 22)} textAnchor="middle">{monthLabel(mk, mk.endsWith("-01") || i === 0)}</text>
-                ) : null
-              ))}
-              {endLabels.map((l) => (
-                <text key={`lab${l.id}`} className="series-lab" x={padL + plotW + 9} y={l.y + 4} style={{ fill: l.color }}>{l.name}</text>
-              ))}
+          <>
+            <div className="chart-hover-header">
               {hi !== null ? (
-                <>
-                  <text x={Math.max(padL + 30, Math.min(padL + plotW - 30, xAt(hi)))} y={padT - 10} textAnchor="middle" className="hover-month">{monthLabel(visibleMonths[hi], true)}</text>
-                  {roughSeries.map((s) => (
-                    <text key={`hv${s.id}`} x={Math.max(padL + 22, Math.min(padL + plotW - 22, xAt(hi)))} y={s.pts[hi][1] - (compact ? 12 : 9)} textAnchor="middle" className="hover-val" style={{ fill: s.pen.color }}>{euroShort(s.points[hi])}</text>
-                  ))}
-                </>
-              ) : null}
-            </g>
-          </svg>
+                <div className="hover-info">
+                  <span className="hover-month-badge">{monthLabel(visibleMonths[hi], true)}</span>
+                  <div className="hover-series-list">
+                    {roughSeries.map((s) => (
+                      <div key={s.id} className="hover-series-item">
+                        <span className="stroke-icon" style={{ borderTopColor: s.pen.color, borderTopStyle: s.pen.dashed ? "dashed" : "solid" }} />
+                        <span className="series-name">{s.name}:</span>
+                        <strong className="series-amount" style={{ color: s.pen.color }}>{formatCurrency(s.points[hi])}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="hover-info idle">
+                  <span className="hover-hint">Desliza por la gráfica para ver el detalle por mes</span>
+                </div>
+              )}
+            </div>
+
+            <svg
+              ref={svgRef}
+              className={`evo-chart ${compact ? "compact" : ""}`}
+              viewBox={`0 0 ${W} ${H}`}
+              role="img"
+              aria-label="Evolución del gasto por categoría"
+              onPointerMove={onMove}
+              onPointerDown={onMove}
+              onPointerLeave={() => setHover(null)}
+            >
+              <g>
+                {yTicks.map((v, ti) => (
+                  <path key={`g${v}`} d={roughPath([[padL, yAt(v)], [padL + plotW, yAt(v)]], mulberry32(31 + ti * 13), 1)} fill="none" stroke="#cfc7b2" strokeWidth={1.2} strokeDasharray="2 6" />
+                ))}
+                <path d={roughAxis} fill="none" stroke="#24211a" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+                {roughSeries.map((s) => (
+                  <path key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={compact ? 3.4 : 2.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
+                ))}
+                {roughSeries.map((s) => s.pts.map(([cx, cy], i) => (
+                  <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={compact ? 3.6 : 2.7} fill={s.pen.color} />
+                )))}
+                {hi !== null ? <line x1={xAt(hi)} y1={padT} x2={xAt(hi)} y2={padT + plotH} stroke="#24211a" strokeWidth={1.4} strokeDasharray="3 4" /> : null}
+                {hi !== null ? roughSeries.map((s) => (
+                  <circle key={`hi-${s.id}`} cx={s.pts[hi][0]} cy={s.pts[hi][1]} r={compact ? 6.5 : 5} fill="none" stroke={s.pen.color} strokeWidth={2} />
+                )) : null}
+              </g>
+
+              <g>
+                {yTicks.map((v) => (
+                  <text key={`t${v}`} className="axis-num" x={padL - 8} y={yAt(v) + 4} textAnchor="end">{euroShort(v)}</text>
+                ))}
+                {visibleMonths.map((mk, i) => (
+                  i % monthEvery === 0 ? (
+                    <text key={mk} className="month-lab" x={xAt(i)} y={padT + plotH + (compact ? 30 : 22)} textAnchor="middle">{monthLabel(mk, mk.endsWith("-01") || i === 0)}</text>
+                  ) : null
+                ))}
+                {endLabels.map((l) => (
+                  <text key={`lab${l.id}`} className="series-lab" x={padL + plotW + 9} y={l.y + 4} style={{ fill: l.color }}>{l.name}</text>
+                ))}
+              </g>
+            </svg>
+          </>
         ) : (
           <div className="chart-empty">Marca al menos una categoría arriba para dibujar su evolución.</div>
         )}
@@ -455,30 +515,92 @@ export function DashboardView() {
       <div className="hand-rule" />
 
       <p className="section-title">Este mes, por categoría</p>
-      <p className="section-sub">Cuánto llevas de cada una comparado con lo que sueles gastar. La rayita es “lo normal”.</p>
+      <p className="section-sub">Cuánto llevas de cada una comparado con lo que sueles gastar. Toca en la flecha para desglosar por subcategorías.</p>
       <div className="budget-list">
         {budget.map((r, i) => {
           const nowW = Math.min(100, (r.now / budgetMax) * 100);
           const usualPos = Math.min(100, (r.usual / budgetMax) * 100);
           const over = r.pct !== null && r.pct > 0.05;
           const under = r.pct !== null && r.pct < -0.05;
+          const subs = categorySubcategories.get(r.id) ?? [];
+          const isExpanded = Boolean(expandedCats[r.id]);
+          const hasSubs = subs.length > 0;
+
           return (
-            <div className="budget-row" key={r.id}>
-              <div className="budget-top">
-                <button type="button" className="name" onClick={() => addToChart(r.id)} title="Ver su evolución arriba">{r.name}</button>
-                <span className={`note ${over ? "over" : under ? "under" : ""}`}>
-                  {r.pct === null ? "primer mes" : Math.abs(r.pct) < 0.05 ? "≈ como siempre" : `${r.pct > 0 ? "+" : ""}${Math.round(r.pct * 100)}% de lo normal`}
-                </span>
+            <div className={`budget-row-container ${isExpanded ? "expanded" : ""}`} key={r.id}>
+              <div className="budget-row">
+                <div className="budget-top">
+                  <div className="budget-title-group">
+                    {hasSubs ? (
+                      <button
+                        type="button"
+                        className={`expand-btn ${isExpanded ? "open" : ""}`}
+                        onClick={() => setExpandedCats((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
+                        aria-label={isExpanded ? `Cerrar subcategorías de ${r.name}` : `Abrir subcategorías de ${r.name}`}
+                        title={isExpanded ? "Contraer subcategorías" : "Desglosar en subcategorías"}
+                      >
+                        <span className="expand-icon">{isExpanded ? "▼" : "▶"}</span>
+                      </button>
+                    ) : null}
+                    <button type="button" className="name" onClick={() => addToChart(r.id)} title="Ver su evolución arriba">{r.name}</button>
+                    {hasSubs ? (
+                      <button
+                        type="button"
+                        className="sub-count-tag"
+                        onClick={() => setExpandedCats((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
+                        title={isExpanded ? "Contraer subcategorías" : "Desglosar en subcategorías"}
+                      >
+                        ({subs.length} subcat)
+                      </button>
+                    ) : null}
+                  </div>
+                  <span className={`note ${over ? "over" : under ? "under" : ""}`}>
+                    {r.pct === null ? "primer mes" : Math.abs(r.pct) < 0.05 ? "≈ como siempre" : `${r.pct > 0 ? "+" : ""}${Math.round(r.pct * 100)}% de lo normal`}
+                  </span>
+                </div>
+                <div className="budget-track">
+                  <span className="base" />
+                  <span className="fill" style={{ width: `${Math.max(1.2, nowW)}%` }} />
+                  {r.usual > 0 ? <span className={`usual ${i === 0 ? "lbl" : ""}`} style={{ left: `${usualPos}%` }} /> : null}
+                </div>
+                <div className="budget-amt">
+                  <span className="now">{formatCurrency(r.now)}</span>
+                  {r.usual > 0 ? <span className="of">de ~{formatCurrency(r.usual)} habituales</span> : null}
+                </div>
               </div>
-              <div className="budget-track">
-                <span className="base" />
-                <span className="fill" style={{ width: `${Math.max(1.2, nowW)}%` }} />
-                {r.usual > 0 ? <span className={`usual ${i === 0 ? "lbl" : ""}`} style={{ left: `${usualPos}%` }} /> : null}
-              </div>
-              <div className="budget-amt">
-                <span className="now">{formatCurrency(r.now)}</span>
-                {r.usual > 0 ? <span className="of">de ~{formatCurrency(r.usual)} habituales</span> : null}
-              </div>
+
+              {isExpanded && hasSubs ? (
+                <div className="budget-sublist">
+                  {subs.map((sub) => {
+                    const subNowW = Math.min(100, (sub.now / budgetMax) * 100);
+                    const subUsualPos = Math.min(100, (sub.usual / budgetMax) * 100);
+                    const subOver = sub.pct !== null && sub.pct > 0.05;
+                    const subUnder = sub.pct !== null && sub.pct < -0.05;
+                    return (
+                      <div className="budget-subrow" key={sub.id}>
+                        <div className="subrow-tree">└</div>
+                        <div className="subrow-content">
+                          <div className="budget-top">
+                            <span className="sub-name">{sub.name}</span>
+                            <span className={`note small ${subOver ? "over" : subUnder ? "under" : ""}`}>
+                              {sub.pct === null ? "" : Math.abs(sub.pct) < 0.05 ? "≈ normal" : `${sub.pct > 0 ? "+" : ""}${Math.round(sub.pct * 100)}%`}
+                            </span>
+                          </div>
+                          <div className="budget-track sub">
+                            <span className="base" />
+                            <span className="fill sub" style={{ width: `${Math.max(1, subNowW)}%` }} />
+                            {sub.usual > 0 ? <span className="usual" style={{ left: `${subUsualPos}%` }} /> : null}
+                          </div>
+                          <div className="budget-amt sub">
+                            <span className="now">{formatCurrency(sub.now)}</span>
+                            {sub.usual > 0 ? <span className="of">de ~{formatCurrency(sub.usual)} hab.</span> : null}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           );
         })}

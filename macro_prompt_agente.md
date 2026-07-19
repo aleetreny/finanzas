@@ -285,20 +285,21 @@ Los movimientos `Aire acondicionado` y `Cerradura` son candidatos a inmovilizado
 
 ## 10. Reservas e ingresos del piso
 
-Existe un único tipo de ingreso por alquiler, sin separar Airbnb, Booking, residencial o turístico. Cada reserva permite registrar:
+Existe un único tipo de ingreso por alquiler, sin separar el ingreso por plataforma. El formulario visible de cada reserva contiene concepto, entrada, salida, plataforma, alojamiento final después de descuentos y limpieza. La salida es exclusiva y las noches se calculan como `check_out_date - check_in_date`.
 
-- periodo desde/hasta;
-- importe bruto del cliente antes de descuentos;
-- descuentos;
-- comisión de plataforma;
-- comisión del gestor;
-- limpieza que recibe el gestor.
+La plataforma guarda un perfil inmutable dentro de cada reserva:
 
-El neto es:
+- Airbnb compartida antigua: `3 % × 1,21`;
+- Airbnb íntegra al propietario: `15,5 % × 1,21`;
+- Booking: `15 % + 1,3 %`;
+- Directa: `0 %`;
+- Gestora: `18 %` por defecto.
 
-`gross_before_discount - discount_amount - platform_commission_amount - manager_commission_amount - manager_cleaning_amount`
+Airbnb nueva es el perfil predeterminado para nuevas reservas de Airbnb. En ajustes avanzados se pueden editar ambos porcentajes, anotar un descuento informativo y sobrescribir la comisión real de plataforma o el pago total real al cohost. Los overrides vacíos usan el cálculo automático; un valor, incluido cero, sustituye el resultado calculado.
 
-Los importes se reparten por días entre los meses que abarque la reserva. Para alquileres mensuales completos se permite reparto uniforme por meses. Cada componente conserva exactamente sus céntimos.
+El total bruto es alojamiento final más limpieza. El descuento no se vuelve a restar. La comisión de gestora se calcula sobre el total después de plataforma y sin limpieza; su pago total incluye la limpieza. El neto es `total_bruto - comision_plataforma_usada - pago_gestora_usado`.
+
+Los importes se reparten por noches entre los meses que abarque la reserva. Para alquileres mensuales completos se permite reparto uniforme por meses. Cada componente conserva exactamente sus céntimos. En los resúmenes, descuentos, comisiones y pagos a la gestora se muestran con signo negativo.
 
 ## 11. Histórico y ejercicio 2026
 
@@ -440,7 +441,7 @@ Los movimientos del aire acondicionado y la cerradura deben aparecer como candid
 
 Debes incluir:
 
-- Tests unitarios del reparto diario y mensual de reservas.
+- Tests unitarios del reparto diario y mensual de reservas, perfiles de comisión y overrides exactos.
 - Test de importación de 1.024 filas.
 - Test de idempotencia del CSV.
 - Test de generación de recurrentes sin duplicados.

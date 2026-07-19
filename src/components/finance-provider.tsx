@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { calculateRentalBooking } from "@/lib/property-rental";
 import type {
   Account,
   Category,
@@ -238,27 +239,32 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const property = properties.find((item) => item.name === "Piso Málaga") ?? properties[0];
     if (!property) throw new Error("No existe la propiedad Piso Málaga.");
 
-    const gross = Number(booking.gross_before_discount);
-    const discount = Number(booking.discount_amount);
-    const platformCommission = Number(booking.platform_commission_amount);
-    const managerCommission = Number(booking.manager_commission_amount);
-    const cleaning = Number(booking.manager_cleaning_amount);
-    const afterDiscount = gross - discount;
+    const calculation = calculateRentalBooking({
+      checkInDate: booking.check_in_date,
+      checkOutDate: booking.check_out_date,
+      accommodationFinal: Number(booking.accommodation_final),
+      cleaning: Number(booking.cleaning_fee),
+      platformRate: Number(booking.platform_commission_rate),
+      managerRate: Number(booking.manager_rate),
+      platformCommissionOverride: booking.platform_commission_override_amount,
+      managerPaymentOverride: booking.manager_payment_override_amount,
+    });
     const payload = {
       ...booking,
-      platform: "other" as const,
       booking_date: booking.check_in_date,
-      cleaning_fee: cleaning,
-      guest_paid_after_discount: afterDiscount,
-      platform_commission_rate: 0,
+      gross_before_discount: calculation.totalGross,
+      guest_paid_after_discount: calculation.totalGross,
+      platform_commission_amount: calculation.platformCommissionUsed,
       bank_fee_rate: 0,
       bank_fee_amount: 0,
-      manager_rate: 0,
-      payout_received: afterDiscount - platformCommission,
-      amount_payable_to_manager: managerCommission + cleaning,
-      owner_net_after_manager: afterDiscount - platformCommission - managerCommission - cleaning,
+      manager_commission_amount: calculation.managerCommissionCalculated,
+      manager_cleaning_amount: Number(booking.cleaning_fee),
+      payout_received: calculation.netAfterPlatform,
+      amount_payable_to_manager: calculation.managerPaymentUsed,
+      owner_net_after_manager: calculation.ownerNet,
       calculation_status: "reconciled" as const,
-      manual_override: true,
+      manual_override: booking.platform_commission_override_amount !== null
+        || booking.manager_payment_override_amount !== null,
     };
 
     const query = id

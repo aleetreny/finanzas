@@ -1,48 +1,78 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type UseFormRegisterReturn } from "react-hook-form";
 import { z } from "zod";
 import { useFinance } from "@/components/finance-provider";
 import { formatCurrency, todayIso } from "@/lib/format";
-import type { RentalBooking, RentalBookingInput } from "@/lib/types";
+import {
+  calculateRentalBooking,
+  defaultCommissionModel,
+  RENTAL_COMMISSION_PROFILES,
+} from "@/lib/property-rental";
+import type {
+  RentalBooking,
+  RentalBookingInput,
+  RentalCommissionModel,
+  RentalPlatform,
+} from "@/lib/types";
 
 const bookingSchema = z.object({
-  name: z.string().trim().min(2, "Indica un nombre para la reserva."),
-  check_in_date: z.string().min(10, "Indica el inicio."),
-  check_out_date: z.string().min(10, "Indica el final."),
-  gross_before_discount: z.number().min(0, "El importe no puede ser negativo."),
-  discount_amount: z.number().min(0, "El descuento no puede ser negativo."),
-  platform_commission_amount: z.number().min(0, "La comisión no puede ser negativa."),
-  manager_commission_amount: z.number().min(0, "La comisión no puede ser negativa."),
-  manager_cleaning_amount: z.number().min(0, "La limpieza no puede ser negativa."),
-  allocation_method: z.enum(["daily", "monthly"]),
-  notes: z.string().optional(),
+  name: z.string().trim().min(2, "Indica un concepto para la reserva."),
+  check_in_date: z.string().min(10, "Indica la entrada."),
+  check_out_date: z.string().min(10, "Indica la salida."),
+  platform: z.enum(["airbnb", "booking", "direct", "other"]),
+  commission_model: z.enum(["airbnb_shared_legacy", "airbnb_host_only", "booking_standard", "direct", "other"]),
+  accommodation_final: z.number().min(0, "El alojamiento no puede ser negativo."),
+  cleaning_fee: z.number().min(0, "La limpieza no puede ser negativa."),
+  discount_amount: z.number().min(0, "El ajuste no puede ser negativo."),
+  platform_commission_override_amount: z.number().min(0, "La comisión real no puede ser negativa.").nullable(),
+  manager_payment_override_amount: z.number().min(0, "El pago real no puede ser negativo.").nullable(),
+  platform_rate_percent: z.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede superar el 100 %."),
+  manager_rate_percent: z.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede superar el 100 %."),
 }).superRefine((values, context) => {
-  if (values.check_out_date < values.check_in_date) {
-    context.addIssue({ code: "custom", path: ["check_out_date"], message: "El final no puede ser anterior al inicio." });
+  if (values.check_out_date <= values.check_in_date) {
+    context.addIssue({ code: "custom", path: ["check_out_date"], message: "La salida debe ser posterior a la entrada." });
   }
-  if (values.discount_amount > values.gross_before_discount) {
-    context.addIssue({ code: "custom", path: ["discount_amount"], message: "El descuento supera el importe bruto." });
+  const expectedPlatform = RENTAL_COMMISSION_PROFILES[values.commission_model].platform;
+  if (expectedPlatform !== values.platform) {
+    context.addIssue({ code: "custom", path: ["platform"], message: "El modelo de comisión no coincide con la plataforma." });
   }
 });
 
 type BookingValues = z.infer<typeof bookingSchema>;
 
+function addIsoDays(value: string, days: number) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function defaultValues(initial?: RentalBooking): BookingValues {
+  const platform = initial?.platform ?? "airbnb";
+  const commissionModel = initial?.commission_model ?? defaultCommissionModel(platform);
+  const profile = RENTAL_COMMISSION_PROFILES[commissionModel];
+  const checkIn = initial?.check_in_date ?? todayIso();
+
   return {
-    name: initial?.name ?? "Alquiler",
-    check_in_date: initial?.check_in_date ?? todayIso(),
-    check_out_date: initial?.check_out_date ?? todayIso(),
-    gross_before_discount: Number(initial?.gross_before_discount ?? 0),
+    name: initial?.name ?? "Reserva",
+    check_in_date: checkIn,
+    check_out_date: initial?.check_out_date ?? addIsoDays(checkIn, 1),
+    platform,
+    commission_model: commissionModel,
+    accommodation_final: Number(initial?.accommodation_final ?? 0),
+    cleaning_fee: Number(initial?.cleaning_fee ?? 0),
     discount_amount: Number(initial?.discount_amount ?? 0),
-    platform_commission_amount: Number(initial?.platform_commission_amount ?? 0),
-    manager_commission_amount: Number(initial?.manager_commission_amount ?? 0),
-    manager_cleaning_amount: Number(initial?.manager_cleaning_amount ?? 0),
-    allocation_method: initial?.allocation_method ?? "daily",
-    notes: initial?.notes ?? "",
+    platform_commission_override_amount: initial?.platform_commission_override_amount == null
+      ? null
+      : Number(initial.platform_commission_override_amount),
+    manager_payment_override_amount: initial?.manager_payment_override_amount == null
+      ? null
+      : Number(initial.manager_payment_override_amount),
+    platform_rate_percent: Number(initial?.platform_commission_rate ?? profile.platformRate) * 100,
+    manager_rate_percent: Number(initial?.manager_rate ?? profile.managerRate) * 100,
   };
 }
 
@@ -61,22 +91,54 @@ export function RentalBookingForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BookingValues>({ resolver: zodResolver(bookingSchema), defaultValues: defaultValues(initial) });
 
-  const amounts = useWatch({ control });
-  const previewNet = Number(amounts.gross_before_discount ?? 0)
-    - Number(amounts.discount_amount ?? 0)
-    - Number(amounts.platform_commission_amount ?? 0)
-    - Number(amounts.manager_commission_amount ?? 0)
-    - Number(amounts.manager_cleaning_amount ?? 0);
+  const values = useWatch({ control });
+  const platform = values.platform ?? "airbnb";
+  const calculation = calculateRentalBooking({
+    checkInDate: values.check_in_date ?? "",
+    checkOutDate: values.check_out_date ?? "",
+    accommodationFinal: Number(values.accommodation_final ?? 0),
+    cleaning: Number(values.cleaning_fee ?? 0),
+    platformRate: Number(values.platform_rate_percent ?? 0) / 100,
+    managerRate: Number(values.manager_rate_percent ?? 0) / 100,
+    platformCommissionOverride: values.platform_commission_override_amount,
+    managerPaymentOverride: values.manager_payment_override_amount,
+  });
 
-  async function submit(values: BookingValues) {
+  function applyProfile(model: RentalCommissionModel) {
+    const profile = RENTAL_COMMISSION_PROFILES[model];
+    setValue("commission_model", model, { shouldDirty: true, shouldValidate: true });
+    setValue("platform_rate_percent", profile.platformRate * 100, { shouldDirty: true });
+    setValue("manager_rate_percent", profile.managerRate * 100, { shouldDirty: true });
+  }
+
+  const platformField = register("platform", {
+    onChange: (event) => applyProfile(defaultCommissionModel(event.target.value as RentalPlatform)),
+  });
+  const modelField = register("commission_model", {
+    onChange: (event) => applyProfile(event.target.value as RentalCommissionModel),
+  });
+
+  async function submit(formValues: BookingValues) {
     setSubmitError(null);
     const input: RentalBookingInput = {
-      ...values,
-      name: values.name.trim(),
-      notes: values.notes?.trim() || null,
+      name: formValues.name.trim(),
+      check_in_date: formValues.check_in_date,
+      check_out_date: formValues.check_out_date,
+      platform: formValues.platform,
+      commission_model: formValues.commission_model,
+      accommodation_final: formValues.accommodation_final,
+      cleaning_fee: formValues.cleaning_fee,
+      discount_amount: formValues.discount_amount,
+      platform_commission_rate: formValues.platform_rate_percent / 100,
+      platform_commission_override_amount: formValues.platform_commission_override_amount,
+      manager_rate: formValues.manager_rate_percent / 100,
+      manager_payment_override_amount: formValues.manager_payment_override_amount,
+      allocation_method: initial?.allocation_method ?? "daily",
+      notes: initial?.notes ?? null,
     };
     try {
       await saveBooking(input, initial?.id);
@@ -90,13 +152,13 @@ export function RentalBookingForm({
     <form className="rental-form" onSubmit={handleSubmit(submit)}>
       {initial?.calculation_status === "needs_review" ? (
         <p className="notice rental-review-notice">
-          Este cobro se importó con el importe bancario. Completa el periodo y el desglose para dejarlo conciliado.
+          Este cobro se importó desde el banco. Completa el periodo y los importes reales para dejarlo conciliado.
         </p>
       ) : null}
 
       <div className="field full">
         <label htmlFor="booking-name">Concepto</label>
-        <input id="booking-name" placeholder="Alquiler" {...register("name")} />
+        <input id="booking-name" placeholder="Reserva" {...register("name")} />
         {errors.name ? <p className="field-error">{errors.name.message}</p> : null}
       </div>
 
@@ -107,38 +169,102 @@ export function RentalBookingForm({
           {errors.check_in_date ? <p className="field-error">{errors.check_in_date.message}</p> : null}
         </div>
         <div className="field">
-          <label htmlFor="booking-end">Hasta, incluido</label>
+          <label htmlFor="booking-end">Hasta</label>
           <input id="booking-end" type="date" {...register("check_out_date")} />
           {errors.check_out_date ? <p className="field-error">{errors.check_out_date.message}</p> : null}
         </div>
       </div>
-
-      <div className="rental-form-grid">
-        <MoneyField id="booking-gross" label="Importe del cliente, antes de descuentos" error={errors.gross_before_discount?.message} register={register("gross_before_discount", { valueAsNumber: true })} />
-        <MoneyField id="booking-discount" label="Descuentos" error={errors.discount_amount?.message} register={register("discount_amount", { valueAsNumber: true })} />
-        <MoneyField id="booking-platform" label="Comisión plataforma" error={errors.platform_commission_amount?.message} register={register("platform_commission_amount", { valueAsNumber: true })} />
-        <MoneyField id="booking-manager" label="Comisión gestor" error={errors.manager_commission_amount?.message} register={register("manager_commission_amount", { valueAsNumber: true })} />
-        <MoneyField id="booking-cleaning" label="Limpieza, la recibe el gestor" error={errors.manager_cleaning_amount?.message} register={register("manager_cleaning_amount", { valueAsNumber: true })} />
-      </div>
-
-      <div className="rental-net-preview">
-        <span>Neto de la reserva</span>
-        <strong className={previewNet >= 0 ? "positive" : ""}>{formatCurrency(previewNet)}</strong>
-      </div>
+      <p className="booking-night-count" aria-live="polite">
+        {calculation.nights} {calculation.nights === 1 ? "noche" : "noches"} · la fecha de salida no cuenta como noche
+      </p>
 
       <div className="field full">
-        <label htmlFor="booking-allocation">Reparto entre meses</label>
-        <select id="booking-allocation" {...register("allocation_method")}>
-          <option value="daily">Proporcional a los días de cada mes</option>
-          <option value="monthly">Mismo importe por cada mes incluido</option>
+        <label htmlFor="booking-platform">Plataforma</label>
+        <select id="booking-platform" {...platformField}>
+          <option value="airbnb">Airbnb</option>
+          <option value="booking">Booking</option>
+          <option value="direct">Directa</option>
+          <option value="other">Otra</option>
         </select>
-        <small>Para alquileres mensuales completos usa el reparto igual por meses.</small>
+        {errors.platform ? <p className="field-error">{errors.platform.message}</p> : null}
       </div>
 
-      <div className="field full">
-        <label htmlFor="booking-notes">Notas</label>
-        <textarea id="booking-notes" placeholder="Información adicional de la reserva" {...register("notes")} />
+      {platform === "airbnb" ? (
+        <div className="field full">
+          <label htmlFor="booking-airbnb-model">Modelo de comisión de Airbnb</label>
+          <select id="booking-airbnb-model" {...modelField}>
+            <option value="airbnb_host_only">Comisión íntegra al propietario</option>
+            <option value="airbnb_shared_legacy">Comisión compartida antigua</option>
+          </select>
+        </div>
+      ) : <input type="hidden" {...modelField} />}
+
+      <div className="rental-form-grid two">
+        <MoneyField
+          id="booking-accommodation"
+          label="Alojamiento final"
+          help="Después de descuentos y sin incluir la limpieza."
+          error={errors.accommodation_final?.message}
+          register={register("accommodation_final", { valueAsNumber: true })}
+        />
+        <MoneyField
+          id="booking-cleaning"
+          label="Limpieza"
+          help="Se cobra al huésped y forma parte del pago a la gestora."
+          error={errors.cleaning_fee?.message}
+          register={register("cleaning_fee", { valueAsNumber: true })}
+        />
       </div>
+
+      <div className="rental-calculation-preview">
+        <PreviewRow label="Total bruto" value={calculation.totalGross} />
+        {Number(values.discount_amount ?? 0) > 0 ? <PreviewRow label="Descuento o ajuste (informativo)" value={-Number(values.discount_amount)} /> : null}
+        <PreviewRow label="Comisión plataforma" value={-calculation.platformCommissionUsed} />
+        <PreviewRow label="Pago total gestora" value={-calculation.managerPaymentUsed} />
+        <PreviewRow label="Neto propietario" value={calculation.ownerNet} total />
+      </div>
+
+      <details className="rental-advanced">
+        <summary><ChevronDown size={16} />Ajustes avanzados</summary>
+        <div className="rental-advanced-fields">
+          <MoneyField
+            id="booking-discount"
+            label="Descuento o ajuste"
+            help="Solo informativo: no se vuelve a restar del alojamiento final."
+            error={errors.discount_amount?.message}
+            register={register("discount_amount", { valueAsNumber: true })}
+          />
+          <MoneyField
+            id="booking-platform-real"
+            label="Comisión real de plataforma"
+            help={`Vacío: se usará ${formatCurrency(calculation.platformCommissionCalculated)}.`}
+            optional
+            error={errors.platform_commission_override_amount?.message}
+            register={register("platform_commission_override_amount", { setValueAs: optionalNumber })}
+          />
+          <MoneyField
+            id="booking-manager-real"
+            label="Pago real al cohost o gestora"
+            help={`Vacío: se usará ${formatCurrency(calculation.managerPaymentCalculated)}.`}
+            optional
+            error={errors.manager_payment_override_amount?.message}
+            register={register("manager_payment_override_amount", { setValueAs: optionalNumber })}
+          />
+          <PercentField
+            id="booking-platform-rate"
+            label="Porcentaje de plataforma"
+            error={errors.platform_rate_percent?.message}
+            register={register("platform_rate_percent", { valueAsNumber: true })}
+          />
+          <PercentField
+            id="booking-manager-rate"
+            label="Porcentaje de gestora"
+            error={errors.manager_rate_percent?.message}
+            register={register("manager_rate_percent", { valueAsNumber: true })}
+          />
+        </div>
+        <p className="form-help">Los porcentajes y el modelo quedan guardados dentro de esta reserva y no cambian si modificas perfiles futuros.</p>
+      </details>
 
       {submitError ? <p className="notice error">{submitError}</p> : null}
 
@@ -146,28 +272,53 @@ export function RentalBookingForm({
         <button className="button" type="button" onClick={onCancel}><X size={16} />Cancelar</button>
         <button className="button primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? <LoaderCircle className="spin" size={17} /> : <Check size={17} />}
-          {initial ? "Guardar desglose" : "Guardar reserva"}
+          {initial ? "Guardar reserva" : "Añadir reserva"}
         </button>
       </div>
     </form>
   );
 }
 
+function optionalNumber(value: unknown) {
+  if (value === "" || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function PreviewRow({ label, value, total = false }: { label: string; value: number; total?: boolean }) {
+  return <div className={total ? "total" : ""}><span>{label}</span><strong className={value > 0 ? "positive" : value < 0 ? "negative" : ""}>{formatCurrency(value)}</strong></div>;
+}
+
 function MoneyField({
   id,
   label,
+  help,
+  optional = false,
   error,
   register,
 }: {
   id: string;
   label: string;
+  help?: string;
+  optional?: boolean;
   error?: string;
-  register: React.InputHTMLAttributes<HTMLInputElement>;
+  register: UseFormRegisterReturn;
 }) {
   return (
     <div className="field">
+      <label htmlFor={id}>{label}{optional ? <span className="opt"> · opcional</span> : null}</label>
+      <div className="money-input"><input id={id} type="number" min="0" step="0.01" inputMode="decimal" placeholder={optional ? "Automático" : undefined} {...register} /><span>€</span></div>
+      {help ? <small>{help}</small> : null}
+      {error ? <p className="field-error">{error}</p> : null}
+    </div>
+  );
+}
+
+function PercentField({ id, label, error, register }: { id: string; label: string; error?: string; register: UseFormRegisterReturn }) {
+  return (
+    <div className="field">
       <label htmlFor={id}>{label}</label>
-      <div className="money-input"><input id={id} type="number" min="0" step="0.01" inputMode="decimal" {...register} /><span>€</span></div>
+      <div className="money-input percentage-input"><input id={id} type="number" min="0" max="100" step="0.001" inputMode="decimal" {...register} /><span>%</span></div>
       {error ? <p className="field-error">{error}</p> : null}
     </div>
   );

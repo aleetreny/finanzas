@@ -21,7 +21,8 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 
 - Dashboard personal sin mezclar los movimientos del Piso Málaga.
 - Alta rápida, edición, eliminación, búsqueda y filtros de movimientos.
-- Vista independiente del Piso Málaga con reservas, periodos y desglose de descuentos, comisiones y limpieza.
+- Vista independiente del Piso Málaga con un formulario compacto de reservas, noches automáticas y perfiles de comisión para Airbnb antigua/nueva, Booking, Directa y Otra.
+- Cada reserva conserva su modelo y porcentajes; las comisiones reales de plataforma y gestora pueden sobrescribir el cálculo automático sin perder diferencias de redondeo.
 - Prorrateo diario o mensual de cada reserva, resumen mensual, neto acumulado y cuadro fiscal anual.
 - Un único tipo de ingreso por alquiler, sin separar plataformas ni modalidad residencial/turística.
 - CRUD de gastos periódicos del piso con vigencias mensual, trimestral o anual.
@@ -58,6 +59,7 @@ Las migraciones versionadas están en `supabase/migrations`:
 3. `harden_security_and_indexes`: permisos mínimos, función de reclamación restringida e índices de claves foráneas.
 4. `reorganize_finance_categories`: separación por ámbitos, migración de cuidado personal y retirada del dominio eliminado.
 5. `property_rental_dashboard`: reservas canónicas, unificación del ingreso del piso, alquiler enero-junio de 7.200 €, cobros de julio editables y comunidad periódica desde agosto.
+6. `rental_commission_models`: fecha de salida exclusiva, alojamiento final, perfiles de comisión inmutables por reserva y overrides de importes reales.
 
 El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico.
 
@@ -83,7 +85,7 @@ npm run build
 npx playwright test
 ```
 
-Los tests cubren las 1.024 filas y su suma, idempotencia, separación del Piso Málaga, prorrateo de reservas, gastos periódicos, taxonomía, amortización y presencia de RLS.
+Los tests cubren las 1.024 filas y su suma, idempotencia, separación del Piso Málaga, prorrateo de reservas, perfiles y overrides de comisión, gastos periódicos, taxonomía, amortización y presencia de RLS.
 
 ## Despliegue en GitHub Pages
 

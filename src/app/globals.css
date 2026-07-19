@@ -351,10 +351,127 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .evo-chart.compact .hover-val { font-size: 21px; }
 .chart-empty { display: grid; min-height: 220px; place-items: center; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 18px; }
 
+/* Cabecera de Leyenda en Hover para el gráfico */
+.chart-hover-header {
+  min-height: 38px;
+  padding: 4px 8px 8px;
+  border-bottom: 1px dashed var(--rule-ink);
+  margin-bottom: 6px;
+}
+.hover-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hover-info.idle {
+  justify-content: center;
+}
+.hover-hint {
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  color: var(--pencil);
+  font-style: italic;
+}
+.hover-month-badge {
+  font-family: var(--font-hand), cursive;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 12px 100px 14px 100px / 100px 12px 90px 14px;
+  background: var(--paper-2);
+  white-space: nowrap;
+}
+.hover-series-list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hover-series-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  background: var(--paper);
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--rule-ink);
+}
+.hover-series-item .stroke-icon {
+  width: 18px;
+  height: 0;
+  border-top-width: 3px;
+  display: inline-block;
+}
+.hover-series-item .series-name {
+  color: var(--pencil);
+}
+.hover-series-item .series-amount {
+  font-weight: 700;
+}
+
 /* Este mes vs. lo habitual — todas las barras a la misma escala */
-.budget-list { display: grid; gap: 18px; margin-top: 12px; }
+.budget-list { display: grid; gap: 14px; margin-top: 12px; }
+.budget-row-container {
+  display: grid;
+  gap: 6px;
+  transition: background-color 0.15s ease;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.budget-row-container.expanded {
+  background: color-mix(in srgb, var(--paper-2) 45%, transparent);
+}
 .budget-row { display: grid; gap: 5px; }
 .budget-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.budget-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  font-size: 10px;
+  color: var(--ink);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.expand-btn:hover {
+  background: var(--paper-2);
+  transform: scale(1.08);
+}
+.expand-btn.open {
+  background: var(--ink);
+  color: var(--paper);
+}
+.expand-icon {
+  line-height: 1;
+}
+.sub-count-tag {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 13px;
+  color: var(--pencil);
+  cursor: pointer;
+}
+.sub-count-tag:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
 .budget-top .name { border: 0; background: transparent; padding: 0; font-family: var(--font-hand), cursive; font-size: 18px; font-weight: 700; color: var(--ink); cursor: pointer; }
 .budget-top .name:hover { text-decoration: underline wavy var(--pencil-faint) 1.5px; text-underline-offset: 5px; }
 .budget-top .note { font-family: var(--font-hand), cursive; font-size: 14px; color: var(--pencil); }
@@ -370,6 +487,58 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .budget-amt { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-hand), cursive; }
 .budget-amt .now { font-size: 20px; font-weight: 700; }
 .budget-amt .of { font-size: 14px; color: var(--pencil); }
+
+/* Subcategorías desplegables */
+.budget-sublist {
+  display: grid;
+  gap: 8px;
+  padding-left: 10px;
+  margin-top: 2px;
+  border-left: 2px dashed var(--pencil-faint);
+}
+.budget-subrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.subrow-tree {
+  font-family: var(--font-hand), monospace;
+  color: var(--pencil-faint);
+  font-size: 15px;
+  line-height: 1;
+  padding-top: 3px;
+}
+.subrow-content {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.sub-name {
+  font-family: var(--font-hand), cursive;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.note.small {
+  font-size: 12.5px;
+}
+.budget-track.sub {
+  height: 14px;
+}
+.budget-track.sub .fill {
+  top: 2px;
+  bottom: 2px;
+  border-width: 1.5px;
+}
+.budget-amt.sub {
+  font-size: 15px;
+}
+.budget-amt.sub .now {
+  font-size: 16px;
+}
+.budget-amt.sub .of {
+  font-size: 13px;
+}
 
 /* Últimos apuntes */
 .last-list { display: grid; margin-top: 10px; }
@@ -477,6 +646,22 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .money-input { position: relative; }
 .money-input input { width: 100%; padding-right: 34px; }
 .money-input span { position: absolute; top: 50%; right: 12px; color: var(--pencil); transform: translateY(-50%); }
+.negative { color: var(--red-pen) !important; }
+.booking-night-count { margin: -9px 2px 0; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 16px; }
+.rental-calculation-preview { display: grid; border-block: 2px solid var(--ink); padding: 7px 3px; }
+.rental-calculation-preview > div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 30px; }
+.rental-calculation-preview span { color: var(--pencil); }
+.rental-calculation-preview strong { font-variant-numeric: tabular-nums; }
+.rental-calculation-preview .total { margin-top: 4px; border-top: 1px dashed var(--rule-ink); padding-top: 8px; }
+.rental-calculation-preview .total span { color: var(--ink); font-weight: 700; }
+.rental-calculation-preview .total strong { font-family: var(--font-display), cursive; font-size: 27px; }
+.rental-advanced { border: 1px solid var(--rule-ink); border-radius: 10px 70px 12px 70px / 70px 10px 60px 12px; background: color-mix(in srgb, var(--paper-solid) 82%, transparent); padding: 0 14px; }
+.rental-advanced summary { display: flex; align-items: center; gap: 7px; min-height: 46px; cursor: pointer; font-weight: 700; list-style: none; }
+.rental-advanced summary::-webkit-details-marker { display: none; }
+.rental-advanced summary svg { transition: transform .18s ease; }
+.rental-advanced[open] summary svg { transform: rotate(180deg); }
+.rental-advanced-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; border-top: 1px dashed var(--rule-ink); padding: 14px 0 6px; }
+.rental-advanced > .form-help { margin-bottom: 14px; }
 .rental-net-preview { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-block: 2px solid var(--ink); padding: 10px 4px; }
 .rental-net-preview span { color: var(--pencil); }
 .rental-net-preview strong { font-family: var(--font-display), cursive; font-size: 28px; }
@@ -532,6 +717,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .recurring-row > .amount { grid-column: 2; grid-row: 1; }
   .recurring-row > .row-actions { grid-column: 2; grid-row: 2; }
   .rental-form-grid, .rental-form-grid.two { grid-template-columns: 1fr; }
+  .rental-advanced-fields { grid-template-columns: 1fr; }
   .rental-form-actions { flex-direction: column-reverse; }
   .rental-form-actions .button { width: 100%; }
   /* Cabecera móvil: marca en su línea y navegación en UNA sola línea */

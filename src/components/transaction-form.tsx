@@ -147,6 +147,37 @@ export function TransactionForm({
     }
   }
 
+  const [rawAmount, setRawAmount] = useState<string>(() =>
+    initial && typeof initial.amount === "number" && !isNaN(initial.amount)
+      ? String(Math.abs(initial.amount)).replace(".", ",")
+      : ""
+  );
+
+  useEffect(() => {
+    register("amount", { required: true });
+  }, [register]);
+
+  function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const inputVal = e.target.value;
+    const displayVal = inputVal.replace(/[^0-9.,]/g, "");
+
+    const parts = displayVal.split(/[.,]/);
+    let finalDisplay = displayVal;
+    if (parts.length > 2) {
+      const sep = displayVal.includes(",") ? "," : ".";
+      finalDisplay = parts[0] + sep + parts.slice(1).join("");
+    }
+    setRawAmount(finalDisplay);
+
+    const normalized = finalDisplay.replace(",", ".");
+    const parsed = parseFloat(normalized);
+    if (!isNaN(parsed) && parsed > 0) {
+      setValue("amount", parsed, { shouldValidate: true });
+    } else {
+      setValue("amount", undefined as unknown as number, { shouldValidate: true });
+    }
+  }
+
   return (
     <form className="quick-form" onSubmit={handleSubmit(submit)}>
       {!fixedDirection ? (
@@ -159,14 +190,13 @@ export function TransactionForm({
       <div className="amount-hero">
         <span className="cur">euros</span>
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
-          min="0.01"
           placeholder="0"
           aria-label="Importe en euros"
           autoFocus={!initial}
-          {...register("amount", { valueAsNumber: true })}
+          value={rawAmount}
+          onChange={handleAmountChange}
         />
         <span className="hint">{errors.amount ? errors.amount.message : direction === "expense" ? "¿cuánto te has gastado?" : "¿cuánto has ingresado?"}</span>
       </div>

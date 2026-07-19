@@ -78,6 +78,15 @@ export type RecurringRule = {
 
 export type RentalAllocationMethod = "daily" | "monthly";
 
+export type RentalPlatform = "airbnb" | "booking" | "direct" | "other";
+
+export type RentalCommissionModel =
+  | "airbnb_shared_legacy"
+  | "airbnb_host_only"
+  | "booking_standard"
+  | "direct"
+  | "other";
+
 export type RentalBooking = {
   id: string;
   user_id: string | null;
@@ -85,11 +94,21 @@ export type RentalBooking = {
   name: string;
   check_in_date: string;
   check_out_date: string;
+  platform: RentalPlatform;
+  commission_model: RentalCommissionModel;
+  accommodation_final: number;
+  cleaning_fee: number;
   discount_amount: number;
   gross_before_discount: number;
+  platform_commission_rate: number;
   platform_commission_amount: number;
+  platform_commission_override_amount: number | null;
+  manager_rate: number;
   manager_commission_amount: number;
   manager_cleaning_amount: number;
+  manager_payment_override_amount: number | null;
+  amount_payable_to_manager: number;
+  owner_net_after_manager: number;
   calculation_status: "draft" | "reconciled" | "needs_review";
   allocation_method: RentalAllocationMethod;
   source_key: string | null;
@@ -103,11 +122,15 @@ export type RentalBookingInput = Pick<
   | "name"
   | "check_in_date"
   | "check_out_date"
-  | "gross_before_discount"
+  | "platform"
+  | "commission_model"
+  | "accommodation_final"
+  | "cleaning_fee"
   | "discount_amount"
-  | "platform_commission_amount"
-  | "manager_commission_amount"
-  | "manager_cleaning_amount"
+  | "platform_commission_rate"
+  | "platform_commission_override_amount"
+  | "manager_rate"
+  | "manager_payment_override_amount"
   | "allocation_method"
   | "notes"
 >;

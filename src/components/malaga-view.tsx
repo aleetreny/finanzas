@@ -26,8 +26,9 @@ type MonthlyRow = {
   otherIncome: number;
   discounts: number;
   platform: number;
-  manager: number;
+  managerCommission: number;
   cleaning: number;
+  managerPayment: number;
   recurring: number;
   otherExpenses: number;
   net: number;
@@ -43,8 +44,9 @@ function blankMonths(year: number): MonthlyRow[] {
     otherIncome: 0,
     discounts: 0,
     platform: 0,
-    manager: 0,
+    managerCommission: 0,
     cleaning: 0,
+    managerPayment: 0,
     recurring: 0,
     otherExpenses: 0,
     net: 0,
@@ -124,8 +126,9 @@ export function MalagaView() {
         month.gross += allocation.grossIncome;
         month.discounts += allocation.discounts;
         month.platform += allocation.platformCommission;
-        month.manager += allocation.managerCommission;
+        month.managerCommission += allocation.managerCommission;
         month.cleaning += allocation.cleaning;
+        month.managerPayment += allocation.managerPayment;
       });
     });
 
@@ -159,13 +162,14 @@ export function MalagaView() {
       month.otherIncome = roundMoney(month.otherIncome);
       month.discounts = roundMoney(month.discounts);
       month.platform = roundMoney(month.platform);
-      month.manager = roundMoney(month.manager);
+      month.managerCommission = roundMoney(month.managerCommission);
       month.cleaning = roundMoney(month.cleaning);
+      month.managerPayment = roundMoney(month.managerPayment);
       month.recurring = roundMoney(month.recurring);
       month.otherExpenses = roundMoney(month.otherExpenses);
       month.net = roundMoney(
-        month.gross + month.otherIncome - month.discounts - month.platform - month.manager
-          - month.cleaning - month.recurring - month.otherExpenses,
+        month.gross + month.otherIncome - month.platform - month.managerPayment
+          - month.recurring - month.otherExpenses,
       );
     });
 
@@ -174,8 +178,9 @@ export function MalagaView() {
     const otherIncome = total("otherIncome");
     const discounts = total("discounts");
     const platform = total("platform");
-    const manager = total("manager");
+    const manager = total("managerCommission");
     const cleaning = total("cleaning");
+    const managerPayment = total("managerPayment");
     const recurring = total("recurring");
     const otherExpenses = total("otherExpenses");
     const fixedTaxRows: TaxRow[] = [
@@ -198,7 +203,7 @@ export function MalagaView() {
       selectedTransactions,
       taxRows,
       income: roundMoney(gross + otherIncome),
-      expenses: roundMoney(discounts + platform + manager + cleaning + recurring + otherExpenses),
+      expenses: roundMoney(platform + managerPayment + recurring + otherExpenses),
       net: total("net"),
     };
   }, [bookings, propertyRecurring, selectedYear, standaloneTransactions, subcategoryNames, today]);
@@ -275,7 +280,7 @@ export function MalagaView() {
 
       <div className="property-summary" aria-label={`Resumen del Piso Málaga en ${selectedYear}`}>
         <div><span>Ingresos registrados</span><strong className="positive">{formatCurrency(analysis.income)}</strong></div>
-        <div><span>Reducciones y gastos</span><strong>{formatCurrency(analysis.expenses)}</strong></div>
+        <div><span>Gastos computados</span><strong className="negative">{formatCurrency(-analysis.expenses)}</strong></div>
         <div><span>Neto acumulado</span><strong className={analysis.net >= 0 ? "positive" : ""}>{formatCurrency(analysis.net)}</strong></div>
       </div>
 
@@ -283,18 +288,17 @@ export function MalagaView() {
         <div className="section-heading"><div><p className="eyebrow">Evolución</p><h2>Desglose mensual</h2></div><span className="badge">{selectedYear}</span></div>
         <div className="property-table-scroll">
           <table className="data-table property-dashboard-table">
-            <thead><tr><th>Mes</th><th>Ingresos brutos</th><th>Descuentos</th><th>Com. plataforma</th><th>Com. gestor</th><th>Limpieza</th><th>Periódicos</th><th>Otros gastos</th><th>Neto</th></tr></thead>
+            <thead><tr><th>Mes</th><th>Ingresos brutos</th><th>Descuento / ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Periódicos</th><th>Otros gastos</th><th>Neto</th></tr></thead>
             <tbody>
               {analysis.months.map((month) => (
                 <tr key={month.key}>
                   <td><strong>{month.label}</strong>{month.otherIncome ? <span className="transaction-note">+ {formatCurrency(month.otherIncome)} otros ingresos</span> : null}</td>
                   <MoneyCell value={month.gross} positive />
-                  <MoneyCell value={month.discounts} />
-                  <MoneyCell value={month.platform} />
-                  <MoneyCell value={month.manager} />
-                  <MoneyCell value={month.cleaning} />
-                  <MoneyCell value={month.recurring} />
-                  <MoneyCell value={month.otherExpenses} />
+                  <MoneyCell value={month.discounts} negative />
+                  <MoneyCell value={month.platform} negative />
+                  <MoneyCell value={month.managerPayment} negative />
+                  <MoneyCell value={month.recurring} negative />
+                  <MoneyCell value={month.otherExpenses} negative />
                   <MoneyCell value={month.net} signed />
                 </tr>
               ))}
@@ -310,7 +314,7 @@ export function MalagaView() {
             <div className="tax-total-row" key={`${row.group}-${row.label}`}>
               <span className={`badge ${row.group === "Ingreso" ? "green" : row.group === "Reducción" ? "gold" : ""}`}>{row.group}</span>
               <strong>{row.label}</strong>
-              <span className="amount">{formatCurrency(row.amount)}</span>
+              <span className={`amount ${row.group === "Ingreso" ? "positive" : "negative"}`}>{formatCurrency(row.group === "Ingreso" ? row.amount : -row.amount)}</span>
             </div>
           )) : <p className="empty-inline">Todavía no hay importes para este ejercicio.</p>}
         </div>
@@ -325,22 +329,20 @@ export function MalagaView() {
         {selectedBookings.length ? (
           <div className="property-table-scroll">
             <table className="data-table property-dashboard-table booking-table">
-              <thead><tr><th>Periodo</th><th>Reserva</th><th>Bruto</th><th>Descuentos y gastos</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
+              <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
               <tbody>
-                {selectedBookings.map((booking) => {
-                  const deductions = Number(booking.discount_amount) + Number(booking.platform_commission_amount)
-                    + Number(booking.manager_commission_amount) + Number(booking.manager_cleaning_amount);
-                  return (
+                {selectedBookings.map((booking) => (
                     <tr key={booking.id}>
                       <td>{formatDate(booking.check_in_date)}<span className="transaction-note">hasta {formatDate(booking.check_out_date)}</span></td>
                       <td><strong>{booking.name}</strong>{booking.calculation_status === "needs_review" ? <span className="badge gold booking-status">Completar</span> : null}</td>
                       <td className="amount positive">{formatCurrency(Number(booking.gross_before_discount))}</td>
-                      <td className="amount">{formatCurrency(deductions)}</td>
+                      <td className="amount negative">{Number(booking.discount_amount) ? formatCurrency(-Number(booking.discount_amount)) : "—"}</td>
+                      <td className="amount negative">{Number(booking.platform_commission_amount) ? formatCurrency(-Number(booking.platform_commission_amount)) : "—"}</td>
+                      <td className="amount negative">{Number(booking.amount_payable_to_manager) ? formatCurrency(-Number(booking.amount_payable_to_manager)) : "—"}</td>
                       <td className={`amount ${rentalBookingNet(booking) >= 0 ? "positive" : ""}`}>{formatCurrency(rentalBookingNet(booking))}</td>
                       <td><div className="row-actions"><button className="icon-button" title="Editar desglose" onClick={() => { setEditingBooking(booking); setBookingOpen(true); }}><Pencil size={15} /></button><button className="icon-button" title="Eliminar reserva" onClick={() => void removeBooking(booking)}><Trash2 size={15} /></button></div></td>
                     </tr>
-                  );
-                })}
+                ))}
               </tbody>
             </table>
           </div>
@@ -395,8 +397,9 @@ export function MalagaView() {
   );
 }
 
-function MoneyCell({ value, positive = false, signed = false }: { value: number; positive?: boolean; signed?: boolean }) {
-  return <td className={`amount ${(positive || signed) && value > 0 ? "positive" : ""}`}>{value ? formatCurrency(value) : "—"}</td>;
+function MoneyCell({ value, positive = false, negative = false, signed = false }: { value: number; positive?: boolean; negative?: boolean; signed?: boolean }) {
+  const tone = positive && value > 0 ? "positive" : negative && value > 0 ? "negative" : signed && value > 0 ? "positive" : signed && value < 0 ? "negative" : "";
+  return <td className={`amount ${tone}`}>{value ? formatCurrency(negative ? -Math.abs(value) : value) : "—"}</td>;
 }
 
 function Modal({ title, eyebrow, onClose, children }: { title: string; eyebrow: string; onClose: () => void; children: React.ReactNode }) {

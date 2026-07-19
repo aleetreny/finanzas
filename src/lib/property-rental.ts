@@ -1,5 +1,10 @@
 import { roundMoney } from "@/lib/format";
-import type { RecurringRule, RentalBooking } from "@/lib/types";
+import type {
+  RecurringRule,
+  RentalBooking,
+  RentalCommissionModel,
+  RentalPlatform,
+} from "@/lib/types";
 
 const DAY_MS = 86_400_000;
 
@@ -10,8 +15,51 @@ export type RentalMonthAllocation = {
   platformCommission: number;
   managerCommission: number;
   cleaning: number;
+  managerPayment: number;
   net: number;
 };
+
+export type RentalCalculationInput = {
+  checkInDate: string;
+  checkOutDate: string;
+  accommodationFinal: number;
+  cleaning: number;
+  platformRate: number;
+  managerRate: number;
+  platformCommissionOverride?: number | null;
+  managerPaymentOverride?: number | null;
+};
+
+export type RentalCalculation = {
+  nights: number;
+  totalGross: number;
+  platformCommissionCalculated: number;
+  platformCommissionUsed: number;
+  netAfterPlatform: number;
+  managerCommissionBase: number;
+  managerCommissionCalculated: number;
+  managerPaymentCalculated: number;
+  managerPaymentUsed: number;
+  ownerNet: number;
+};
+
+export const RENTAL_COMMISSION_PROFILES: Record<
+  RentalCommissionModel,
+  { platform: RentalPlatform; platformRate: number; managerRate: number }
+> = {
+  airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18 },
+  airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18 },
+  booking_standard: { platform: "booking", platformRate: 0.15 + 0.013, managerRate: 0.18 },
+  direct: { platform: "direct", platformRate: 0, managerRate: 0.18 },
+  other: { platform: "other", platformRate: 0, managerRate: 0.18 },
+};
+
+export function defaultCommissionModel(platform: RentalPlatform): RentalCommissionModel {
+  if (platform === "airbnb") return "airbnb_host_only";
+  if (platform === "booking") return "booking_standard";
+  if (platform === "direct") return "direct";
+  return "other";
+}
 
 export type RecurringOccurrence = {
   ruleId: string;
@@ -47,6 +95,49 @@ function addUtcDays(value: Date, days: number) {
   return new Date(value.getTime() + days * DAY_MS);
 }
 
+export function rentalNights(checkInDate: string, checkOutDate: string) {
+  const start = parseIsoDate(checkInDate);
+  const end = parseIsoDate(checkOutDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+  return Math.floor((end.getTime() - start.getTime()) / DAY_MS);
+}
+
+function hasOverride(value: number | null | undefined): value is number {
+  return value !== null && value !== undefined && Number.isFinite(Number(value));
+}
+
+export function calculateRentalBooking(input: RentalCalculationInput): RentalCalculation {
+  const totalGross = roundMoney(Number(input.accommodationFinal) + Number(input.cleaning));
+  const platformCommissionCalculated = roundMoney(totalGross * Number(input.platformRate));
+  const platformCommissionUsed = roundMoney(
+    hasOverride(input.platformCommissionOverride)
+      ? Number(input.platformCommissionOverride)
+      : platformCommissionCalculated,
+  );
+  const netAfterPlatform = roundMoney(totalGross - platformCommissionUsed);
+  const managerCommissionBase = roundMoney(netAfterPlatform - Number(input.cleaning));
+  const managerCommissionCalculated = roundMoney(managerCommissionBase * Number(input.managerRate));
+  const managerPaymentCalculated = roundMoney(Number(input.cleaning) + managerCommissionCalculated);
+  const managerPaymentUsed = roundMoney(
+    hasOverride(input.managerPaymentOverride)
+      ? Number(input.managerPaymentOverride)
+      : managerPaymentCalculated,
+  );
+
+  return {
+    nights: rentalNights(input.checkInDate, input.checkOutDate),
+    totalGross,
+    platformCommissionCalculated,
+    platformCommissionUsed,
+    netAfterPlatform,
+    managerCommissionBase,
+    managerCommissionCalculated,
+    managerPaymentCalculated,
+    managerPaymentUsed,
+    ownerNet: roundMoney(totalGross - platformCommissionUsed - managerPaymentUsed),
+  };
+}
+
 function enumerateMonths(start: Date, end: Date) {
   const result: Date[] = [];
   let cursor = startOfMonth(start);
@@ -79,22 +170,27 @@ function splitMoney(amount: number, weights: number[]) {
 export function allocateRentalBooking(booking: RentalBooking): RentalMonthAllocation[] {
   const start = parseIsoDate(booking.check_in_date);
   const end = parseIsoDate(booking.check_out_date);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return [];
 
-  const months = enumerateMonths(start, end);
+  const lastNight = addUtcDays(end, -1);
+  const months = enumerateMonths(start, lastNight);
   const weights = months.map((month) => {
     if (booking.allocation_method === "monthly") return 1;
     const overlapStart = start > month ? start : month;
     const monthEnd = endOfMonth(month);
-    const overlapEnd = end < monthEnd ? end : monthEnd;
+    const overlapEnd = lastNight < monthEnd ? lastNight : monthEnd;
     return Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS) + 1;
   });
 
   const gross = splitMoney(Number(booking.gross_before_discount), weights);
   const discounts = splitMoney(Number(booking.discount_amount), weights);
   const platform = splitMoney(Number(booking.platform_commission_amount), weights);
-  const manager = splitMoney(Number(booking.manager_commission_amount), weights);
-  const cleaning = splitMoney(Number(booking.manager_cleaning_amount), weights);
+  const managerPaymentTotal = Number(booking.amount_payable_to_manager);
+  const cleaningTotal = Math.min(Number(booking.cleaning_fee), managerPaymentTotal);
+  const managerCommissionTotal = managerPaymentTotal - cleaningTotal;
+  const manager = splitMoney(managerCommissionTotal, weights);
+  const cleaning = splitMoney(cleaningTotal, weights);
+  const managerPayment = splitMoney(managerPaymentTotal, weights);
 
   return months.map((month, index) => ({
     month: monthKeyFromDate(month),
@@ -103,7 +199,8 @@ export function allocateRentalBooking(booking: RentalBooking): RentalMonthAlloca
     platformCommission: platform[index],
     managerCommission: manager[index],
     cleaning: cleaning[index],
-    net: roundMoney(gross[index] - discounts[index] - platform[index] - manager[index] - cleaning[index]),
+    managerPayment: managerPayment[index],
+    net: roundMoney(gross[index] - platform[index] - managerPayment[index]),
   }));
 }
 
@@ -165,9 +262,7 @@ export function recurringOccurrencesForYear(
 export function rentalBookingNet(booking: RentalBooking) {
   return roundMoney(
     Number(booking.gross_before_discount)
-      - Number(booking.discount_amount)
       - Number(booking.platform_commission_amount)
-      - Number(booking.manager_commission_amount)
-      - Number(booking.manager_cleaning_amount),
+      - Number(booking.amount_payable_to_manager),
   );
 }
