@@ -14,9 +14,11 @@ import { getSupabase } from "@/lib/supabase";
 import type {
   Account,
   Category,
+  PropertyRecurringInput,
   Property,
   RecurringRule,
   RentalBooking,
+  RentalBookingInput,
   Subcategory,
   Transaction,
   TransactionInput,
@@ -41,7 +43,10 @@ type FinanceContextValue = {
   addTransaction: (input: TransactionInput) => Promise<void>;
   updateTransaction: (id: string, input: TransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  saveBooking: (booking: Omit<RentalBooking, "id">) => Promise<void>;
+  saveBooking: (booking: RentalBookingInput, id?: string) => Promise<void>;
+  deleteBooking: (id: string) => Promise<void>;
+  savePropertyRecurring: (rule: PropertyRecurringInput, id?: string) => Promise<void>;
+  deletePropertyRecurring: (id: string) => Promise<void>;
 };
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
@@ -93,7 +98,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         supabase.from("subcategories").select("id,category_id,name,sort_order,is_active").order("sort_order"),
         supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).range(0, 4999),
         supabase.from("recurring_rules").select("*").order("effective_from", { ascending: false }),
-        supabase.from("rental_bookings").select("*").order("created_at", { ascending: false }),
+        supabase.from("rental_bookings").select("*").order("check_in_date", { ascending: false }),
         supabase.from("properties").select("id,name,property_type,is_active").order("name"),
       ]);
 
@@ -228,18 +233,83 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setTransactions((current) => current.filter((row) => row.id !== id));
   }, [supabase]);
 
-  const saveBooking = useCallback(async (booking: Omit<RentalBooking, "id">) => {
+  const saveBooking = useCallback(async (booking: RentalBookingInput, id?: string) => {
     if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
     const property = properties.find((item) => item.name === "Piso Málaga") ?? properties[0];
     if (!property) throw new Error("No existe la propiedad Piso Málaga.");
-    const { error: bookingError } = await supabase.from("rental_bookings").insert({
+
+    const gross = Number(booking.gross_before_discount);
+    const discount = Number(booking.discount_amount);
+    const platformCommission = Number(booking.platform_commission_amount);
+    const managerCommission = Number(booking.manager_commission_amount);
+    const cleaning = Number(booking.manager_cleaning_amount);
+    const afterDiscount = gross - discount;
+    const payload = {
       ...booking,
-      user_id: session.user.id,
-      property_id: property.id,
-    });
+      platform: "other" as const,
+      booking_date: booking.check_in_date,
+      cleaning_fee: cleaning,
+      guest_paid_after_discount: afterDiscount,
+      platform_commission_rate: 0,
+      bank_fee_rate: 0,
+      bank_fee_amount: 0,
+      manager_rate: 0,
+      payout_received: afterDiscount - platformCommission,
+      amount_payable_to_manager: managerCommission + cleaning,
+      owner_net_after_manager: afterDiscount - platformCommission - managerCommission - cleaning,
+      calculation_status: "reconciled" as const,
+      manual_override: true,
+    };
+
+    const query = id
+      ? supabase.from("rental_bookings").update(payload).eq("id", id)
+      : supabase.from("rental_bookings").insert({
+          ...payload,
+          user_id: session.user.id,
+          property_id: property.id,
+        });
+    const { error: bookingError } = await query;
     if (bookingError) throw bookingError;
     await refresh();
   }, [properties, refresh, session, supabase]);
+
+  const deleteBooking = useCallback(async (id: string) => {
+    if (!supabase) throw new Error("Supabase no está configurado.");
+    const { error: bookingError } = await supabase.from("rental_bookings").delete().eq("id", id);
+    if (bookingError) throw bookingError;
+    setBookings((current) => current.filter((booking) => booking.id !== id));
+  }, [supabase]);
+
+  const savePropertyRecurring = useCallback(async (rule: PropertyRecurringInput, id?: string) => {
+    if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
+    const category = categories.find((item) => item.category_scope === "property");
+    if (!category) throw new Error("No existe la categoría del Piso Málaga.");
+    const start = new Date(`${rule.effective_from}T00:00:00Z`);
+    const payload = {
+      ...rule,
+      amount: -Math.abs(Number(rule.amount)),
+      user_id: session.user.id,
+      category_id: category.id,
+      context: "Piso Málaga",
+      day_of_month: start.getUTCDate(),
+      auto_generate: true,
+      is_active: true,
+    };
+
+    const query = id
+      ? supabase.from("recurring_rules").update(payload).eq("id", id)
+      : supabase.from("recurring_rules").insert(payload);
+    const { error: recurringError } = await query;
+    if (recurringError) throw recurringError;
+    await refresh();
+  }, [categories, refresh, session, supabase]);
+
+  const deletePropertyRecurring = useCallback(async (id: string) => {
+    if (!supabase) throw new Error("Supabase no está configurado.");
+    const { error: recurringError } = await supabase.from("recurring_rules").delete().eq("id", id);
+    if (recurringError) throw recurringError;
+    setRecurringRules((current) => current.filter((rule) => rule.id !== id));
+  }, [supabase]);
 
   const value = useMemo<FinanceContextValue>(() => ({
     configured: Boolean(supabase),
@@ -261,9 +331,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     updateTransaction,
     deleteTransaction,
     saveBooking,
+    deleteBooking,
+    savePropertyRecurring,
+    deletePropertyRecurring,
   }), [
-    accounts, addTransaction, bookings, categories, deleteTransaction, error,
-    loading, notice, properties, recurringRules, refresh, saveBooking, session,
+    accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
+    deleteTransaction, error, loading, notice, properties, recurringRules, refresh,
+    saveBooking, savePropertyRecurring, session,
     signIn, signOut, subcategories, supabase, transactions, updateTransaction,
   ]);
 

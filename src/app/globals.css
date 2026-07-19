@@ -219,6 +219,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 
 /* etiqueta = trocito de cinta / círculo a lápiz */
 .badge { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--pencil); border-radius: 12px 120px 14px 120px / 120px 12px 110px 14px; color: var(--ink-soft); padding: 2px 10px; font-family: var(--font-hand), cursive; font-size: 14px; font-weight: 400; white-space: nowrap; }
+.badge.green { border-color: var(--green-pen); color: var(--green-pen); }
 .badge.gold { border-color: var(--amber-pen); color: var(--amber-pen); }
 .badge.red { border-color: var(--red-pen); color: var(--red-pen); }
 .row-actions { display: flex; justify-content: flex-end; gap: 2px; }
@@ -439,11 +440,49 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .settings-help { margin-top: 18px; }
 
 /* Pestaña independiente del Piso Málaga */
+.property-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.property-year-bar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; border-block: 1px solid var(--rule-ink); padding: 11px 4px; }
+.property-year-bar > div { display: flex; align-items: center; gap: 10px; }
+.property-year-bar select { min-height: 38px; border: 2px solid var(--ink); border-radius: 9px 100px 11px 100px / 100px 9px 90px 11px; background: var(--paper-solid); color: var(--ink); padding: 2px 32px 2px 10px; font-size: 17px; font-weight: 700; }
+.property-year-bar p { max-width: 610px; margin: 0; color: var(--pencil); font-size: 14px; text-align: right; }
 .property-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
 .property-summary > div { display: grid; gap: 2px; border-bottom: 2px solid var(--ink); padding: 4px 4px 10px; }
 .property-summary span { color: var(--pencil); font-size: 14px; }
 .property-summary strong { font-family: var(--font-display), cursive; font-size: clamp(28px, 5vw, 38px); line-height: 1; }
-.property-toolbar { margin-bottom: 14px; }
+.property-section { margin-top: 30px; border-top: 2px solid var(--ink); padding-top: 14px; }
+.section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+.section-heading h2 { font-size: clamp(25px, 4vw, 32px); }
+.section-heading p { margin: 0 0 2px; }
+.property-table-scroll { width: 100%; overflow-x: auto; }
+.property-dashboard-table { min-width: 980px; }
+.property-dashboard-table th:not(:first-child), .property-dashboard-table td:not(:first-child) { text-align: right; }
+.property-dashboard-table td { white-space: nowrap; }
+.property-dashboard-table td:first-child, .property-dashboard-table th:first-child { text-align: left; }
+.property-dashboard-table .row-actions { min-width: 78px; }
+.property-tax-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+.tax-total-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px dashed var(--rule-ink); }
+.tax-total-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-inline { margin: 8px 0; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 17px; }
+.form-help, .field small { margin: 4px 0 0; color: var(--pencil); font-size: 13px; }
+.booking-table { min-width: 800px; }
+.booking-status { margin-left: 8px; }
+.recurring-list { display: grid; }
+.recurring-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; align-items: center; gap: 14px; min-height: 58px; border-bottom: 1px dashed var(--rule-ink); padding: 5px 2px; }
+.recurring-row > div:first-child { display: grid; gap: 2px; }
+.recurring-row > div:first-child span { color: var(--pencil); font-size: 14px; }
+.property-modal { width: min(100%, 720px); }
+.rental-form { display: grid; gap: 16px; }
+.rental-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.rental-form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.money-input { position: relative; }
+.money-input input { width: 100%; padding-right: 34px; }
+.money-input span { position: absolute; top: 50%; right: 12px; color: var(--pencil); transform: translateY(-50%); }
+.rental-net-preview { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-block: 2px solid var(--ink); padding: 10px 4px; }
+.rental-net-preview span { color: var(--pencil); }
+.rental-net-preview strong { font-family: var(--font-display), cursive; font-size: 28px; }
+.rental-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.rental-review-notice { border-color: var(--amber-pen); color: var(--amber-pen); margin-bottom: 18px; }
+.opt { color: var(--pencil-faint); font-weight: 400; }
 
 .mobile-list { display: none; }
 .floating-action {
@@ -481,6 +520,20 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .settings-subcategory { grid-template-columns: 1fr; padding: 8px 0; }
   .settings-subcategory .settings-actions { justify-content: flex-start; }
   .property-summary { grid-template-columns: 1fr; gap: 8px; }
+  .page-header { align-items: stretch; flex-direction: column; }
+  .property-actions { justify-content: flex-start; }
+  .property-actions .button { flex: 1 1 145px; }
+  .property-year-bar { align-items: flex-start; flex-direction: column; }
+  .property-year-bar p { text-align: left; }
+  .property-table-scroll .data-table { display: table; }
+  .property-tax-grid { grid-template-columns: 1fr; }
+  .recurring-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-block: 10px; }
+  .recurring-row > .badge { justify-self: start; }
+  .recurring-row > .amount { grid-column: 2; grid-row: 1; }
+  .recurring-row > .row-actions { grid-column: 2; grid-row: 2; }
+  .rental-form-grid, .rental-form-grid.two { grid-template-columns: 1fr; }
+  .rental-form-actions { flex-direction: column-reverse; }
+  .rental-form-actions .button { width: 100%; }
   /* Cabecera móvil: marca en su línea y navegación en UNA sola línea */
   .nb-top { position: relative; padding: 10px 14px 9px; row-gap: 0; }
   .nb-brand { font-size: 23px; flex-basis: 100%; }

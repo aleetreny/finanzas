@@ -23,12 +23,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-function defaults(initial?: Transaction): FormValues {
+function defaults(initial?: Transaction, fixedDirection?: "income" | "expense"): FormValues {
   return {
     transaction_date: initial?.transaction_date ?? todayIso(),
     name: initial?.name ?? "",
     amount: initial ? Math.abs(initial.amount) : (undefined as unknown as number),
-    direction: initial?.direction === "income" ? "income" : "expense",
+    direction: fixedDirection ?? (initial?.direction === "income" ? "income" : "expense"),
     category_id: initial?.category_id ?? "",
     subcategory_id: initial?.subcategory_id ?? "",
     context: initial?.context ?? "",
@@ -48,11 +48,13 @@ export function TransactionForm({
   onSaved,
   onCancel,
   scope = "general",
+  fixedDirection,
 }: {
   initial?: Transaction;
   onSaved?: () => void;
   onCancel?: () => void;
   scope?: "general" | "property";
+  fixedDirection?: "income" | "expense";
 }) {
   const router = useRouter();
   const { categories, subcategories, addTransaction, updateTransaction } = useFinance();
@@ -66,7 +68,7 @@ export function TransactionForm({
     setValue,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: defaults(initial) });
+  } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: defaults(initial, fixedDirection) });
 
   const direction = useWatch({ control, name: "direction" });
   const categoryId = useWatch({ control, name: "category_id" });
@@ -85,8 +87,14 @@ export function TransactionForm({
     [activeCategories, direction, scope],
   );
   const availableSubcategories = useMemo(
-    () => subcategories.filter((subcategory) => subcategory.category_id === categoryId && subcategory.is_active),
-    [categoryId, subcategories],
+    () => subcategories.filter((subcategory) => {
+      if (subcategory.category_id !== categoryId || !subcategory.is_active) return false;
+      if (scope !== "property") return true;
+      const name = subcategory.name.toLocaleLowerCase("es");
+      const incomeConcept = name.startsWith("ingreso") || name.startsWith("reembolso");
+      return direction === "income" ? incomeConcept : !incomeConcept;
+    }),
+    [categoryId, direction, scope, subcategories],
   );
   const usesSubcategorySelector = scope === "property" || direction === "income";
 
@@ -141,10 +149,12 @@ export function TransactionForm({
 
   return (
     <form className="quick-form" onSubmit={handleSubmit(submit)}>
-      <div className="seg" role="group" aria-label="Tipo de movimiento">
-        <button type="button" className={`expense ${direction === "expense" ? "active" : ""}`} onClick={() => setValue("direction", "expense")}>Gasto</button>
-        <button type="button" className={`income ${direction === "income" ? "active" : ""}`} onClick={() => setValue("direction", "income")}>Ingreso</button>
-      </div>
+      {!fixedDirection ? (
+        <div className="seg" role="group" aria-label="Tipo de movimiento">
+          <button type="button" className={`expense ${direction === "expense" ? "active" : ""}`} onClick={() => setValue("direction", "expense")}>Gasto</button>
+          <button type="button" className={`income ${direction === "income" ? "active" : ""}`} onClick={() => setValue("direction", "income")}>Ingreso</button>
+        </div>
+      ) : null}
 
       <div className="amount-hero">
         <span className="cur">euros</span>

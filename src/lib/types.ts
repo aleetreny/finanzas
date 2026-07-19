@@ -76,28 +76,52 @@ export type RecurringRule = {
   notes: string | null;
 };
 
+export type RentalAllocationMethod = "daily" | "monthly";
+
 export type RentalBooking = {
   id: string;
-  platform: "airbnb" | "booking" | "direct" | "other";
-  booking_date: string | null;
-  check_in_date: string | null;
-  check_out_date: string | null;
+  user_id: string | null;
+  property_id: string;
+  name: string;
+  check_in_date: string;
+  check_out_date: string;
   discount_amount: number;
-  cleaning_fee: number;
-  guest_paid_after_discount: number;
   gross_before_discount: number;
-  platform_commission_rate: number;
   platform_commission_amount: number;
-  bank_fee_rate: number;
-  bank_fee_amount: number;
-  manager_rate: number;
   manager_commission_amount: number;
   manager_cleaning_amount: number;
-  payout_received: number;
-  amount_payable_to_manager: number;
-  owner_net_after_manager: number;
   calculation_status: "draft" | "reconciled" | "needs_review";
+  allocation_method: RentalAllocationMethod;
+  source_key: string | null;
+  linked_transaction_id: string | null;
+  notes: string | null;
+  created_at: string;
 };
+
+export type RentalBookingInput = Pick<
+  RentalBooking,
+  | "name"
+  | "check_in_date"
+  | "check_out_date"
+  | "gross_before_discount"
+  | "discount_amount"
+  | "platform_commission_amount"
+  | "manager_commission_amount"
+  | "manager_cleaning_amount"
+  | "allocation_method"
+  | "notes"
+>;
+
+export type PropertyRecurringInput = Pick<
+  RecurringRule,
+  | "name"
+  | "amount"
+  | "frequency"
+  | "effective_from"
+  | "effective_until"
+  | "subcategory_id"
+  | "notes"
+>;
 
 export type Property = {
   id: string;

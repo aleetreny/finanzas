@@ -173,25 +173,17 @@ Campos:
 - `id`
 - `user_id`
 - `property_id`
-- `platform`: `airbnb`, `booking`, `direct`, `other`
-- fecha de reserva, entrada y salida opcionales
+- `name`
+- `check_in_date` y `check_out_date` obligatorias
 - `discount_amount`
-- `cleaning_fee`
-- `guest_paid_after_discount`
 - `gross_before_discount`
-- `platform_commission_rate`
 - `platform_commission_amount`
-- `bank_fee_rate`
-- `bank_fee_amount`
-- `manager_rate`
 - `manager_commission_amount`
 - `manager_cleaning_amount`
-- `payout_received`
-- `amount_payable_to_manager`
-- `owner_net_after_manager`
+- `allocation_method`: `daily` o `monthly`
 - `calculation_status`
-- `manual_override`
 - `linked_transaction_id`
+- `source_key`
 - timestamps
 
 ### `assets`
@@ -275,10 +267,7 @@ No cambies fechas ni importes durante la importación.
 
 El contexto `Piso Málaga` debe permitir filtrar de forma independiente:
 
-- Ingresos residenciales.
-- Airbnb.
-- Booking.
-- Alquiler turístico directo u otra plataforma.
+- Un único ingreso de alquiler, con desglose por reserva.
 - Comunidad.
 - Electricidad.
 - Gas y butano.
@@ -294,130 +283,33 @@ Los pagos personales de IRPF llamados `Renta` no son automáticamente un gasto d
 
 Los movimientos `Aire acondicionado` y `Cerradura` son candidatos a inmovilizado o mejora, pero no debes crear una amortización definitiva sin confirmación del usuario.
 
-## 10. Calculadora de reservas de Airbnb
+## 10. Reservas e ingresos del piso
 
-Usa estos valores predeterminados, todos editables:
+Existe un único tipo de ingreso por alquiler, sin separar Airbnb, Booking, residencial o turístico. Cada reserva permite registrar:
 
-- Limpieza: 60 €.
-- Comisión de la gestora: 18 %.
-- Comisión de Airbnb mostrada en el ejemplo: 15,5 % más IVA del 21 % sobre esa comisión.
-- Tasa efectiva inicial de plataforma: `0.155 * 1.21 = 0.18755`.
-- Sin gasto bancario separado en el ejemplo.
+- periodo desde/hasta;
+- importe bruto del cliente antes de descuentos;
+- descuentos;
+- comisión de plataforma;
+- comisión del gestor;
+- limpieza que recibe el gestor.
 
-En Airbnb la plataforma descuenta automáticamente:
+El neto es:
 
-- Comisión de Airbnb.
-- Limpieza para la gestora.
-- Comisión de gestión.
-- Descuentos.
-- Pago al cohost.
+`gross_before_discount - discount_amount - platform_commission_amount - manager_commission_amount - manager_cleaning_amount`
 
-La base de la comisión de gestión es:
+Los importes se reparten por días entre los meses que abarque la reserva. Para alquileres mensuales completos se permite reparto uniforme por meses. Cada componente conserva exactamente sus céntimos.
 
-`guest_paid_after_discount - platform_commission_amount - cleaning_fee`
+## 11. Histórico y ejercicio 2026
 
-La comisión de gestión es:
+- Enero-junio de 2026 se registra como una reserva única de 7.200 €, repartida en seis mensualidades de 1.200 €.
+- Los cobros desde julio de 2026 se convierten en reservas editables marcadas como pendientes de completar.
+- No se inventan descuentos ni comisiones que no consten.
+- El histórico anterior a julio de 2026 no requiere reconstrucción detallada.
 
-`manager_commission_amount = manager_rate * management_base`
+## 12. Dashboard anual del piso
 
-El pago total al cohost es:
-
-`manager_cleaning_amount + manager_commission_amount`
-
-El ingreso del propietario es:
-
-`payout_received = guest_paid_after_discount - platform_commission_amount - manager_cleaning_amount - manager_commission_amount`
-
-Cuando el usuario introduzca únicamente el ingreso bancario recibido y el descuento, permite reconstruir una estimación:
-
-`guest_paid_after_discount = (payout_received / (1 - manager_rate) + cleaning_fee) / (1 - effective_platform_rate)`
-
-Después:
-
-`gross_before_discount = guest_paid_after_discount + discount_amount`
-
-Conserva precisión interna durante los cálculos y redondea a dos decimales al mostrar o guardar importes monetarios. Muestra una conciliación y, si la diferencia frente al pago real supera 0,02 €, exige ajuste manual.
-
-### Caso de prueba Airbnb
-
-Con el ejemplo aportado:
-
-- Tarifa original de habitación: 1.489,00 €.
-- Descuento: 148,90 €.
-- Habitación tras descuento: 1.340,10 €.
-- Limpieza: 60,00 €.
-- Huésped paga: 1.400,10 €.
-- Comisión Airbnb: 262,59 €.
-- Base de la gestora: 1.077,51 €.
-- Comisión del 18 %: 193,95 € aproximadamente.
-- Pago total al cohost: 253,96 €.
-- Ingreso recibido: 883,55 €.
-
-El test debe aceptar diferencias de hasta dos céntimos por redondeos internos o por el modo en que la plataforma calcula el pago agregado al cohost.
-
-## 11. Calculadora de reservas de Booking
-
-Usa como valores predeterminados editables los que aparecen en el ejemplo:
-
-- Limpieza: 70 €.
-- Comisión Booking: 15 %.
-- Cargo bancario: 1,3 %.
-- Comisión de la gestora: 18 %.
-- La factura de la gestora se calcula sin añadir IVA en esta primera configuración.
-
-Booking ingresa en la cuenta del usuario:
-
-`payout_received = guest_paid_after_discount - platform_commission_amount - bank_fee_amount`
-
-La base de la gestora es:
-
-`management_base = guest_paid_after_discount - platform_commission_amount - bank_fee_amount - cleaning_fee`
-
-La comisión de la gestora es:
-
-`manager_commission_amount = manager_rate * management_base`
-
-La cantidad pendiente de pagar a la gestora es:
-
-`amount_payable_to_manager = cleaning_fee + manager_commission_amount`
-
-El neto final del propietario tras pagar a la gestora es:
-
-`owner_net_after_manager = payout_received - amount_payable_to_manager`
-
-Cuando el usuario introduzca el ingreso bancario y el descuento:
-
-`guest_paid_after_discount = payout_received / (1 - booking_commission_rate - bank_fee_rate)`
-
-`gross_before_discount = guest_paid_after_discount + discount_amount`
-
-Todas las variables deben ser editables por reserva.
-
-### Caso de prueba Booking
-
-Con el ejemplo aportado:
-
-- Total de la reserva: 327,40 €.
-- Comisión Booking: 49,11 €.
-- Cargo bancario: 4,26 €.
-- Cobro de Booking: 274,03 €.
-- Limpieza: 70,00 €.
-- Base de la gestora: 204,03 €.
-- Comisión del 18 %: 36,73 €.
-- Pago a la gestora: 106,73 €.
-- Neto final del propietario: 167,30 €.
-
-## 12. Tratamiento del histórico de Airbnb y Booking
-
-No inventes desgloses para los cobros históricos.
-
-Los movimientos históricos contienen principalmente el importe bancario neto, pero no todos los descuentos ni todos los datos de la reserva. Por tanto:
-
-- Impórtalos como movimientos reales.
-- Marca la plataforma.
-- No generes comisiones históricas ficticias.
-- Permite vincular más adelante una reserva o factura si el usuario la añade.
-- Usa la calculadora completa para las reservas nuevas.
+La página muestra por ejercicio el ingreso, los gastos y el neto acumulado; un desglose mensual por descuentos, comisiones, limpieza, recurrentes y otros gastos; y una tabla anual por categorías para facilitar la preparación de la renta.
 
 ## 13. Movimientos recurrentes
 
@@ -476,17 +368,11 @@ Construye primero estas rutas:
    - campos avanzados desplegables
 
 4. `/piso-malaga`
-   - ingresos y gastos
-   - resultado neto
-   - filtros por plataforma y ejercicio
-   - posibles gastos fiscales
-   - candidatos a inmovilizado
-
-5. `/reservas`
-   - listado
-   - alta Airbnb
-   - alta Booking
-   - desglose y conciliación
+   - reservas con periodo y desglose editable
+   - resultado neto y reparto mensual
+   - tabla fiscal por ejercicio
+   - gastos periódicos
+   - gastos adicionales e inmovilizado
 
 6. `/recurrentes`
    - reglas
@@ -507,8 +393,6 @@ Construye primero estas rutas:
 9. `/ajustes`
    - categorías
    - subcategorías
-   - porcentajes predeterminados
-   - limpieza Airbnb/Booking
    - cuenta por defecto
 
 ## 16. Experiencia móvil
@@ -556,7 +440,7 @@ Los movimientos del aire acondicionado y la cerradura deben aparecer como candid
 
 Debes incluir:
 
-- Tests unitarios de los dos ejemplos de Airbnb y Booking.
+- Tests unitarios del reparto diario y mensual de reservas.
 - Test de importación de 1.024 filas.
 - Test de idempotencia del CSV.
 - Test de generación de recurrentes sin duplicados.
@@ -583,7 +467,7 @@ Sigue estas fases:
 
 ### Fase 3
 - Recurrentes configurables.
-- Calculadoras Airbnb y Booking con tests.
+- Reservas, desglose y prorrateo con tests.
 
 ### Fase 4
 - Piso Málaga e inmovilizado.
@@ -603,7 +487,7 @@ La primera versión se considera lista cuando:
 - La suma total de importes coincide con 14.276,66 €.
 - Se puede añadir, editar y eliminar un movimiento desde móvil y escritorio.
 - Las categorías coinciden con el catálogo.
-- Los ejemplos de Airbnb y Booking cuadran dentro de 0,02 €.
+- El reparto de reservas conserva todos los céntimos y respeta su periodo.
 - El piso de Málaga tiene una vista separada.
 - Los candidatos a inmovilizado se pueden revisar.
 - La aplicación es instalable como PWA.
