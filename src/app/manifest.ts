@@ -16,10 +16,37 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait-primary",
     icons: [
       {
-        src: `${basePath}/icon.svg`,
-        sizes: "any",
-        type: "image/svg+xml",
+        src: `${basePath}/icon-192.png`,
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: `${basePath}/icon-512.png`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: `${basePath}/icon-maskable-512.png`,
+        sizes: "512x512",
+        type: "image/png",
         purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Anotar un gasto",
+        short_name: "Anotar",
+        description: "Abrir directamente el registro rápido de gastos.",
+        url: `${basePath}/movimientos/nuevo/`,
+        icons: [
+          {
+            src: `${basePath}/icon-192.png`,
+            sizes: "192x192",
+            type: "image/png",
+          },
+        ],
       },
     ],
   };

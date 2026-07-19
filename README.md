@@ -31,6 +31,22 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 - CRUD completo de categorías y subcategorías, con ámbitos separados para gastos, ingresos y Piso Málaga.
 - Autenticación por enlace mágico, PWA instalable y diseño móvil.
 
+## Instalar en el móvil
+
+La web publicada funciona como una aplicación independiente y necesita servirse por HTTPS (GitHub Pages ya lo hace):
+
+- **iPhone/iPad:** abre la web en Safari, pulsa **Compartir** y elige **Añadir a pantalla de inicio**.
+- **Android:** abre la web en Chrome, pulsa el menú de tres puntos y elige **Instalar aplicación** o **Añadir a pantalla de inicio**.
+
+Al abrirla desde el icono se muestra sin la barra del navegador. La navegación inferior mantiene **Anotar** siempre a mano; en Android, una pulsación larga sobre el icono también ofrece el acceso rápido **Anotar un gasto**.
+
+En iPhone, Safari y una PWA instalada no siempre comparten la sesión creada por un enlace mágico. La primera vez:
+
+1. En la aplicación instalada, pulsa **Es mi primera vez o todavía no tengo clave** y solicita el correo.
+2. Abre el enlace recibido; Safari te llevará directamente a **Ajustes → Acceso desde el icono del iPhone**.
+3. Crea una clave de al menos 10 caracteres y vuelve a abrir **Mis gastos** desde su icono.
+4. Entra con el mismo correo y esa clave. La sesión queda guardada en la PWA y no es necesario repetir el proceso en cada apertura.
+
 ## Desarrollo local
 
 Requisitos: Node.js 24 y npm.

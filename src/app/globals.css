@@ -24,11 +24,23 @@
 
 * { box-sizing: border-box; }
 
-html { min-height: 100%; background: var(--paper); }
+html {
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  background: var(--paper);
+}
 
 /* Papel de libreta: renglones horizontales tenues + una raya de margen roja */
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   margin: 0;
   color: var(--ink);
   font-family: var(--font-hand), "Comic Sans MS", cursive, sans-serif;
@@ -70,7 +82,13 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .sketch { border: 2px solid var(--ink); border-radius: 14px 220px 18px 220px / 220px 16px 200px 18px; background: var(--paper-solid); }
 .sketch-2 { border: 2px solid var(--ink); border-radius: 210px 14px 200px 20px / 16px 205px 14px 220px; background: var(--paper-solid); }
 
-.app-frame { min-height: 100vh; }
+.app-frame {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
 
 /* ---------------------------------------------------------------------------
    Cabecera superior tipo libreta (sin logos)
@@ -105,9 +123,9 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .nb-account { display: flex; align-items: center; gap: 10px; font-family: var(--font-hand), cursive; font-size: 14px; color: var(--pencil); }
 .nb-account .who { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.main-content { min-height: 60vh; padding: 26px clamp(18px, 5vw, 60px) 120px; }
+.main-content { min-width: 0; min-height: 60vh; width: 100%; padding: 26px clamp(18px, 5vw, 60px) 120px; }
 
-.page { width: 100%; max-width: 1080px; margin: 0 auto; }
+.page { min-width: 0; width: 100%; max-width: 1080px; margin: 0 auto; }
 
 /* Cabecera de página (títulos manuscritos) */
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin: 6px 0 22px; }
@@ -284,7 +302,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 /* ===========================================================================
    LA ESTRELLA — evolución de gastos, explorable a lápiz
    ========================================================================= */
-.evo { max-width: 1000px; margin: 0 auto; }
+.evo { width: 100%; min-width: 0; max-width: 1000px; overflow-x: clip; margin: 0 auto; }
 .evo-head { margin-bottom: 8px; }
 .evo-head h1 { font-size: clamp(40px, 8vw, 68px); }
 .evo-head p { margin: 2px 0 0; color: var(--pencil); font-size: 17px; }
@@ -335,8 +353,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .range-btn.on { background: var(--ink); color: var(--paper); }
 
 /* Marco del gráfico */
-.chart-card { border: 2px solid var(--ink); border-radius: 10px 240px 14px 240px / 240px 12px 220px 14px; background: var(--paper-solid); padding: 14px 12px 8px; margin-top: 10px; }
-.evo-chart { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.chart-card { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px 240px 14px 240px / 240px 12px 220px 14px; background: var(--paper-solid); padding: 14px 12px 8px; margin-top: 10px; }
+.evo-chart { display: block; width: 100%; max-width: 100%; height: auto; overflow: hidden; touch-action: pan-y pinch-zoom; }
 /* Ojo: sin `fill` genérico aquí — pisaría los colores de cada tinta */
 .evo-chart text { font-family: var(--font-hand), cursive; }
 .evo-chart .axis-num { font-size: 13px; fill: var(--pencil); }
@@ -564,6 +582,13 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .auth-icon { display: grid; width: 48px; height: 48px; place-items: center; border: 2px solid var(--ink); border-radius: 50% 44% 52% 46%; color: var(--ink); margin-bottom: 14px; }
 .auth-form { display: grid; gap: 12px; margin-top: 22px; }
 .auth-form label { font-family: var(--font-hand), cursive; font-size: 14px; font-weight: 700; }
+.auth-switch { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 16px; border: 0; background: transparent; color: var(--blue-pen); font-family: var(--font-hand), cursive; font-size: 15px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+.access-setup { display: grid; gap: 16px; margin-bottom: 28px; padding: 20px 22px; }
+.access-setup-copy { display: flex; align-items: flex-start; gap: 14px; }
+.access-setup-copy .auth-icon { width: 44px; height: 44px; flex: 0 0 44px; margin: 0; }
+.access-setup-copy h2 { font-size: 28px; }
+.access-setup-copy p { max-width: 680px; margin: 5px 0 0; color: var(--pencil); font-size: 15px; }
+.access-password-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; gap: 14px; }
 .notice { border-radius: 8px 120px 10px 120px / 120px 8px 110px 10px; padding: 10px 12px; font-size: 15px; border: 2px solid var(--ink); }
 .notice.success { border-color: var(--green-pen); color: var(--green-pen); }
 .notice.error { border-color: var(--red-pen); color: var(--red-pen); }
@@ -679,12 +704,30 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   box-shadow: 3px 3px 0 var(--pencil-faint);
 }
 
+/* Navegación de aplicación para móvil. En escritorio se mantiene la libreta
+   completa; en una pantalla pequeña, las acciones principales quedan fijas. */
+.mobile-nav { display: none; }
+
 /* ---------------------------------------------------------------------------
    Responsive
    ------------------------------------------------------------------------- */
 @media (max-width: 720px) {
-  body { font-size: 16px; }
-  .main-content { padding: 20px 16px 110px; }
+  :root { --mobile-nav-height: 68px; }
+  html, body { height: 100%; overflow: hidden; }
+  body { min-height: 100%; font-size: 16px; }
+  .app-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-height: 0;
+    height: 100dvh;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+  }
+  .main-content { max-width: 100%; overflow-x: clip; contain: inline-size; padding: 18px 16px calc(var(--mobile-nav-height) + 34px + env(safe-area-inset-bottom)); }
   .two-column { grid-template-columns: 1fr; }
   .data-table { display: none; }
   .mobile-list { display: grid; }
@@ -698,6 +741,10 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .toolbar > * { flex: 1 1 150px; }
   .toolbar .search-field { flex-basis: 100%; }
   .settings-add { grid-template-columns: 1fr; }
+  .access-setup { padding: 18px 16px; }
+  .access-setup-copy { align-items: center; }
+  .access-password-form { grid-template-columns: 1fr; }
+  .access-password-form .button { width: 100%; }
   .settings-category-main { grid-template-columns: 36px minmax(0, 1fr); }
   .settings-category-main > .settings-actions { grid-column: 2; justify-content: flex-start; }
   .settings-inline-edit { grid-template-columns: 1fr; }
@@ -720,12 +767,72 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .rental-advanced-fields { grid-template-columns: 1fr; }
   .rental-form-actions { flex-direction: column-reverse; }
   .rental-form-actions .button { width: 100%; }
-  /* Cabecera móvil: marca en su línea y navegación en UNA sola línea */
-  .nb-top { position: relative; padding: 10px 14px 9px; row-gap: 0; }
-  .nb-brand { font-size: 23px; flex-basis: 100%; }
-  .nb-nav { width: 100%; flex-wrap: nowrap; gap: 2px 13px; overflow-x: auto; scrollbar-width: none; }
-  .nb-nav::-webkit-scrollbar { display: none; }
-  .nb-nav a { flex: 0 0 auto; font-size: 15.5px; padding-bottom: 3px; }
-  .nb-account { position: absolute; top: 8px; right: 8px; }
+  /* Cabecera y navegación permanecen dentro del viewport de la app. */
+  .nb-top {
+    position: sticky;
+    top: 0;
+    align-items: center;
+    min-height: calc(55px + env(safe-area-inset-top));
+    padding: calc(8px + env(safe-area-inset-top)) 14px 8px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    touch-action: pan-y pinch-zoom;
+    row-gap: 0;
+  }
+  .nb-brand { min-width: 0; font-size: 24px; flex: 1; }
+  .nb-nav, .nb-spacer { display: none; }
+  .nb-account { position: static; }
   .nb-account .who { display: none; }
+  .floating-action { display: none; }
+
+  .mobile-nav {
+    position: fixed;
+    z-index: 40;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: flex-start;
+    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    padding: 5px 6px env(safe-area-inset-bottom);
+    border-top: 2px solid var(--ink);
+    background: color-mix(in srgb, var(--paper) 96%, transparent);
+    box-shadow: 0 -7px 18px color-mix(in srgb, var(--ink) 9%, transparent);
+    backdrop-filter: blur(12px);
+  }
+  .mobile-nav-link {
+    display: flex;
+    min-width: 0;
+    min-height: 56px;
+    flex: 1 1 20%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border: 0;
+    background: transparent;
+    color: var(--pencil);
+    font-family: var(--font-hand), cursive;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .mobile-nav-link.active { color: var(--ink); }
+  .mobile-nav-link.quick {
+    align-self: flex-start;
+    min-height: 61px;
+    margin-top: -13px;
+    border: 2px solid var(--ink);
+    border-radius: 50% 46% 52% 48%;
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: 2px 3px 0 var(--pencil-faint);
+  }
+  .evo, .chart-card, .budget-list, .budget-row-container, .budget-row, .budget-top, .budget-title-group { min-width: 0; max-width: 100%; }
+  .budget-top { align-items: flex-start; flex-wrap: wrap; }
+  .budget-title-group { flex: 1 1 190px; flex-wrap: wrap; }
+  .budget-top > .note { min-width: 0; flex: 0 1 auto; overflow-wrap: anywhere; text-align: right; }
+  .q-save { bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom)); }
+  .property-table-scroll, .preview-table { max-width: 100%; overscroll-behavior-inline: contain; }
 }

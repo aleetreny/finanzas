@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, ChevronDown, ChevronUp, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { Check, ChevronDown, ChevronUp, KeyRound, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
 import { getSupabase } from "@/lib/supabase";
@@ -20,7 +20,7 @@ function readableError(message: string) {
 }
 
 export function SettingsView() {
-  const { categories, subcategories, session, refresh } = useFinance();
+  const { categories, subcategories, session, refresh, updatePassword } = useFinance();
   const supabase = getSupabase();
   const [newCategory, setNewCategory] = useState("");
   const [newCategoryScope, setNewCategoryScope] = useState<CategoryScope>("expense");
@@ -34,10 +34,40 @@ export function SettingsView() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [accessPassword, setAccessPassword] = useState("");
+  const [accessPasswordRepeat, setAccessPasswordRepeat] = useState("");
+  const [accessBusy, setAccessBusy] = useState(false);
+  const [accessMessage, setAccessMessage] = useState<string | null>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   function showMessage(text: string, type: "success" | "error" = "success") {
     setMessage(text);
     setMessageType(type);
+  }
+
+  async function saveAccessPassword(event: FormEvent) {
+    event.preventDefault();
+    setAccessMessage(null);
+    setAccessError(null);
+    if (accessPassword.length < 10) {
+      setAccessError("La clave debe tener al menos 10 caracteres.");
+      return;
+    }
+    if (accessPassword !== accessPasswordRepeat) {
+      setAccessError("Las dos claves no coinciden.");
+      return;
+    }
+    setAccessBusy(true);
+    try {
+      await updatePassword(accessPassword);
+      setAccessPassword("");
+      setAccessPasswordRepeat("");
+      setAccessMessage("Clave guardada. Ya puedes cerrar Safari, volver al icono Mis gastos y entrar con tu correo y esta clave.");
+    } catch (caught) {
+      setAccessError(caught instanceof Error ? caught.message : "No se pudo guardar la clave.");
+    } finally {
+      setAccessBusy(false);
+    }
   }
 
   async function mutate(success: string, operation: () => Promise<{ error: { message: string } | null }>) {
@@ -160,6 +190,51 @@ export function SettingsView() {
         title="Ajustes"
         description="Añade, renombra, organiza o elimina todas tus categorías y subcategorías."
       />
+
+      <section className="access-setup card">
+        <div className="access-setup-copy">
+          <span className="auth-icon"><KeyRound size={22} /></span>
+          <div>
+            <h2>Acceso desde el icono del iPhone</h2>
+            <p>
+              Crea una clave privada una sola vez. Después podrás entrar directamente desde la aplicación de la pantalla de inicio, sin volver a abrir el correo ni Safari.
+            </p>
+          </div>
+        </div>
+        <form className="access-password-form" onSubmit={saveAccessPassword}>
+          <div className="field">
+            <label htmlFor="access-password">Nueva clave</label>
+            <input
+              id="access-password"
+              type="password"
+              value={accessPassword}
+              onChange={(event) => setAccessPassword(event.target.value)}
+              minLength={10}
+              required
+              autoComplete="new-password"
+              placeholder="Mínimo 10 caracteres"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="access-password-repeat">Repite la clave</label>
+            <input
+              id="access-password-repeat"
+              type="password"
+              value={accessPasswordRepeat}
+              onChange={(event) => setAccessPasswordRepeat(event.target.value)}
+              minLength={10}
+              required
+              autoComplete="new-password"
+              placeholder="La misma clave"
+            />
+          </div>
+          <button className="button primary" type="submit" disabled={accessBusy || accessPassword.length < 10 || accessPassword !== accessPasswordRepeat}>
+            {accessBusy ? "Guardando…" : "Guardar clave"}
+          </button>
+        </form>
+        {accessMessage ? <p className="notice success" role="status">{accessMessage}</p> : null}
+        {accessError ? <p className="notice error" role="alert">{accessError}</p> : null}
+      </section>
 
       <section className="settings-add card">
         <div className="field">

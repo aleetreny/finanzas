@@ -38,7 +38,9 @@ type FinanceContextValue = {
   recurringRules: RecurringRule[];
   bookings: RentalBooking[];
   properties: Property[];
-  signIn: (email: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<boolean>;
+  sendAccessLink: (email: string) => Promise<boolean>;
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   addTransaction: (input: TransactionInput) => Promise<void>;
@@ -53,7 +55,12 @@ type FinanceContextValue = {
 const FinanceContext = createContext<FinanceContextValue | null>(null);
 
 function messageFrom(error: unknown) {
-  return error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
+  const message = error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
+  const normalized = message.toLowerCase();
+  if (normalized.includes("invalid login credentials")) return "El correo o la clave no son correctos.";
+  if (normalized.includes("password should be")) return "La clave no cumple la longitud mínima requerida.";
+  if (normalized.includes("rate limit") || normalized.includes("email rate limit")) return "Espera un poco antes de pedir otro correo.";
+  return message;
 }
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
@@ -175,25 +182,61 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh, session, supabase]);
 
-  const signIn = useCallback(async (email: string) => {
-    if (!supabase) return;
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    if (!supabase) return false;
     setError(null);
     setNotice(null);
     setLoading(true);
     try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
+      return true;
+    } catch (caught) {
+      setError(messageFrom(caught));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const sendAccessLink = useCallback(async (email: string) => {
+    if (!supabase) return false;
+    setError(null);
+    setNotice(null);
+    setLoading(true);
+    try {
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+      const redirectUrl = new URL(`${basePath}/ajustes/`, window.location.origin);
+      redirectUrl.searchParams.set("configurar-acceso", "1");
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
-          emailRedirectTo: window.location.href,
+          shouldCreateUser: false,
+          emailRedirectTo: redirectUrl.toString(),
         },
       });
       if (signInError) throw signInError;
-      setNotice("Te hemos enviado un enlace seguro. Revisa tu correo para entrar.");
+      setNotice("Enlace enviado. Ábrelo en Safari y crea tu clave en la pantalla que aparecerá.");
+      return true;
     } catch (caught) {
       setError(messageFrom(caught));
+      return false;
     } finally {
       setLoading(false);
+    }
+  }, [supabase]);
+
+  const updatePassword = useCallback(async (password: string) => {
+    if (!supabase) throw new Error("Supabase no está configurado.");
+    setError(null);
+    setNotice(null);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
+      setNotice("Clave guardada.");
+    } catch (caught) {
+      setError(messageFrom(caught));
+      throw caught;
     }
   }, [supabase]);
 
@@ -330,7 +373,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     recurringRules,
     bookings,
     properties,
-    signIn,
+    signInWithPassword,
+    sendAccessLink,
+    updatePassword,
     signOut,
     refresh,
     addTransaction,
@@ -344,7 +389,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
     deleteTransaction, error, loading, notice, properties, recurringRules, refresh,
     saveBooking, savePropertyRecurring, session,
-    signIn, signOut, subcategories, supabase, transactions, updateTransaction,
+    sendAccessLink, signInWithPassword, signOut, subcategories, supabase, transactions,
+    updatePassword, updateTransaction,
   ]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
