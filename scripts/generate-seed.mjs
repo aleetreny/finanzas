@@ -6,7 +6,7 @@ import Papa from 'papaparse'
 const root = resolve(import.meta.dirname, '..')
 const outputPath = resolve(
   root,
-  'supabase/migrations/20260715120907_initial_data.sql',
+  'supabase/migrations/20260715133118_initial_data.sql',
 )
 
 function readCsv(fileName) {

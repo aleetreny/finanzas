@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260715120800_initial_schema.sql"), "utf8");
+const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260715132856_initial_schema.sql"), "utf8");
 
 describe("Supabase security migration", () => {
   it("enables RLS for every public application table", () => {
