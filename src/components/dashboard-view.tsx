@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useFinance } from "@/components/finance-provider";
 import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -238,7 +239,7 @@ export function DashboardView() {
   const yAt = (v: number) => padT + (1 - v / yMax) * plotH;
   const yTicks = [0, yMax / 2, yMax];
   const monthEvery = compact ? (n > 9 ? 3 : n > 6 ? 2 : 1) : n > 14 ? 2 : 1;
-  const hi = hover !== null && hover >= 0 && hover < n ? hover : null;
+  const hi = hover !== null && hover >= 0 && hover < n ? hover : (n > 0 ? n - 1 : null);
 
   // Trazos temblorosos (semilla estable) — recalculados si cambia la geometría
   const roughSeries = useMemo(
@@ -275,6 +276,17 @@ export function DashboardView() {
     if (!svg || n === 0) return;
     const rect = svg.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * W;
+    let i = n <= 1 ? 0 : Math.round(((x - padL) / plotW) * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    setHover(i);
+  }
+
+  function onTouch(e: React.TouchEvent<SVGSVGElement>) {
+    const svg = svgRef.current;
+    if (!svg || n === 0 || !e.touches || e.touches.length === 0) return;
+    const rect = svg.getBoundingClientRect();
+    const clientX = e.touches[0].clientX;
+    const x = ((clientX - rect.left) / rect.width) * W;
     let i = n <= 1 ? 0 : Math.round(((x - padL) / plotW) * (n - 1));
     i = Math.max(0, Math.min(n - 1, i));
     setHover(i);
@@ -404,10 +416,18 @@ export function DashboardView() {
           const on = idx >= 0;
           const pen = on ? penFor(idx) : null;
           return (
-            <button type="button" key={c.id} className={`pick ${on ? "on" : ""}`} onClick={() => toggle(c.id)} aria-pressed={on}>
-              <span className="box" />
-              {on && pen ? <span className="stroke" style={{ borderTopColor: pen.color, borderTopStyle: pen.dashed ? "dashed" : "solid" }} /> : null}
-              {c.name}
+            <button
+              type="button"
+              key={c.id}
+              className={`pick ${on ? "on" : ""}`}
+              onClick={() => toggle(c.id)}
+              aria-pressed={on}
+              style={on && pen ? { borderColor: pen.color } : undefined}
+            >
+              <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
+                {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
+              </span>
+              <span>{c.name}</span>
             </button>
           );
         })}
@@ -423,10 +443,18 @@ export function DashboardView() {
               const on = idx >= 0;
               const pen = on ? penFor(selected.length + idx) : null;
               return (
-                <button type="button" key={s.id} className={`pick small ${on ? "on" : ""}`} onClick={() => toggleSub(s.id)} aria-pressed={on}>
-                  <span className="box" />
-                  {on && pen ? <span className="stroke" style={{ borderTopColor: pen.color, borderTopStyle: pen.dashed ? "dashed" : "solid" }} /> : null}
-                  {s.name}
+                <button
+                  type="button"
+                  key={s.id}
+                  className={`pick small ${on ? "on" : ""}`}
+                  onClick={() => toggleSub(s.id)}
+                  aria-pressed={on}
+                  style={on && pen ? { borderColor: pen.color } : undefined}
+                >
+                  <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
+                    {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
+                  </span>
+                  <span>{s.name}</span>
                 </button>
               );
             })}
@@ -445,24 +473,63 @@ export function DashboardView() {
         {series.length && n > 0 ? (
           <>
             <div className="chart-hover-header">
-              {hi !== null ? (
-                <div className="hover-info">
-                  <span className="hover-month-badge">{monthLabel(visibleMonths[hi], true)}</span>
-                  <div className="hover-series-list">
-                    {roughSeries.map((s) => (
+              <div className="hover-info">
+                <div className="month-nav-controls">
+                  <button
+                    type="button"
+                    className="month-nav-btn"
+                    disabled={hi === null || hi <= 0}
+                    onClick={() => setHover(hi !== null ? Math.max(0, hi - 1) : 0)}
+                    aria-label="Mes anterior"
+                    title="Mes anterior"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <span className="hover-month-badge">
+                    {hi !== null && visibleMonths[hi] ? monthLabel(visibleMonths[hi], true) : "—"}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="month-nav-btn"
+                    disabled={hi === null || hi >= n - 1}
+                    onClick={() => setHover(hi !== null ? Math.min(n - 1, hi + 1) : n - 1)}
+                    aria-label="Mes siguiente"
+                    title="Mes siguiente"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <div className="hover-series-list">
+                  {hi !== null && visibleMonths[hi] ? (
+                    roughSeries.map((s) => (
                       <div key={s.id} className="hover-series-item">
                         <span className="stroke-icon" style={{ borderTopColor: s.pen.color, borderTopStyle: s.pen.dashed ? "dashed" : "solid" }} />
                         <span className="series-name">{s.name}:</span>
                         <strong className="series-amount" style={{ color: s.pen.color }}>{formatCurrency(s.points[hi])}</strong>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : null}
                 </div>
-              ) : (
-                <div className="hover-info idle">
-                  <span className="hover-hint">Desliza por la gráfica para ver el detalle por mes</span>
-                </div>
-              )}
+              </div>
+
+              <div className="month-selector-bar">
+                {visibleMonths.map((mk, idx) => {
+                  const isSelected = hi === idx;
+                  return (
+                    <button
+                      key={mk}
+                      type="button"
+                      className={`month-pill ${isSelected ? "active" : ""}`}
+                      onClick={() => setHover(idx)}
+                    >
+                      {monthLabel(mk, mk.endsWith("-01") || idx === 0)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <svg
@@ -473,7 +540,8 @@ export function DashboardView() {
               aria-label="Evolución del gasto por categoría"
               onPointerMove={onMove}
               onPointerDown={onMove}
-              onPointerLeave={() => setHover(null)}
+              onTouchStart={onTouch}
+              onTouchMove={onTouch}
             >
               <g>
                 {yTicks.map((v, ti) => (
@@ -539,7 +607,7 @@ export function DashboardView() {
                         aria-label={isExpanded ? `Cerrar subcategorías de ${r.name}` : `Abrir subcategorías de ${r.name}`}
                         title={isExpanded ? "Contraer subcategorías" : "Desglosar en subcategorías"}
                       >
-                        <span className="expand-icon">{isExpanded ? "▼" : "▶"}</span>
+                        {isExpanded ? <ChevronDown size={15} strokeWidth={2.5} /> : <ChevronRight size={15} strokeWidth={2.5} />}
                       </button>
                     ) : null}
                     <button type="button" className="name" onClick={() => addToChart(r.id)} title="Ver su evolución arriba">{r.name}</button>
