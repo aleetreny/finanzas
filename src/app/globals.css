@@ -301,7 +301,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .hero-note .down { color: var(--green-pen); font-weight: 700; }
 
 /* Lista de categorías para marcar (casillas hechas a mano) */
-.pick-list { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 4px; }
+.pick-list { display: flex; flex-wrap: wrap; gap: 10px 20px; max-width: 780px; margin-bottom: 4px; }
 .pick {
   display: inline-flex;
   align-items: center;
