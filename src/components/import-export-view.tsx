@@ -113,13 +113,19 @@ export function ImportExportView() {
       let imported = 0;
       for (let index = 0; index < valid.length; index += 200) {
         const chunk = valid.slice(index, index + 200);
-        const { error } = await supabase.from("transactions").upsert(chunk, { onConflict: "user_id,source,source_external_id", ignoreDuplicates: true });
+        // Con ignoreDuplicates, solo las filas realmente insertadas vuelven en
+        // data: así el informe no cuenta duplicados omitidos como importados.
+        const { data: insertedRows, error } = await supabase
+          .from("transactions")
+          .upsert(chunk, { onConflict: "user_id,source,source_external_id", ignoreDuplicates: true })
+          .select("id");
         if (error) throw error;
-        imported += chunk.length;
+        imported += insertedRows?.length ?? 0;
       }
       await supabase.from("import_batches").update({ imported_rows: imported, rejected_rows: rejected.length, completed_at: new Date().toISOString() }).eq("id", batch.id);
       setParseErrors(rejected);
-      setMessage(`Importación terminada: ${imported} filas válidas y ${rejected.length} rechazadas.`);
+      const skipped = valid.length - imported;
+      setMessage(`Importación terminada: ${imported} filas nuevas, ${skipped} duplicadas omitidas y ${rejected.length} rechazadas.`);
       await refresh();
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "No se pudo importar el archivo.");

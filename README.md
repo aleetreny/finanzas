@@ -1,6 +1,6 @@
 # Finanzas personales
 
-Aplicación responsive y PWA para gestionar el histórico financiero personal y, en una pestaña independiente, el Piso Málaga. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS.
+Aplicación responsive y PWA para gestionar el histórico financiero personal y, en una pestaña independiente, el Piso Málaga. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS. Es multiusuario: cualquier persona puede crear su cuenta y obtiene su propia libreta, completamente aislada del resto.
 
 ## Entornos
 
@@ -29,7 +29,20 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 - Calculadora de amortización lineal prorrateada por días.
 - Importación CSV con vista previa, hash e informe por fila; exportación completa.
 - CRUD completo de categorías y subcategorías, con ámbitos separados para gastos, ingresos y Piso Málaga.
-- Autenticación por enlace mágico, PWA instalable y diseño móvil.
+- Autenticación por enlace mágico o correo y clave, PWA instalable y diseño móvil.
+- Registro abierto: cada usuario nuevo recibe automáticamente su espacio de trabajo.
+
+## Cuentas de usuario
+
+Cualquier persona puede usar la aplicación, no solo el propietario del histórico:
+
+1. En la pantalla de acceso, pulsa **Es mi primera vez o todavía no tengo clave** y escribe tu correo.
+2. Abre el enlace recibido y crea tu clave en la pantalla que aparece.
+3. A partir de ahí se entra con correo y clave desde cualquier dispositivo.
+
+En el primer inicio de sesión, la función `bootstrap_user_workspace()` aprovisiona el espacio de trabajo del usuario: una cuenta bancaria por defecto, la taxonomía inicial de categorías y subcategorías, una propiedad para la pestaña de alquiler y sus ajustes. El histórico original solo pertenece al primer usuario que lo reclamó; las políticas RLS garantizan que nadie ve datos de otra persona.
+
+El proveedor de correo integrado de Supabase permite pocos envíos por hora (suficiente para uso personal). Si se va a invitar a varias personas seguidas, configura un SMTP propio en el panel de Supabase (**Authentication → Emails → SMTP settings**).
 
 ## Instalar en el móvil
 
@@ -43,9 +56,11 @@ Al abrirla desde el icono se muestra sin la barra del navegador. La navegación 
 En iPhone, Safari y una PWA instalada no siempre comparten la sesión creada por un enlace mágico. La primera vez:
 
 1. En la aplicación instalada, pulsa **Es mi primera vez o todavía no tengo clave** y solicita el correo.
-2. Abre el enlace recibido; Safari te llevará directamente a **Ajustes → Acceso desde el icono del iPhone**.
+2. Abre el enlace recibido; Safari te llevará directamente a **Ajustes → Tu clave de acceso**.
 3. Crea una clave de al menos 10 caracteres y vuelve a abrir **Mis gastos** desde su icono.
 4. Entra con el mismo correo y esa clave. La sesión queda guardada en la PWA y no es necesario repetir el proceso en cada apertura.
+
+Si ya se abrió el enlace en Safari, no hay que solicitar otro correo: usa **Continuar en Safari** para recuperar esa sesión y terminar de crear la clave. El botón de envío queda desactivado después de una solicitud correcta para no consumir por accidente el límite del proveedor integrado de Supabase.
 
 ## Desarrollo local
 
@@ -76,8 +91,9 @@ Las migraciones versionadas están en `supabase/migrations`:
 4. `reorganize_finance_categories`: separación por ámbitos, migración de cuidado personal y retirada del dominio eliminado.
 5. `property_rental_dashboard`: reservas canónicas, unificación del ingreso del piso, alquiler enero-junio de 7.200 €, cobros de julio editables y comunidad periódica desde agosto.
 6. `rental_commission_models`: fecha de salida exclusiva, alojamiento final, perfiles de comisión inmutables por reserva y overrides de importes reales.
+7. `multi_user_onboarding`: función `bootstrap_user_workspace()` que aprovisiona cuenta, taxonomía y propiedad a cada usuario nuevo de forma idempotente.
 
-El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico.
+El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico. El resto de usuarios pasa por `bootstrap_user_workspace()`, que respeta esa reclamación única y siembra un espacio de trabajo vacío listo para anotar.
 
 Para regenerar la migración de datos desde los CSV:
 

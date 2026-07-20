@@ -195,9 +195,9 @@ export function SettingsView() {
         <div className="access-setup-copy">
           <span className="auth-icon"><KeyRound size={22} /></span>
           <div>
-            <h2>Acceso desde el icono del iPhone</h2>
+            <h2>Tu clave de acceso</h2>
             <p>
-              Crea una clave privada una sola vez. Después podrás entrar directamente desde la aplicación de la pantalla de inicio, sin volver a abrir el correo ni Safari.
+              Crea una clave privada una sola vez. Después entrarás con tu correo y esta clave, también desde el icono de la pantalla de inicio, sin volver a abrir el correo.
             </p>
           </div>
         </div>

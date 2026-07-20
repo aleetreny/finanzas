@@ -12,7 +12,8 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100",
-    reuseExistingServer: false,
+    // En local se reutiliza el servidor levantado a mano; en CI siempre limpio.
+    reuseExistingServer: !process.env.CI,
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",

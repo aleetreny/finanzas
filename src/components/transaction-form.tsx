@@ -36,11 +36,11 @@ function defaults(initial?: Transaction, fixedDirection?: "income" | "expense"):
   };
 }
 
+// Igual que todayIso: siempre sobre la fecha local, nunca la UTC.
 function shiftDay(days: number): string {
   const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function TransactionForm({

@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -54,12 +55,18 @@ type FinanceContextValue = {
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
 
-function messageFrom(error: unknown) {
+export function messageFrom(error: unknown) {
   const message = error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
+  const code = error && typeof error === "object" && "code" in error
+    ? String(error.code)
+    : "";
   const normalized = message.toLowerCase();
   if (normalized.includes("invalid login credentials")) return "El correo o la clave no son correctos.";
   if (normalized.includes("password should be")) return "La clave no cumple la longitud mínima requerida.";
-  if (normalized.includes("rate limit") || normalized.includes("email rate limit")) return "Espera un poco antes de pedir otro correo.";
+  if (code === "over_email_send_rate_limit") {
+    return "Ya se han enviado los dos correos permitidos en esta hora. No pidas otro: abre Safari y continúa con la sesión del enlace que ya utilizaste.";
+  }
+  if (normalized.includes("rate limit")) return "Espera 60 segundos antes de volver a pedir el correo.";
   return message;
 }
 
@@ -76,8 +83,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
   const [bookings, setBookings] = useState<RentalBooking[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  // Con datos ya cargados, los refrescos son silenciosos: no se desmonta la
+  // interfaz ni se pierde el estado de filtros, gráficos o desplazamiento.
+  const hasLoadedRef = useRef(false);
 
   const clearData = useCallback(() => {
+    hasLoadedRef.current = false;
     setAccounts([]);
     setCategories([]);
     setSubcategories([]);
@@ -89,7 +100,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!supabase) return;
-    setLoading(true);
+    if (!hasLoadedRef.current) setLoading(true);
     setError(null);
     try {
       const [
@@ -128,6 +139,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setRecurringRules((recurringResult.data ?? []) as RecurringRule[]);
       setBookings((bookingsResult.data ?? []) as RentalBooking[]);
       setProperties((propertiesResult.data ?? []) as Property[]);
+      hasLoadedRef.current = true;
     } catch (caught) {
       setError(messageFrom(caught));
     } finally {
@@ -160,27 +172,31 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
   }, [clearData, supabase]);
 
+  // Depende del id de usuario, no del objeto de sesión: así un refresco de
+  // token no relanza el alta ni vuelve a descargar todos los datos.
+  const userId = session?.user.id;
+
   useEffect(() => {
-    if (!supabase || !session) return;
+    if (!supabase || !userId) return;
     let active = true;
 
-    async function claimAndLoad() {
+    async function bootstrapAndLoad() {
       setLoading(true);
-      const { error: claimError } = await supabase!.rpc("claim_initial_dataset");
+      const { error: bootstrapError } = await supabase!.rpc("bootstrap_user_workspace");
       if (!active) return;
-      if (claimError && !claimError.message.includes("already assigned")) {
-        setError(claimError.message);
+      if (bootstrapError) {
+        setError(messageFrom(bootstrapError));
         setLoading(false);
         return;
       }
       await refresh();
     }
 
-    void claimAndLoad();
+    void bootstrapAndLoad();
     return () => {
       active = false;
     };
-  }, [refresh, session, supabase]);
+  }, [refresh, supabase, userId]);
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
     if (!supabase) return false;
@@ -211,12 +227,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
           emailRedirectTo: redirectUrl.toString(),
         },
       });
       if (signInError) throw signInError;
-      setNotice("Enlace enviado. Ábrelo en Safari y crea tu clave en la pantalla que aparecerá.");
+      setNotice("Enlace enviado. Ábrelo desde el correo: aparecerá la pantalla para crear tu clave.");
       return true;
     } catch (caught) {
       setError(messageFrom(caught));

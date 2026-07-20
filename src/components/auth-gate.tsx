@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ArrowLeft, Database, KeyRound, LoaderCircle, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Database, ExternalLink, KeyRound, LoaderCircle, Mail, ShieldCheck } from "lucide-react";
 import { useFinance } from "@/components/finance-provider";
 
 export function AuthGate({ children }: { children: ReactNode }) {
@@ -9,6 +9,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"password" | "link">("password");
+  const [linkRequested, setLinkRequested] = useState(false);
+  const setupUrl = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/ajustes/?configurar-acceso=1`;
 
   if (!configured) {
     return (
@@ -33,7 +35,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
     async function submitLink(event: FormEvent) {
       event.preventDefault();
-      await sendAccessLink(email.trim());
+      const sent = await sendAccessLink(email.trim());
+      if (sent) setLinkRequested(true);
     }
 
     return (
@@ -43,7 +46,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         {mode === "password" ? (
           <>
             <h1>Entrar en Mis gastos</h1>
-            <p>Usa la clave que configuraste para abrir la aplicación directamente desde este iPhone.</p>
+            <p>Usa la clave que configuraste para abrir tu libreta directamente desde este dispositivo.</p>
             <form onSubmit={submitPassword} className="auth-form">
               <label htmlFor="auth-email">Correo electrónico</label>
               <div className="input-with-icon">
@@ -83,9 +86,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
           </>
         ) : (
           <>
-            <h1>Preparar acceso en el iPhone</h1>
+            <h1>Crear tu acceso</h1>
             <p>
-              Te enviaremos un enlace una sola vez. Ábrelo desde el correo: Safari mostrará directamente la pantalla para crear tu clave.
+              Te enviaremos un enlace a tu correo. Al abrirlo verás la pantalla para crear tu clave; si es tu primera vez, se creará tu propia libreta con sus categorías ya preparadas.
             </p>
             <form onSubmit={submitLink} className="auth-form">
               <label htmlFor="auth-email">Correo electrónico</label>
@@ -101,11 +104,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   autoComplete="email"
                 />
               </div>
-              <button className="button primary" type="submit" disabled={loading}>
+              <button className="button primary" type="submit" disabled={loading || linkRequested}>
                 {loading ? <LoaderCircle className="spin" size={18} /> : null}
-                Enviarme el enlace
+                {linkRequested ? "Correo enviado" : "Enviarme el enlace"}
               </button>
             </form>
+            <div className="safari-resume">
+              <p>¿Ya abriste uno de los correos? No solicites otro. Continúa en Safari para crear la clave con la sesión que ya está abierta allí.</p>
+              <a className="button" href={setupUrl} target="_blank" rel="noopener noreferrer">
+                Continuar en Safari <ExternalLink size={16} />
+              </a>
+            </div>
             <button className="auth-switch" type="button" onClick={() => setMode("password")}>
               <ArrowLeft size={16} /> Ya tengo una clave
             </button>
