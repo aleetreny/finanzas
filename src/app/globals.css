@@ -161,6 +161,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 
 .icon-button { display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 50% 46% 52% 48%; background: transparent; color: var(--pencil); }
 .icon-button:hover { background: var(--paper-2); color: var(--ink); }
+.icon-button:disabled { opacity: .45; cursor: not-allowed; }
 .icon-button.subtle { color: var(--pencil-faint); }
 
 /* ---------------------------------------------------------------------------
@@ -297,6 +298,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .more-toggle:hover { color: var(--ink); }
 
 .q-save { position: sticky; bottom: 0; margin: 24px -2px 0; padding: 14px 2px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--paper) 60%, transparent); }
+.q-secondary-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+.q-secondary-actions .button { min-width: 0; flex: 1; }
 .q-save .button.primary { width: 100%; min-height: 54px; font-size: 20px; }
 
 /* ===========================================================================
@@ -822,11 +825,17 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .two-column { grid-template-columns: 1fr; }
   .data-table { display: none; }
   .mobile-list { display: grid; }
-  .mobile-transaction { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: 5px 14px; border: 0; border-bottom: 1px solid var(--rule-ink); background: transparent; color: var(--ink); padding: 13px 4px; text-align: left; }
+  .mobile-transaction { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; border-bottom: 1px solid var(--rule-ink); color: var(--ink); padding: 11px 0; }
   .mobile-transaction:last-child { border-bottom: 0; }
-  .mobile-transaction strong { font-size: 17px; font-weight: 700; }
-  .mobile-transaction .amount { grid-column: 2; grid-row: 1; }
-  .mobile-transaction .meta { color: var(--pencil); font-size: 14px; }
+  .mobile-transaction-details { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 5px 14px; }
+  .mobile-transaction-details strong { overflow: hidden; font-size: 17px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-transaction-details .amount { grid-column: 2; grid-row: 1; }
+  .mobile-transaction-details .meta { grid-column: 1 / -1; overflow: hidden; color: var(--pencil); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-transaction-actions { display: flex; align-items: center; }
+  .mobile-transaction-action { display: inline-flex; min-width: 52px; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; border-radius: 9px; background: transparent; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 12px; font-weight: 700; }
+  .mobile-transaction-action:hover { background: var(--paper-2); color: var(--ink); }
+  .mobile-transaction-action.danger { color: var(--red-pen); }
+  .mobile-transaction-action:disabled { opacity: .45; cursor: not-allowed; }
   .modal-backdrop { place-items: end stretch; padding: 0; }
   .modal-card { width: 100%; max-height: 94vh; border-radius: 20px 20px 0 0; }
   .toolbar > * { flex: 1 1 150px; }
