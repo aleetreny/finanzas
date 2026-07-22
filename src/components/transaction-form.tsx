@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronDown, LoaderCircle, X } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -47,12 +47,16 @@ export function TransactionForm({
   initial,
   onSaved,
   onCancel,
+  onDelete,
+  isDeleting = false,
   scope = "general",
   fixedDirection,
 }: {
   initial?: Transaction;
   onSaved?: () => void;
   onCancel?: () => void;
+  onDelete?: () => void | Promise<void>;
+  isDeleting?: boolean;
   scope?: "general" | "property";
   fixedDirection?: "income" | "expense";
 }) {
@@ -301,10 +305,20 @@ export function TransactionForm({
       {submitError ? <p className="notice error" style={{ marginTop: 16 }}>{submitError}</p> : null}
 
       <div className="q-save">
-        {onCancel ? (
-          <button className="button" type="button" onClick={onCancel} style={{ width: "100%", marginBottom: 8 }}><X size={16} />Cancelar</button>
+        {onCancel || (initial && onDelete) ? (
+          <div className="q-secondary-actions">
+            {onCancel ? (
+              <button className="button" type="button" onClick={onCancel} disabled={isDeleting}><X size={16} />Cancelar</button>
+            ) : null}
+            {initial && onDelete ? (
+              <button className="button danger" type="button" onClick={() => void onDelete()} disabled={isSubmitting || isDeleting}>
+                {isDeleting ? <LoaderCircle className="spin" size={17} /> : <Trash2 size={17} />}
+                {isDeleting ? "Eliminando…" : "Eliminar"}
+              </button>
+            ) : null}
+          </div>
         ) : null}
-        <button className="button primary" type="submit" disabled={isSubmitting || !availableCategories.length}>
+        <button className="button primary" type="submit" disabled={isSubmitting || isDeleting || !availableCategories.length}>
           {isSubmitting ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}
           {initial ? "Guardar cambios" : "Anotar"}
         </button>
