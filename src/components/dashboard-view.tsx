@@ -10,12 +10,33 @@ import { formatCurrency, formatDate } from "@/lib/format";
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MES_LARGO = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-// Tintas para gastos. El verde se reserva siempre para los ingresos.
-const PENS = ["#24211a", "#33518c", "#b23a2b", "#9a6d1f", "#6f4d82"];
+// Tintas para gastos. Paleta ampliada de 16 colores únicos para que nunca se repitan.
+const PENS = [
+  "#24211a", // Tinta Negra Carbón
+  "#33518c", // Azul Marino Bolígrafo
+  "#b23a2b", // Rojo Coral
+  "#9a6d1f", // Ocre Miel
+  "#6f4d82", // Púrpura Pluma
+  "#008080", // Turquesa Teal
+  "#d96b27", // Naranja Terracota
+  "#2e7d32", // Verde Bosque
+  "#c2185b", // Rosa Carmín
+  "#455a64", // Gris Pizarra
+  "#8d6e63", // Marrón Caoba
+  "#0097a7", // Cian Océano
+  "#7b1fa2", // Morado Intenso
+  "#afb42b", // Verde Oliva
+  "#e64a19", // Naranja Bermellón
+  "#1976d2", // Azul Cobalto
+];
 const INCOME_PEN = { color: "#2f7a4b", dashed: true };
 const INCOME_SERIES_ID = "income-total";
 function penFor(order: number) {
-  return { color: PENS[order % PENS.length], dashed: order >= PENS.length };
+  if (order < PENS.length) {
+    return { color: PENS[order], dashed: false };
+  }
+  const hue = (order * 137.5) % 360;
+  return { color: `hsl(${Math.round(hue)}, 65%, 40%)`, dashed: false };
 }
 
 function addMonths(key: string, delta: number) {
@@ -189,6 +210,7 @@ export function DashboardView() {
   const [incomeSelected, setIncomeSelected] = useState(false);
   const [subSelected, setSubSelected] = useState<string[]>([]);
   const [hover, setHover] = useState<number | null>(null);
+  const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
 
@@ -253,13 +275,13 @@ export function DashboardView() {
 
   const yMax = useMemo(() => niceCeil(Math.max(1, ...series.flatMap((s) => s.points))), [series]);
 
-  // Geometría del lienzo (compacta en pantallas estrechas para que se lea)
+  // Geometría del lienzo
   const W = compact ? 620 : 1000;
   const H = compact ? 470 : 460;
   const padL = compact ? 66 : 58;
-  const padR = compact ? 26 : 112;
+  const padR = compact ? 105 : 135;
   const padT = compact ? 40 : 26;
-  const padB = compact ? 52 : 42;
+  const padB = compact ? 54 : 44;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const n = visibleMonths.length;
@@ -269,7 +291,7 @@ export function DashboardView() {
   const monthEvery = compact ? (n > 9 ? 3 : n > 6 ? 2 : 1) : n > 14 ? 2 : 1;
   const hi = hover !== null && hover >= 0 && hover < n ? hover : (n > 0 ? n - 1 : null);
 
-  // Trazos temblorosos (semilla estable) — recalculados si cambia la geometría
+  // Trazos temblorosos (semilla estable)
   const roughSeries = useMemo(
     () =>
       series.map((s, si) => {
@@ -277,27 +299,60 @@ export function DashboardView() {
         const pts = s.points.map((v, i) => [xAt(i), yAt(v)] as [number, number]);
         return { ...s, d: roughPath(pts, rand, compact ? 1.1 : 1.3), pts };
       }),
-    // xAt/yAt derivan de n, yMax y compact (geometría); series cubre los datos
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [series, n, yMax, compact],
   );
   const roughAxis = roughPath([[padL, padT], [padL, padT + plotH], [padL + plotW, padT + plotH]], mulberry32(7), 1.1);
 
-  // Etiquetas al final de cada línea (solo escritorio): recortadas y separadas
+  // Etiquetas al final de cada línea: apiladas de forma inteligente sin salirse NUNCA del lienzo
   const endLabels = useMemo(() => {
-    if (compact) return [];
-    const labels = roughSeries.map((s) => ({
-      id: s.id,
-      name: truncate(s.name, 13),
-      color: s.pen.color,
-      y: Math.max(padT + 10, Math.min(padT + plotH - 4, s.pts[s.pts.length - 1]?.[1] ?? padT)),
-    })).sort((a, b) => a.y - b.y);
+    if (roughSeries.length === 0) return [];
+
+    const totalLabels = roughSeries.length;
+    const minStep = compact
+      ? (totalLabels > 5 ? 16 : 19)
+      : (totalLabels > 5 ? 18 : 22);
+
+    const minY = padT + 8;
+    const maxY = padT + plotH - (compact ? 12 : 14);
+
+    const labels = roughSeries.map((s) => {
+      const origY = s.pts[s.pts.length - 1]?.[1] ?? padT;
+      return {
+        id: s.id,
+        name: truncate(s.name, compact ? 10 : 13),
+        color: s.pen.color,
+        origY,
+        y: Math.max(minY, Math.min(maxY, origY)),
+      };
+    }).sort((a, b) => a.y - b.y);
+
+    // 1. Pasada hacia abajo imponiendo minStep
     for (let i = 1; i < labels.length; i += 1) {
-      if (labels[i].y - labels[i - 1].y < 19) labels[i].y = labels[i - 1].y + 19;
+      if (labels[i].y - labels[i - 1].y < minStep) {
+        labels[i].y = labels[i - 1].y + minStep;
+      }
     }
+
+    // 2. Pasada de corrección hacia arriba si la última chapa sobrepasa el límite inferior (maxY)
+    if (labels.length > 0 && labels[labels.length - 1].y > maxY) {
+      labels[labels.length - 1].y = maxY;
+      for (let i = labels.length - 2; i >= 0; i -= 1) {
+        if (labels[i + 1].y - labels[i].y < minStep) {
+          labels[i].y = labels[i + 1].y - minStep;
+        }
+      }
+      // Distribución equitativa si el espacio es muy ajustado
+      if (labels[0].y < minY) {
+        const availableSpace = maxY - minY;
+        const step = availableSpace / Math.max(1, labels.length - 1);
+        for (let i = 0; i < labels.length; i += 1) {
+          labels[i].y = minY + i * step;
+        }
+      }
+    }
+
     return labels;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roughSeries, compact]);
+  }, [roughSeries, compact, padT, plotH]);
 
   function onMove(e: React.PointerEvent<SVGSVGElement>) {
     const svg = svgRef.current;
@@ -423,107 +478,137 @@ export function DashboardView() {
   return (
     <div className="evo">
       <div className="evo-head">
-        <h1>Tu dinero, en movimiento</h1>
+        <h1>A día {now.getDate()} de {MES_LARGO[now.getMonth()]} llevas...</h1>
       </div>
 
-      {/* Lo primero: cuánto llevo este mes */}
-      <div className="hero-month">
-        <p className="hero-line">
-          En {MES_LARGO[now.getMonth()]} has gastado <strong>{formatCurrency(monthTotal)}</strong>
-        </p>
-        {heroPct !== null ? (
-          <p className="hero-note">
-            lo normal a día {now.getDate()} serían ~{formatCurrency(usualToDate)} →{" "}
-            {Math.abs(heroPct) < 0.05
-              ? <span>vas como siempre</span>
-              : <span className={heroPct > 0 ? "up" : "down"}>{heroPct > 0 ? "+" : ""}{Math.round(heroPct * 100)}% {heroPct > 0 ? "por encima" : "por debajo"}</span>}
-          </p>
-        ) : null}
-        <p className="hero-income-line">
-          También has ingresado <strong>{formatCurrency(monthIncome)}</strong>
-        </p>
-        <p className="hero-net-line">
-          Tu balance neto es de{" "}
-          <strong className={monthNet >= 0 ? "positive" : "negative"}>
-            {monthNet >= 0 ? "+" : ""}{formatCurrency(monthNet)}
-          </strong>
-        </p>
-      </div>
+      {/* CONCEPTO 7: Resumen Tríptico Ultra Claro y Simple */}
+      <div className="concept7-hero-strip">
 
-      <p className="evo-ask">¿Qué quiero mirar?</p>
-      <div className="chart-pick-groups">
-        <fieldset className="chart-pick-group expense">
-          <legend>Gastos</legend>
-          <div className="pick-list">
-            {expenseCategories.map((c) => {
-              const idx = selected.indexOf(c.id);
-              const on = idx >= 0;
-              const pen = on ? penFor(idx) : null;
-              return (
-                <button
-                  type="button"
-                  key={c.id}
-                  className={`pick ${on ? "on" : ""}`}
-                  onClick={() => toggle(c.id)}
-                  aria-pressed={on}
-                  style={on && pen ? { borderColor: pen.color } : undefined}
-                >
-                  <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
-                    {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
-                  </span>
-                  <span>{c.name}</span>
-                </button>
-              );
-            })}
+        <div className="c7-grid">
+          <div className="c7-card primary">
+            <div className="c7-lbl-group">
+              <span className="c7-lbl">Gastos del mes</span>
+              {heroPct !== null ? (
+                <span className={`c7-pill ${heroPct > 0 ? "up" : "down"}`}>
+                  {heroPct > 0 ? "+" : ""}{Math.round(heroPct * 100)}% {heroPct > 0 ? "más" : "menos"} de lo habitual
+                </span>
+              ) : null}
+            </div>
+            <strong className="c7-val expense">{formatCurrency(monthTotal)}</strong>
           </div>
-        </fieldset>
 
-        <fieldset className="chart-pick-group income">
-          <legend>Ingresos</legend>
-          <div className="pick-list">
+          <div className="c7-card">
+            <span className="c7-lbl">Ingresos</span>
+            <strong className="c7-val income">+{formatCurrency(monthIncome)}</strong>
+          </div>
+
+          <div className="c7-card">
+            <span className="c7-lbl">Balance Neto</span>
+            <strong className={`c7-val ${monthNet >= 0 ? "positive" : "negative"}`}>
+              {monthNet >= 0 ? "+" : ""}{formatCurrency(monthNet)}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Selector Compacto del Concepto 4 (Conservado a petición del usuario) */}
+      <div className="concept4-selector-card">
+        <div className="c4-selector-head">
+          <div className="c4-head-left">
+            <h2>Categorías en la gráfica</h2>
+            <span className="c4-head-sub">{selected.length} activas · Toca para filtrar</span>
+          </div>
+          <div className="c4-head-actions">
             <button
               type="button"
-              className={`pick income-pick ${incomeSelected ? "on" : ""}`}
-              onClick={toggleIncome}
-              aria-pressed={incomeSelected}
+              className="c4-mini-btn"
+              onClick={() => {
+                const active = expenseCategories.filter((c) => (byCatMonth.get(c.id)?.get(currentKey) ?? 0) > 0).map((c) => c.id);
+                setSelected(active.length ? active : expenseCategories.map((c) => c.id));
+              }}
             >
-              <span className="box">
-                {incomeSelected ? <span className="box-check">✓</span> : null}
-              </span>
-              <span>Total ingresado</span>
+              Con gasto
+            </button>
+            <button
+              type="button"
+              className="c4-mini-btn"
+              onClick={() => setSelected(expenseCategories.map((c) => c.id))}
+            >
+              Todas
+            </button>
+            <button
+              type="button"
+              className="c4-mini-btn"
+              onClick={() => setSelected([])}
+            >
+              Borrar
             </button>
           </div>
-        </fieldset>
-      </div>
+        </div>
 
-      {/* Desglose de una categoría en sus subcategorías */}
-      {drillSubs.length ? (
-        <>
-          <p className="evo-ask small">Desglosar {categoryName.get(selected[0])?.toLowerCase()} en…</p>
-          <div className="pick-list">
-            {drillSubs.map((s) => {
-              const idx = subSelected.indexOf(s.id);
-              const on = idx >= 0;
-              const pen = on ? penFor(selected.length + idx) : null;
-              return (
-                <button
-                  type="button"
-                  key={s.id}
-                  className={`pick small ${on ? "on" : ""}`}
-                  onClick={() => toggleSub(s.id)}
-                  aria-pressed={on}
-                  style={on && pen ? { borderColor: pen.color } : undefined}
-                >
-                  <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
-                    {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
-                  </span>
-                  <span>{s.name}</span>
-                </button>
-              );
-            })}
+        {/* Micro-cuadrícula compacta */}
+        <div className="c4-micro-grid">
+          {expenseCategories.map((c) => {
+            const idx = selected.indexOf(c.id);
+            const on = idx >= 0;
+            const pen = on ? penFor(idx) : null;
+            const catNow = byCatMonth.get(c.id)?.get(currentKey) ?? 0;
+            return (
+              <button
+                type="button"
+                key={c.id}
+                className={`c4-micro-tile ${on ? "on" : ""} ${catNow > 0 ? "has-spend" : ""}`}
+                onClick={() => toggle(c.id)}
+                aria-pressed={on}
+                style={on && pen ? { borderColor: pen.color } : undefined}
+              >
+                <span className="c4-dot" style={{ backgroundColor: on && pen ? pen.color : "var(--pencil-faint)" }} />
+                <span className="c4-name">{c.name}</span>
+                <span className="c4-val">{catNow > 0 ? formatCurrency(catNow) : "0 €"}</span>
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            className={`c4-micro-tile income-tile ${incomeSelected ? "on" : ""}`}
+            onClick={toggleIncome}
+            aria-pressed={incomeSelected}
+          >
+            <span className="c4-dot income-dot-bg" />
+            <span className="c4-name income-txt">Ingresos totales</span>
+            <span className="c4-val income-txt">{formatCurrency(monthIncome)}</span>
+          </button>
+        </div>
+
+        {/* Desglose de subcategorías */}
+        {drillSubs.length ? (
+          <div className="c4-sub-panel">
+            <span className="c4-sub-lbl">Subcategorías de <strong>{categoryName.get(selected[0])}</strong>:</span>
+            <div className="c4-sub-chips">
+              {drillSubs.map((s) => {
+                const idx = subSelected.indexOf(s.id);
+                const on = idx >= 0;
+                const pen = on ? penFor(selected.length + idx) : null;
+                const subNow = bySubMonth.get(s.id)?.get(currentKey) ?? 0;
+                return (
+                  <button
+                    type="button"
+                    key={s.id}
+                    className={`c4-sub-btn ${on ? "on" : ""}`}
+                    onClick={() => toggleSub(s.id)}
+                    aria-pressed={on}
+                    style={on && pen ? { borderColor: pen.color } : undefined}
+                  >
+                    <span className="c4-sub-name">{s.name}</span>
+                    <span className="c4-sub-val">{subNow > 0 ? formatCurrency(subNow) : "0 €"}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </>
-      ) : null}
+        ) : null}
+      </div>
 
       <div className="range-row">
         <span className="lbl">Meses:</span>
@@ -567,13 +652,23 @@ export function DashboardView() {
 
                 <div className="hover-series-list">
                   {hi !== null && visibleMonths[hi] ? (
-                    roughSeries.map((s) => (
-                      <div key={s.id} className={`hover-series-item ${s.kind}`}>
-                        <span className="stroke-icon" style={{ borderTopColor: s.pen.color, borderTopStyle: s.pen.dashed ? "dashed" : "solid" }} />
-                        <span className="series-name">{s.name}:</span>
-                        <strong className="series-amount" style={{ color: s.pen.color }}>{s.kind === "income" ? "+" : ""}{formatCurrency(s.points[hi])}</strong>
-                      </div>
-                    ))
+                    roughSeries.map((s) => {
+                      const isDimmed = activeSeriesId !== null && activeSeriesId !== s.id;
+                      const isHighlighted = activeSeriesId === s.id;
+                      return (
+                        <div
+                          key={s.id}
+                          className={`hover-series-item ${s.kind} ${isHighlighted ? "highlighted" : ""}`}
+                          style={{ opacity: isDimmed ? 0.3 : 1 }}
+                          onMouseEnter={() => setActiveSeriesId(s.id)}
+                          onMouseLeave={() => setActiveSeriesId(null)}
+                        >
+                          <span className="stroke-icon" style={{ borderTopColor: s.pen.color, borderTopStyle: s.pen.dashed ? "dashed" : "solid" }} />
+                          <span className="series-name">{s.name}:</span>
+                          <strong className="series-amount" style={{ color: s.pen.color }}>{s.kind === "income" ? "+" : ""}{formatCurrency(s.points[hi])}</strong>
+                        </div>
+                      );
+                    })
                   ) : null}
                 </div>
               </div>
@@ -611,16 +706,57 @@ export function DashboardView() {
                   <path key={`g${v}`} d={roughPath([[padL, yAt(v)], [padL + plotW, yAt(v)]], mulberry32(31 + ti * 13), 1)} fill="none" stroke="#cfc7b2" strokeWidth={1.2} strokeDasharray="2 6" />
                 ))}
                 <path d={roughAxis} fill="none" stroke="#24211a" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-                {roughSeries.map((s) => (
-                  <path className={s.kind === "income" ? "income-series" : undefined} key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={s.kind === "income" ? (compact ? 4 : 3.4) : (compact ? 3.4 : 2.8)} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
-                ))}
-                {roughSeries.map((s) => s.pts.map(([cx, cy], i) => (
-                  <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={compact ? 3.6 : 2.7} fill={s.pen.color} />
-                )))}
+                {roughSeries.map((s) => {
+                  const isDimmed = activeSeriesId !== null && activeSeriesId !== s.id;
+                  const isHighlighted = activeSeriesId === s.id;
+                  return (
+                    <path
+                      className={s.kind === "income" ? "income-series" : undefined}
+                      key={s.id}
+                      d={s.d}
+                      fill="none"
+                      stroke={s.pen.color}
+                      strokeWidth={isHighlighted ? 4.8 : s.kind === "income" ? (compact ? 4 : 3.4) : (compact ? 3.4 : 2.8)}
+                      opacity={isDimmed ? 0.2 : 1}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeDasharray={s.pen.dashed ? "9 6" : undefined}
+                      style={{ transition: "opacity 0.2s ease, stroke-width 0.2s ease" }}
+                      onMouseEnter={() => setActiveSeriesId(s.id)}
+                      onMouseLeave={() => setActiveSeriesId(null)}
+                    />
+                  );
+                })}
+                {roughSeries.map((s) => {
+                  const isDimmed = activeSeriesId !== null && activeSeriesId !== s.id;
+                  return s.pts.map(([cx, cy], i) => (
+                    <circle
+                      key={`${s.id}-${i}`}
+                      cx={cx}
+                      cy={cy}
+                      r={compact ? 3.6 : 2.7}
+                      fill={s.pen.color}
+                      opacity={isDimmed ? 0.2 : 1}
+                      style={{ transition: "opacity 0.2s ease" }}
+                    />
+                  ));
+                })}
                 {hi !== null ? <line x1={xAt(hi)} y1={padT} x2={xAt(hi)} y2={padT + plotH} stroke="#24211a" strokeWidth={1.4} strokeDasharray="3 4" /> : null}
-                {hi !== null ? roughSeries.map((s) => (
-                  <circle key={`hi-${s.id}`} cx={s.pts[hi][0]} cy={s.pts[hi][1]} r={compact ? 6.5 : 5} fill="none" stroke={s.pen.color} strokeWidth={2} />
-                )) : null}
+                {hi !== null ? roughSeries.map((s) => {
+                  const isDimmed = activeSeriesId !== null && activeSeriesId !== s.id;
+                  return (
+                    <circle
+                      key={`hi-${s.id}`}
+                      cx={s.pts[hi][0]}
+                      cy={s.pts[hi][1]}
+                      r={compact ? 6.5 : 5}
+                      fill="none"
+                      stroke={s.pen.color}
+                      strokeWidth={2}
+                      opacity={isDimmed ? 0.2 : 1}
+                    />
+                  );
+                }) : null}
               </g>
 
               <g>
@@ -632,9 +768,57 @@ export function DashboardView() {
                     <text key={mk} className="month-lab" x={xAt(i)} y={padT + plotH + (compact ? 30 : 22)} textAnchor="middle">{monthLabel(mk, mk.endsWith("-01") || i === 0)}</text>
                   ) : null
                 ))}
-                {endLabels.map((l) => (
-                  <text key={`lab${l.id}`} className="series-lab" x={padL + plotW + 9} y={l.y + 4} style={{ fill: l.color }}>{l.name}</text>
-                ))}
+                {endLabels.map((l) => {
+                  const isDimmed = activeSeriesId !== null && activeSeriesId !== l.id;
+                  const isHighlighted = activeSeriesId === l.id;
+                  const labelX = padL + plotW + (compact ? 6 : 8);
+                  const needLeader = Math.abs(l.y - l.origY) > 3;
+                  const isDense = roughSeries.length > 5;
+                  const bH = compact ? (isDense ? 14 : 16) : (isDense ? 16 : 18);
+                  const bW = compact ? (isDense ? 68 : 74) : (isDense ? 95 : 105);
+                  const fontSz = compact ? (isDense ? "9.5px" : "11px") : (isDense ? "11px" : "12.5px");
+
+                  return (
+                    <g
+                      key={`lab${l.id}`}
+                      opacity={isDimmed ? 0.25 : 1}
+                      style={{ cursor: "pointer", transition: "opacity 0.2s ease" }}
+                      onMouseEnter={() => setActiveSeriesId(l.id)}
+                      onMouseLeave={() => setActiveSeriesId(null)}
+                    >
+                      {needLeader ? (
+                        <line
+                          x1={padL + plotW}
+                          y1={l.origY}
+                          x2={labelX - 2}
+                          y2={l.y}
+                          stroke={l.color}
+                          strokeWidth={1}
+                          strokeDasharray="2 2"
+                        />
+                      ) : null}
+                      <rect
+                        x={labelX}
+                        y={l.y - bH / 2}
+                        width={bW}
+                        height={bH}
+                        rx={4}
+                        fill="var(--paper-solid)"
+                        stroke={l.color}
+                        strokeWidth={isHighlighted ? 2 : 1.2}
+                      />
+                      <text
+                        key={`lab${l.id}`}
+                        className="series-lab"
+                        x={labelX + 4}
+                        y={l.y + (compact ? 3.5 : 4)}
+                        style={{ fill: l.color, fontWeight: isHighlighted ? 800 : 700, fontSize: fontSz }}
+                      >
+                        {l.name}
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
             </svg>
           </>
