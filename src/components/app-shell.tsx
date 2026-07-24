@@ -39,7 +39,7 @@ function isRouteActive(path: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { hasMalagaAccess, session, signOut } = useFinance();
+  const { hasMalagaAccess, malagaAccessReady, session, signOut } = useFinance();
   // En la exportación estática las URL llevan barra final: se normaliza para
   // que el subrayado de "activo" funcione igual en local y en GitHub Pages.
   const path = (pathname ?? "/").replace(/\/+$/, "") || "/";
@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
         <span className="nb-spacer" />
-        {session ? (
+        {session && malagaAccessReady ? (
           <span className="mobile-header-tools">
             <AppLink
               href="/recurrentes"
@@ -103,14 +103,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
 
       {/* En la propia página de anotar sobra (y taparía el botón de guardar) */}
-      {session && path !== "/movimientos/nuevo" && path !== "/viajes" ? (
+      {session && malagaAccessReady && path !== "/movimientos/nuevo" && path !== "/viajes" ? (
         <AppLink href="/movimientos/nuevo" className="floating-action" aria-label="Anotar un gasto">
           <Plus size={20} />
           <span>Anotar</span>
         </AppLink>
       ) : null}
 
-      {session ? <nav className="mobile-nav" aria-label="Navegación móvil">
+      {session && malagaAccessReady ? <nav className="mobile-nav" aria-label="Navegación móvil">
           {(hasMalagaAccess ? ownerMobileNavigation : mobileNavigation).map(({ href, label, Icon, quick }) => {
             const active = isRouteActive(path, href);
             return (

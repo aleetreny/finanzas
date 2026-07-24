@@ -34,6 +34,7 @@ type FinanceContextValue = {
   configured: boolean;
   session: Session | null;
   hasMalagaAccess: boolean;
+  malagaAccessReady: boolean;
   loading: boolean;
   error: string | null;
   notice: string | null;
@@ -66,6 +67,28 @@ type FinanceContextValue = {
 };
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
+const MALAGA_ACCESS_CACHE_PREFIX = "finanzas:malaga-access:";
+
+function cachedMalagaAccess(userId: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(`${MALAGA_ACCESS_CACHE_PREFIX}${userId}`);
+    if (value === "true") return true;
+    if (value === "false") return false;
+  } catch {
+    // La navegación sigue siendo segura aunque el navegador bloquee storage.
+  }
+  return null;
+}
+
+function cacheMalagaAccess(userId: string, access: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(`${MALAGA_ACCESS_CACHE_PREFIX}${userId}`, String(access));
+  } catch {
+    // El permiso se conserva en memoria durante esta sesión.
+  }
+}
 
 export function messageFrom(error: unknown) {
   const message = error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
@@ -87,6 +110,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabase();
   const [session, setSession] = useState<Session | null>(null);
   const [hasMalagaAccess, setHasMalagaAccess] = useState(false);
+  const [malagaAccessReady, setMalagaAccessReady] = useState(false);
   const [loading, setLoading] = useState(Boolean(supabase));
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -117,7 +141,22 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     hasMalagaAccessRef.current = false;
     lastRecurringGenerationRef.current = "";
     setHasMalagaAccess(false);
+    setMalagaAccessReady(false);
   }, []);
+
+  const applySession = useCallback((nextSession: Session | null) => {
+    if (!nextSession) {
+      setSession(null);
+      clearData();
+      setLoading(false);
+      return;
+    }
+    const cachedAccess = cachedMalagaAccess(nextSession.user.id);
+    hasMalagaAccessRef.current = cachedAccess ?? false;
+    setHasMalagaAccess(cachedAccess ?? false);
+    setMalagaAccessReady(cachedAccess !== null);
+    setSession(nextSession);
+  }, [clearData]);
 
   const loadData = useCallback(async (includeMalaga: boolean) => {
     if (!supabase) return;
@@ -206,23 +245,18 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return;
       if (sessionError) setError(sessionError.message);
-      setSession(data.session);
-      if (!data.session) setLoading(false);
+      applySession(data.session);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      if (!nextSession) {
-        clearData();
-        setLoading(false);
-      }
+      applySession(nextSession);
     });
 
     return () => {
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [clearData, supabase]);
+  }, [applySession, supabase]);
 
   // Depende del id de usuario, no del objeto de sesión: así un refresco de
   // token no relanza el alta ni vuelve a descargar todos los datos.
@@ -231,6 +265,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase || !userId) return;
     let active = true;
+    const activeUserId = userId;
 
     async function bootstrapAndLoad() {
       setLoading(true);
@@ -238,6 +273,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       if (bootstrapError) {
         setError(messageFrom(bootstrapError));
+        setMalagaAccessReady(true);
         setLoading(false);
         return;
       }
@@ -247,8 +283,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         && "has_malaga_access" in bootstrapData
         && bootstrapData.has_malaga_access,
       );
+      cacheMalagaAccess(activeUserId, access);
       hasMalagaAccessRef.current = access;
       setHasMalagaAccess(access);
+      setMalagaAccessReady(true);
 
       const { error: recurringError } = await supabase!.rpc("generate_due_recurring_transactions");
       if (!active) return;
@@ -637,6 +675,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     configured: Boolean(supabase),
     session,
     hasMalagaAccess,
+    malagaAccessReady,
     loading,
     error,
     notice,
@@ -668,7 +707,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     toggleRecurring,
   }), [
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
-    deleteRecurring, deleteTransaction, deleteTripProject, error, hasMalagaAccess, loading, notice, properties,
+    deleteRecurring, deleteTransaction, deleteTripProject, error, hasMalagaAccess, loading, malagaAccessReady, notice, properties,
     recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, saveTripProject, session,
     sendAccessLink, signInWithPassword, signOut, signUp, subcategories, supabase,
     toggleRecurring, transactions, tripProjects, updatePassword, updateTransaction,

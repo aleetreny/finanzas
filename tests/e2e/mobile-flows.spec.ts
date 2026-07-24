@@ -79,6 +79,36 @@ test.describe("mobile quality flows", () => {
     await expect(page.locator(".budget-list")).not.toContainText("Ingresos");
   });
 
+  test("owner navigation never flashes the public Viajes slot while access restores", async ({ page }) => {
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith("finanzas:malaga-access:")) localStorage.removeItem(key);
+      }
+    });
+    await page.addInitScript(() => {
+      sessionStorage.setItem("owner-nav-flashed", "false");
+      const inspect = () => {
+        const labels = [...document.querySelectorAll(".mobile-nav .mobile-nav-link span")]
+          .map((element) => element.textContent?.trim());
+        if (labels.includes("Viajes")) sessionStorage.setItem("owner-nav-flashed", "true");
+      };
+      const observer = new MutationObserver(inspect);
+      const start = () => {
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        inspect();
+      };
+      if (document.documentElement) start();
+      else document.addEventListener("DOMContentLoaded", start, { once: true });
+    });
+
+    await page.goto("/movimientos/");
+    const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
+    await expect(mobileNav.getByRole("link", { name: "Piso" })).toBeVisible();
+    await expect(mobileNav.getByRole("link", { name: "Viajes" })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem("owner-nav-flashed")))
+      .toBe("false");
+  });
+
   test("a long new-expense form uses document scroll and remains saveable with a short viewport", async ({ page }) => {
     await page.goto("/movimientos/nuevo/");
     await page.setViewportSize({ width: 412, height: 520 });
