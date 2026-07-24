@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -383,7 +383,7 @@ export function DashboardView() {
     return (
       <div className="evo">
         <div className="evo-head"><h1>Mis gastos</h1><p>Aún no hay nada anotado.</p></div>
-        <div className="empty-state"><p>Anota tu primer gasto y aquí verás cómo evoluciona mes a mes.</p><Link className="button primary" href="/movimientos/nuevo">Anotar un gasto</Link></div>
+        <div className="empty-state"><p>Anota tu primer gasto y aquí verás cómo evoluciona mes a mes.</p><AppLink className="button primary" href="/movimientos/nuevo">Anotar un gasto</AppLink></div>
       </div>
     );
   }
@@ -686,7 +686,7 @@ export function DashboardView() {
             <span className={`amount ${t.amount >= 0 ? "positive" : ""}`}>{formatCurrency(t.amount)}</span>
           </div>
         ))}
-        <Link className="see-all" href="/movimientos">ver todos los apuntes →</Link>
+        <AppLink className="see-all" href="/movimientos">ver todos los apuntes →</AppLink>
       </div>
     </div>
   );

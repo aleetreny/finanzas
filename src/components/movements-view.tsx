@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Download, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
 import { TransactionList } from "@/components/transaction-list";
@@ -45,7 +45,7 @@ export function MovementsView() {
         eyebrow=""
         title="Apuntes"
         description="Tus gastos e ingresos personales. El Piso Málaga vive únicamente en su propia pestaña."
-        action={<Link href="/movimientos/nuevo" className="button primary"><Plus size={16} />Anotar</Link>}
+        action={<AppLink href="/movimientos/nuevo" className="button primary"><Plus size={16} />Anotar</AppLink>}
       />
       <div className="toolbar">
         <label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre o nota" aria-label="Buscar apuntes" /></label>
@@ -53,7 +53,7 @@ export function MovementsView() {
         <select className="select-field" value={direction} onChange={(event) => setDirection(event.target.value)} aria-label="Filtrar tipo"><option value="all">Gastos e ingresos</option><option value="expense">Gastos</option><option value="income">Ingresos</option></select>
         <select className="select-field" value={year} onChange={(event) => setYear(event.target.value)} aria-label="Filtrar año"><option value="all">Todos los años</option>{years.map((item) => <option key={item}>{item}</option>)}</select>
         <span className="badge">{filtered.length.toLocaleString("es-ES")} apuntes</span>
-        <Link href="/importar-exportar" className="button small"><Download size={15} />CSV</Link>
+        <AppLink href="/importar-exportar" className="button small"><Download size={15} />CSV</AppLink>
       </div>
       <TransactionList transactions={filtered} />
     </div>

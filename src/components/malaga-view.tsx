@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, Pencil, Plus, Repeat2, Trash2 } from "lucide-react";
+import { CalendarRange, Pencil, Plus, Repeat2, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
@@ -327,11 +327,12 @@ export function MalagaView() {
           <button className="button small" onClick={openNewBooking}><Plus size={15} />Añadir</button>
         </div>
         {selectedBookings.length ? (
-          <div className="property-table-scroll">
-            <table className="data-table property-dashboard-table booking-table">
-              <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
-              <tbody>
-                {selectedBookings.map((booking) => (
+          <>
+            <div className="property-table-scroll booking-table-scroll">
+              <table className="data-table property-dashboard-table booking-table">
+                <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
+                <tbody>
+                  {selectedBookings.map((booking) => (
                     <tr key={booking.id}>
                       <td>{formatDate(booking.check_in_date)}<span className="transaction-note">hasta {formatDate(booking.check_out_date)}</span></td>
                       <td><strong>{booking.name}</strong>{booking.calculation_status === "needs_review" ? <span className="badge gold booking-status">Completar</span> : null}</td>
@@ -342,10 +343,34 @@ export function MalagaView() {
                       <td className={`amount ${rentalBookingNet(booking) >= 0 ? "positive" : ""}`}>{formatCurrency(rentalBookingNet(booking))}</td>
                       <td><div className="row-actions"><button className="icon-button" title="Editar desglose" onClick={() => { setEditingBooking(booking); setBookingOpen(true); }}><Pencil size={15} /></button><button className="icon-button" title="Eliminar reserva" onClick={() => void removeBooking(booking)}><Trash2 size={15} /></button></div></td>
                     </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mobile-booking-list">
+              {selectedBookings.map((booking) => (
+                <article className="mobile-booking" key={booking.id}>
+                  <div className="mobile-booking-head">
+                    <div>
+                      <strong>{booking.name}</strong>
+                      <span>{formatDate(booking.check_in_date)} — {formatDate(booking.check_out_date)}</span>
+                    </div>
+                    <strong className={`amount ${rentalBookingNet(booking) >= 0 ? "positive" : ""}`}>{formatCurrency(rentalBookingNet(booking))}</strong>
+                  </div>
+                  <div className="mobile-booking-breakdown">
+                    <span>Bruto <strong>{formatCurrency(Number(booking.gross_before_discount))}</strong></span>
+                    <span>Plataforma <strong>{formatCurrency(-Number(booking.platform_commission_amount))}</strong></span>
+                    <span>Gestora <strong>{formatCurrency(-Number(booking.amount_payable_to_manager))}</strong></span>
+                  </div>
+                  {booking.calculation_status === "needs_review" ? <span className="badge gold">Completar datos</span> : null}
+                  <div className="mobile-booking-actions" role="group" aria-label={`Acciones para ${booking.name}`}>
+                    <button className="button small" type="button" onClick={() => { setEditingBooking(booking); setBookingOpen(true); }}><Pencil size={15} />Editar</button>
+                    <button className="button small danger" type="button" onClick={() => void removeBooking(booking)}><Trash2 size={15} />Eliminar</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         ) : <p className="empty-inline">No hay reservas registradas para {selectedYear}.</p>}
       </section>
 
@@ -404,9 +429,22 @@ function MoneyCell({ value, positive = false, negative = false, signed = false }
 
 function Modal({ title, eyebrow, onClose, children }: { title: string; eyebrow: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="modal-card property-modal" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="card-header"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div></div>
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <section
+        className="modal-card property-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}
+      >
+        <div className="card-header">
+          <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>
+          <button autoFocus className="icon-button modal-close" type="button" onClick={onClose} aria-label={`Cerrar ${title}`}><X size={20} /></button>
+        </div>
         <div className="card-body">{children}</div>
       </section>
     </div>

@@ -1,21 +1,23 @@
 import { expect, test } from "@playwright/test";
+import { installMockFinanceBackend, signInToMockFinance } from "./mock-finance";
 
-test("renders the responsive application shell and configuration state", async ({ page }) => {
+test("renders the responsive application shell and private access state", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".nb-brand:visible").first()).toContainText("Mis gastos");
-  await expect(page.getByRole("heading", { name: "Conecta el proyecto de Supabase" })).toBeVisible();
-  await expect(page.getByText("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entrar en Mis gastos" })).toBeVisible();
+  await expect(page.getByLabel("Correo electrónico")).toBeVisible();
 });
 
 test("static routes are directly addressable", async ({ page }) => {
   await page.goto("/piso-malaga/");
-  await expect(page.getByRole("heading", { name: "Conecta el proyecto de Supabase" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entrar en Mis gastos" })).toBeVisible();
 });
 
 test("mobile viewport stays contained and exposes app navigation", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "Comprobación específica del viewport móvil");
 
-  await page.goto("/");
+  await installMockFinanceBackend(page);
+  await signInToMockFinance(page);
 
   const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
   await expect(mobileNav).toBeVisible();
@@ -44,12 +46,14 @@ test("mobile viewport stays contained and exposes app navigation", async ({ page
   const layout = await page.evaluate(() => {
     const frame = document.querySelector<HTMLElement>(".app-frame");
     const header = document.querySelector<HTMLElement>(".nb-top");
+    window.scrollTo(0, 100);
     if (frame) frame.scrollLeft = 100;
     if (header) header.scrollLeft = 100;
     return {
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: document.documentElement.clientWidth,
       bodyOverflow: getComputedStyle(document.body).overflow,
+      documentOverflowY: getComputedStyle(document.documentElement).overflowY,
       frameOverflowY: frame ? getComputedStyle(frame).overflowY : null,
       frameScrollLeft: frame?.scrollLeft ?? null,
       headerScrollLeft: header?.scrollLeft ?? null,
@@ -57,8 +61,9 @@ test("mobile viewport stays contained and exposes app navigation", async ({ page
   });
 
   expect(layout.documentWidth).toBe(layout.viewportWidth);
-  expect(layout.bodyOverflow).toBe("hidden");
-  expect(layout.frameOverflowY).toBe("auto");
+  expect(layout.bodyOverflow).not.toBe("hidden");
+  expect(layout.documentOverflowY).toBe("auto");
+  expect(layout.frameOverflowY).toBe("visible");
   expect(layout.frameScrollLeft).toBe(0);
   expect(layout.headerScrollLeft).toBe(0);
 });

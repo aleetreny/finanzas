@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, Pencil, Trash2 } from "lucide-react";
+import { LoaderCircle, Pencil, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useFinance } from "@/components/finance-provider";
 import { TransactionForm } from "@/components/transaction-form";
@@ -92,9 +92,22 @@ export function TransactionList({
       </div>
 
       {editing ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}>
-          <section className="modal-card" role="dialog" aria-modal="true" aria-label="Editar movimiento">
-            <div className="card-header"><div><p className="eyebrow">Edición</p><h2>Modificar movimiento</h2></div></div>
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}
+        >
+          <section
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editar movimiento"
+            onKeyDown={(event) => { if (event.key === "Escape") setEditing(null); }}
+          >
+            <div className="card-header">
+              <div><p className="eyebrow">Edición</p><h2>Modificar movimiento</h2></div>
+              <button autoFocus className="icon-button modal-close" type="button" onClick={() => setEditing(null)} aria-label="Cerrar edición"><X size={20} /></button>
+            </div>
             <div className="card-body">
               {deleteError ? <p className="notice error" style={{ marginBottom: 16 }}>{deleteError}</p> : null}
               <TransactionForm

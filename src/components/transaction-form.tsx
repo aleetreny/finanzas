@@ -2,12 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronDown, LoaderCircle, Trash2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useFinance } from "@/components/finance-provider";
 import { todayIso } from "@/lib/format";
+import { appRouteHref } from "@/lib/navigation";
 import type { Transaction, TransactionInput } from "@/lib/types";
 
 const formSchema = z.object({
@@ -60,7 +60,6 @@ export function TransactionForm({
   scope?: "general" | "property";
   fixedDirection?: "income" | "expense";
 }) {
-  const router = useRouter();
   const { categories, subcategories, addTransaction, updateTransaction } = useFinance();
   const [advanced, setAdvanced] = useState(Boolean(initial?.context || initial?.notes));
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -145,7 +144,7 @@ export function TransactionForm({
       if (initial) await updateTransaction(initial.id, input);
       else await addTransaction(input);
       if (onSaved) onSaved();
-      else router.push(scope === "property" ? "/piso-malaga" : "/movimientos");
+      else window.location.assign(appRouteHref(scope === "property" ? "/piso-malaga" : "/movimientos"));
     } catch (caught) {
       setSubmitError(caught instanceof Error ? caught.message : "No se pudo guardar el movimiento.");
     }
@@ -198,7 +197,6 @@ export function TransactionForm({
           inputMode="decimal"
           placeholder="0"
           aria-label="Importe en euros"
-          autoFocus={!initial}
           value={rawAmount}
           onChange={handleAmountChange}
         />
@@ -272,7 +270,13 @@ export function TransactionForm({
 
       <div className="q-label">Concepto</div>
       <div className="field full">
-        <input type="text" placeholder={direction === "expense" ? "p. ej. compra del super" : "p. ej. nómina"} {...register("name")} />
+        <input
+          type="text"
+          aria-label="Concepto"
+          aria-invalid={Boolean(errors.name)}
+          placeholder={direction === "expense" ? "p. ej. compra del super" : "p. ej. nómina"}
+          {...register("name")}
+        />
         {errors.name ? <p className="field-error">{errors.name.message}</p> : null}
       </div>
 
@@ -284,7 +288,7 @@ export function TransactionForm({
       </div>
       {errors.transaction_date ? <p className="field-error" style={{ marginTop: 6 }}>{errors.transaction_date.message}</p> : null}
 
-      <button type="button" className="more-toggle" onClick={() => setAdvanced((value) => !value)} style={{ marginTop: 18 }}>
+      <button type="button" className="more-toggle" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)} style={{ marginTop: 18 }}>
         Más detalles <ChevronDown size={15} style={{ transform: advanced ? "rotate(180deg)" : undefined, transition: "transform .15s ease" }} />
       </button>
       {advanced ? (
