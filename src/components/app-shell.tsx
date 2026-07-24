@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, House, LogOut, Plus, ReceiptText, Settings } from "lucide-react";
 import type { ReactNode } from "react";
+import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 
 const navigation = [
@@ -36,19 +36,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = (pathname ?? "/").replace(/\/+$/, "") || "/";
 
   return (
-    <div className="app-frame">
+    <div className={`app-frame${session ? " authenticated" : ""}`}>
       <header className="nb-top">
-        <Link href="/dashboard" className="nb-brand" aria-label="Ir al resumen">Mis&nbsp;gastos</Link>
-        <nav className="nb-nav" aria-label="Navegación principal">
-          {navigation.map((item) => {
-            const active = isRouteActive(path, item.href);
-            return (
-              <Link href={item.href} key={item.href} className={active ? "active" : ""} aria-current={active ? "page" : undefined}>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <AppLink href="/dashboard" className="nb-brand" aria-label="Ir al resumen">Mis&nbsp;gastos</AppLink>
+        {session ? (
+          <nav className="nb-nav" aria-label="Navegación principal">
+            {navigation.map((item) => {
+              const active = isRouteActive(path, item.href);
+              return (
+                <AppLink href={item.href} key={item.href} className={active ? "active" : ""} aria-current={active ? "page" : undefined}>
+                  {item.label}
+                </AppLink>
+              );
+            })}
+          </nav>
+        ) : null}
         <span className="nb-spacer" />
         {session ? (
           <span className="nb-account">
@@ -64,17 +66,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* En la propia página de anotar sobra (y taparía el botón de guardar) */}
       {session && path !== "/movimientos/nuevo" ? (
-        <Link href="/movimientos/nuevo" className="floating-action" aria-label="Anotar un gasto">
+        <AppLink href="/movimientos/nuevo" className="floating-action" aria-label="Anotar un gasto">
           <Plus size={20} />
           <span>Anotar</span>
-        </Link>
+        </AppLink>
       ) : null}
 
-      <nav className="mobile-nav" aria-label="Navegación móvil">
+      {session ? <nav className="mobile-nav" aria-label="Navegación móvil">
           {mobileNavigation.map(({ href, label, Icon, quick }) => {
             const active = isRouteActive(path, href);
             return (
-              <Link
+              <AppLink
                 href={href}
                 key={href}
                 className={`mobile-nav-link${quick ? " quick" : ""}${active ? " active" : ""}`}
@@ -82,10 +84,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Icon size={quick ? 24 : 20} aria-hidden="true" />
                 <span>{label}</span>
-              </Link>
+              </AppLink>
             );
           })}
-      </nav>
+      </nav> : null}
     </div>
   );
 }

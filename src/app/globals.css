@@ -244,8 +244,29 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .row-actions { display: flex; justify-content: flex-end; gap: 2px; }
 .table-note { margin: 0; border-top: 1px solid var(--rule-ink); color: var(--pencil); padding: 10px; font-size: 14px; text-align: center; }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; overflow-y: auto; background: rgba(36, 33, 26, .34); padding: 22px; }
-.modal-card { width: min(100%, 540px); max-height: calc(100vh - 44px); overflow-y: auto; border: 2px solid var(--ink); border-radius: 18px 220px 20px 220px / 220px 18px 200px 20px; background: var(--paper-solid); }
+.modal-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; overflow: hidden; background: rgba(36, 33, 26, .34); padding: 22px; touch-action: pan-y; }
+.modal-card {
+  width: min(100%, 540px);
+  max-height: calc(100dvh - 44px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+  border: 2px solid var(--ink);
+  border-radius: 18px 220px 20px 220px / 220px 18px 200px 20px;
+  background: var(--paper-solid);
+}
+.modal-card > .card-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  align-items: center;
+  border-bottom: 1px solid var(--rule-ink);
+  background: var(--paper-solid);
+  padding-bottom: 12px;
+}
+.modal-close { flex: 0 0 auto; color: var(--ink); }
 
 /* ---------------------------------------------------------------------------
    Registro rápido (anotar un gasto)
@@ -754,6 +775,17 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .form-help, .field small { margin: 4px 0 0; color: var(--pencil); font-size: 13px; }
 .booking-table { min-width: 800px; }
 .booking-status { margin-left: 8px; }
+.mobile-booking-list { display: none; }
+.mobile-booking { display: grid; gap: 10px; border-bottom: 1px solid var(--rule-ink); padding: 14px 2px; }
+.mobile-booking-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mobile-booking-head > div { display: grid; min-width: 0; gap: 1px; }
+.mobile-booking-head > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-booking-head > div span { color: var(--pencil); font-size: 14px; }
+.mobile-booking-breakdown { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mobile-booking-breakdown span { display: grid; color: var(--pencil); font-size: 13px; }
+.mobile-booking-breakdown strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mobile-booking-actions { display: flex; gap: 8px; }
+.mobile-booking-actions .button { flex: 1; }
 .recurring-list { display: grid; }
 .recurring-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; align-items: center; gap: 14px; min-height: 58px; border-bottom: 1px dashed var(--rule-ink); padding: 5px 2px; }
 .recurring-row > div:first-child { display: grid; gap: 2px; }
@@ -807,21 +839,33 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
    ------------------------------------------------------------------------- */
 @media (max-width: 720px) {
   :root { --mobile-nav-height: 68px; }
-  html, body { height: 100%; overflow: hidden; }
-  body { min-height: 100%; font-size: 16px; }
-  .app-frame {
-    position: fixed;
-    top: 0;
-    left: 0;
-    min-height: 0;
-    height: 100dvh;
+  html {
+    height: auto;
+    min-height: 100%;
     overflow-x: clip;
     overflow-y: auto;
-    overscroll-behavior: none;
-    touch-action: pan-y pinch-zoom;
-    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: calc(var(--mobile-nav-height) + 24px + env(safe-area-inset-bottom));
   }
-  .main-content { max-width: 100%; overflow-x: clip; contain: inline-size; padding: 18px 16px calc(var(--mobile-nav-height) + 34px + env(safe-area-inset-bottom)); }
+  body {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+    overflow-y: visible;
+    font-size: 16px;
+  }
+  .app-frame {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    overflow-x: clip;
+    overflow-y: visible;
+    overscroll-behavior-x: none;
+    touch-action: auto;
+  }
+  .main-content { max-width: 100%; overflow-x: clip; contain: inline-size; padding: 18px 16px calc(34px + env(safe-area-inset-bottom)); }
+  .app-frame.authenticated .main-content { padding-bottom: calc(var(--mobile-nav-height) + 34px + env(safe-area-inset-bottom)); }
   .two-column { grid-template-columns: 1fr; }
   .data-table { display: none; }
   .mobile-list { display: grid; }
@@ -836,8 +880,19 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .mobile-transaction-action:hover { background: var(--paper-2); color: var(--ink); }
   .mobile-transaction-action.danger { color: var(--red-pen); }
   .mobile-transaction-action:disabled { opacity: .45; cursor: not-allowed; }
-  .modal-backdrop { place-items: end stretch; padding: 0; }
-  .modal-card { width: 100%; max-height: 94vh; border-radius: 20px 20px 0 0; }
+  .modal-backdrop {
+    place-items: end stretch;
+    padding: max(8px, env(safe-area-inset-top)) 0 0;
+  }
+  .modal-card {
+    width: 100%;
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    border-radius: 20px 20px 0 0;
+  }
+  .q-save { position: static; bottom: auto; }
+  .button.small, .chip, .chip.sub, .q-date .date-chip, .range-btn { min-height: 44px; }
+  .icon-button { width: 44px; height: 44px; }
+  .property-year-bar select { min-height: 44px; }
   .toolbar > * { flex: 1 1 150px; }
   .toolbar .search-field { flex-basis: 100%; }
   .settings-add { grid-template-columns: 1fr; }
@@ -848,6 +903,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .settings-category-main { grid-template-columns: 36px minmax(0, 1fr); }
   .settings-category-main > .settings-actions { grid-column: 2; justify-content: flex-start; }
   .settings-inline-edit { grid-template-columns: 1fr; }
+  .settings-list { max-height: none; overflow-y: visible; }
   .settings-subcategories { margin-left: 18px; }
   .settings-subcategory { grid-template-columns: 1fr; padding: 8px 0; }
   .settings-subcategory .settings-actions { justify-content: flex-start; }
@@ -858,6 +914,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .property-year-bar { align-items: flex-start; flex-direction: column; }
   .property-year-bar p { text-align: left; }
   .property-table-scroll .data-table { display: table; }
+  .booking-table-scroll { display: none; }
+  .mobile-booking-list { display: grid; }
   .property-tax-grid { grid-template-columns: 1fr; }
   .recurring-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-block: 10px; }
   .recurring-row > .badge { justify-self: start; }
@@ -933,6 +991,5 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .budget-top { align-items: flex-start; flex-wrap: wrap; }
   .budget-title-group { flex: 1 1 190px; flex-wrap: wrap; }
   .budget-top > .note { min-width: 0; flex: 0 1 auto; overflow-wrap: anywhere; text-align: right; }
-  .q-save { bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom)); }
   .property-table-scroll, .preview-table { max-width: 100%; overscroll-behavior-inline: contain; }
 }

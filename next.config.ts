@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
   basePath,
+  // La burbuja inferior de desarrollo tapa la primera acción de la barra
+  // móvil. Los errores de compilación y ejecución siguen mostrándose.
+  devIndicators: false,
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
