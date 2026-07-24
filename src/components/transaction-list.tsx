@@ -77,7 +77,10 @@ export function TransactionList({
               <div className="mobile-transaction-details">
                 <strong>{row.name}</strong>
                 <span className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</span>
-                <span className="meta">{formatDate(row.transaction_date)} · {categoryById.get(row.category_id ?? "") ?? "Sin categoría"}</span>
+                <span className="meta">
+                  {formatDate(row.transaction_date)} · {categoryById.get(row.category_id ?? "") ?? "Sin categoría"}
+                  {row.subcategory_id ? ` · ${subcategoryById.get(row.subcategory_id) ?? "Sin subcategoría"}` : ""}
+                </span>
               </div>
               <div className="mobile-transaction-actions" role="group" aria-label={`Acciones para ${row.name}`}>
                 <button type="button" className="mobile-transaction-action" disabled={deletingId !== null} onClick={() => edit(row)}><Pencil size={16} /><span>Editar</span></button>

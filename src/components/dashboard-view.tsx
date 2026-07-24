@@ -212,7 +212,6 @@ export function DashboardView() {
   const [hover, setHover] = useState<number | null>(null);
   const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const chartRef = useRef<HTMLDivElement | null>(null);
 
   const visibleMonths = useMemo(
     () => (range === "all" ? allMonths : allMonths.slice(Math.max(0, allMonths.length - range))),
@@ -456,11 +455,6 @@ export function DashboardView() {
   const monthIncome = byIncomeMonth.get(currentKey) ?? 0;
   const monthNet = monthIncome - monthTotal;
 
-  function addToChart(id: string) {
-    if (!selected.includes(id)) toggle(id);
-    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
   const lastEntries = useMemo(
     () =>
       [...personalTransactions]
@@ -620,7 +614,7 @@ export function DashboardView() {
         ))}
       </div>
 
-      <div className="chart-card" ref={chartRef}>
+      <div className="chart-card">
         {series.length && n > 0 ? (
           <>
             <div className="chart-hover-header">
@@ -833,7 +827,7 @@ export function DashboardView() {
       <div className="hand-rule" />
 
       <p className="section-title">Este mes, por categoría</p>
-      <p className="section-sub">Cuánto llevas de cada una comparado con lo que sueles gastar. Toca en la flecha para desglosar por subcategorías.</p>
+      <p className="section-sub">Cuánto llevas de cada una comparado con lo que sueles gastar. Abre la flecha para ver subcategorías o toca un nombre para consultar sus apuntes.</p>
       <div className="budget-list">
         {budget.map((r, i) => {
           const nowW = Math.min(100, (r.now / budgetMax) * 100);
@@ -860,7 +854,13 @@ export function DashboardView() {
                         {isExpanded ? <ChevronDown size={15} strokeWidth={2.5} /> : <ChevronRight size={15} strokeWidth={2.5} />}
                       </button>
                     ) : null}
-                    <button type="button" className="name" onClick={() => addToChart(r.id)} title="Ver su evolución arriba">{r.name}</button>
+                    <AppLink
+                      className="name"
+                      href={`/movimientos?month=${currentKey}&category=${encodeURIComponent(r.id)}`}
+                      title={`Ver los apuntes de ${r.name} de este mes`}
+                    >
+                      {r.name}
+                    </AppLink>
                     {hasSubs ? (
                       <button
                         type="button"
@@ -899,7 +899,13 @@ export function DashboardView() {
                         <div className="subrow-tree">└</div>
                         <div className="subrow-content">
                           <div className="budget-top">
-                            <span className="sub-name">{sub.name}</span>
+                            <AppLink
+                              className="sub-name"
+                              href={`/movimientos?month=${currentKey}&category=${encodeURIComponent(r.id)}&subcategory=${encodeURIComponent(sub.id.startsWith("unassigned-") ? "none" : sub.id)}`}
+                              title={`Ver los apuntes de ${sub.name} de este mes`}
+                            >
+                              {sub.name}
+                            </AppLink>
                             <span className={`note small ${subOver ? "over" : subUnder ? "under" : ""}`}>
                               {sub.pct === null ? "" : Math.abs(sub.pct) < 0.05 ? "≈ normal" : `${sub.pct > 0 ? "+" : ""}${Math.round(sub.pct * 100)}%`}
                             </span>

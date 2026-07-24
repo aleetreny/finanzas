@@ -104,6 +104,34 @@ test.describe("desktop quality flows", () => {
     await expect(page.getByText("Factura de agua corregida", { exact: true })).toHaveCount(0);
   });
 
+  test("dashboard breakdown opens Apuntes with category, subcategory, year and month filters", async ({ page }) => {
+    await page.goto("/dashboard/");
+    const monthlyBreakdown = page.locator(".budget-list");
+    await monthlyBreakdown.getByRole("link", { name: "Comida", exact: true }).click();
+    await expect(page).toHaveURL(/\/movimientos\/\?month=2026-07&category=cat-food$/);
+    await expect(page.getByLabel("Filtrar categoría")).toHaveValue("cat-food");
+    await expect(page.getByLabel("Filtrar año")).toHaveValue("2026");
+    await expect(page.getByLabel("Filtrar mes")).toHaveValue("07");
+    await expect(page.getByLabel("Filtrar tipo")).toHaveCount(0);
+    await expect(page.locator(".data-table .transaction-name").filter({ hasText: "Compra semanal" })).toBeVisible();
+    await expect(page.getByText("Nómina julio", { exact: true })).toHaveCount(0);
+
+    await page.goto("/dashboard/");
+    await monthlyBreakdown.getByRole("button", { name: "Abrir subcategorías de Comida" }).click();
+    await monthlyBreakdown.getByRole("link", { name: "Supermercado", exact: true }).click();
+    await expect(page).toHaveURL(/subcategory=sub-food/);
+    await expect(page.getByLabel("Filtrar categoría")).toHaveValue("cat-food");
+    await expect(page.getByLabel("Filtrar subcategoría")).toHaveValue("sub-food");
+    await expect(page.getByText("1 apuntes")).toBeVisible();
+
+    await page.getByLabel("Filtrar categoría").selectOption("all");
+    await expect(page.getByLabel("Filtrar subcategoría")).toHaveValue("all");
+    await page.getByLabel("Filtrar año").selectOption("all");
+    await page.getByLabel("Filtrar mes").selectOption("all");
+    await expect(page.locator(".data-table .transaction-name").filter({ hasText: "Compra semanal" })).toBeVisible();
+    await expect(page.locator(".data-table .transaction-name").filter({ hasText: "Nómina julio" })).toBeVisible();
+  });
+
   test("recurring expenses and incomes support create, edit, pause, resume and delete", async ({ page }) => {
     await page.goto("/recurrentes/");
     await page.getByRole("button", { name: "Nuevo recurrente" }).click();

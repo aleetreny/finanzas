@@ -360,6 +360,11 @@ export async function installMockFinanceBackend(
       const id = idFilter(url);
       const removed = rows.filter((row) => !id || row.id === id);
       db[table] = rows.filter((row) => id && row.id !== id);
+      if (table === "trip_projects" && id) {
+        db.transactions.forEach((transaction) => {
+          if (transaction.trip_project_id === id) transaction.trip_project_id = null;
+        });
+      }
       await fulfillJson(route, removed);
       return;
     }

@@ -3,13 +3,14 @@
 import {
   CalendarDays,
   Check,
+  ChevronDown,
+  ChevronRight,
   LoaderCircle,
   MapPinned,
   Pencil,
   Plus,
-  ReceiptText,
   Route,
-  WalletCards,
+  Trash2,
 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { AppLink } from "@/components/app-link";
@@ -108,13 +109,31 @@ function TripForm({
 }
 
 export function TripsView() {
-  const { categories, transactions, tripProjects } = useFinance();
+  const { categories, subcategories, transactions, tripProjects, deleteTripProject } = useFinance();
   const [selectedId, setSelectedId] = useState("");
   const [editing, setEditing] = useState<EditingTrip>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   );
+  const subcategoryNames = useMemo(
+    () => new Map(subcategories.map((subcategory) => [subcategory.id, subcategory.name])),
+    [subcategories],
+  );
+  const totalsByProject = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const transaction of transactions) {
+      if (!transaction.trip_project_id || Number(transaction.amount) >= 0) continue;
+      totals.set(
+        transaction.trip_project_id,
+        (totals.get(transaction.trip_project_id) ?? 0) + Math.abs(Number(transaction.amount)),
+      );
+    }
+    return totals;
+  }, [transactions]);
   const latestByProject = useMemo(() => {
     const latest = new Map<string, string>();
     for (const transaction of transactions) {
@@ -147,26 +166,53 @@ export function TripsView() {
     [activeSelectedId, transactions],
   );
   const expenses = selectedTransactions.filter((transaction) => Number(transaction.amount) < 0);
-  const income = selectedTransactions.filter((transaction) => Number(transaction.amount) > 0);
   const spent = expenses.reduce((sum, transaction) => sum + Math.abs(Number(transaction.amount)), 0);
-  const recovered = income.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
-  const netCost = spent - recovered;
   const inferredStart = selectedTransactions.at(-1)?.transaction_date ?? null;
   const inferredEnd = selectedTransactions[0]?.transaction_date ?? null;
   const tripStart = selected?.start_date ?? inferredStart;
   const tripEnd = selected?.end_date ?? inferredEnd;
   const tripDays = tripStart && tripEnd ? inclusiveDays(tripStart, tripEnd) : null;
   const categoryBreakdown = useMemo(() => {
-    const totals = new Map<string, number>();
+    const totals = new Map<string, {
+      id: string;
+      name: string;
+      total: number;
+      transactions: Transaction[];
+    }>();
     for (const transaction of selectedTransactions) {
       if (Number(transaction.amount) >= 0) continue;
-      const label = categoryNames.get(transaction.category_id ?? "") ?? "Sin categoría";
-      totals.set(label, (totals.get(label) ?? 0) + Math.abs(Number(transaction.amount)));
+      const id = transaction.category_id ?? "uncategorized";
+      const current = totals.get(id) ?? {
+        id,
+        name: categoryNames.get(transaction.category_id ?? "") ?? "Sin categoría",
+        total: 0,
+        transactions: [],
+      };
+      current.total += Math.abs(Number(transaction.amount));
+      current.transactions.push(transaction);
+      totals.set(id, current);
     }
-    return [...totals.entries()]
-      .map(([name, total]) => ({ name, total }))
+    return [...totals.values()]
       .sort((left, right) => right.total - left.total);
   }, [categoryNames, selectedTransactions]);
+
+  async function removeSelectedTrip() {
+    if (!selected) return;
+    const confirmed = window.confirm(
+      `¿Borrar “${selected.name}”? Sus apuntes se conservarán, pero quedarán sin viaje.`,
+    );
+    if (!confirmed) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await deleteTripProject(selected.id);
+      setExpandedCategories({});
+    } catch (caught) {
+      setDeleteError(caught instanceof Error ? caught.message : "No se pudo borrar el viaje.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="page trips-page">
@@ -185,9 +231,7 @@ export function TripsView() {
         <>
           <div className="trip-project-rail" role="tablist" aria-label="Seleccionar viaje">
             {orderedProjects.map((project) => {
-              const projectSpent = transactions
-                .filter((transaction) => transaction.trip_project_id === project.id && Number(transaction.amount) < 0)
-                .reduce((sum, transaction) => sum + Math.abs(Number(transaction.amount)), 0);
+              const projectSpent = totalsByProject.get(project.id) ?? 0;
               const active = project.id === activeSelectedId;
               return (
                 <button
@@ -196,7 +240,11 @@ export function TripsView() {
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setSelectedId(project.id)}
+                  onClick={() => {
+                    setSelectedId(project.id);
+                    setExpandedCategories({});
+                    setDeleteError(null);
+                  }}
                 >
                   <span className="trip-project-name">
                     <span className={`trip-status-dot${project.is_active ? "" : " closed"}`} />
@@ -224,10 +272,17 @@ export function TripsView() {
                     ) : "Fechas por definir"}
                   </p>
                 </div>
-                <button className="button small" type="button" onClick={() => setEditing(selected)}>
-                  <Pencil size={15} />Editar
-                </button>
+                <div className="trip-hero-actions">
+                  <button className="button small" type="button" onClick={() => setEditing(selected)} disabled={deleting}>
+                    <Pencil size={15} />Editar
+                  </button>
+                  <button className="button small danger" type="button" onClick={() => void removeSelectedTrip()} disabled={deleting}>
+                    {deleting ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}
+                    {deleting ? "Borrando…" : "Borrar"}
+                  </button>
+                </div>
               </div>
+              {deleteError ? <p className="notice error" role="alert">{deleteError}</p> : null}
 
               <div className="trip-summary" aria-label={`Resumen de ${selected.name}`}>
                 <div>
@@ -235,77 +290,73 @@ export function TripsView() {
                   <strong>{formatCurrency(spent)}</strong>
                   <small>{expenses.length} {expenses.length === 1 ? "gasto" : "gastos"}</small>
                 </div>
-                <div>
-                  <span>Recuperado</span>
-                  <strong className="positive">{formatCurrency(recovered)}</strong>
-                  <small>devoluciones o ingresos</small>
-                </div>
-                <div className="trip-net">
-                  <span>Coste neto</span>
-                  <strong className={netCost < 0 ? "positive" : ""}>{formatCurrency(netCost)}</strong>
-                  <small>{tripDays ? `${formatCurrency(netCost / tripDays)} al día` : "Añade fechas para ver el coste diario"}</small>
-                </div>
               </div>
 
-              <div className="trip-detail-grid">
-                <section className="trip-breakdown" aria-labelledby="trip-breakdown-title">
-                  <div className="trip-section-title">
-                    <div>
-                      <p className="eyebrow">Dónde se fue</p>
-                      <h3 id="trip-breakdown-title">Desglose</h3>
-                    </div>
-                    <Route size={22} aria-hidden="true" />
+              <section className="trip-breakdown trip-breakdown-wide" aria-labelledby="trip-breakdown-title">
+                <div className="trip-section-title">
+                  <div>
+                    <p className="eyebrow">Dónde se fue</p>
+                    <h3 id="trip-breakdown-title">Desglose por categorías</h3>
                   </div>
-                  {categoryBreakdown.length ? (
-                    <div className="trip-category-list">
-                      {categoryBreakdown.map((row) => {
-                        const percentage = spent ? row.total / spent * 100 : 0;
-                        return (
-                          <div className="trip-category-row" key={row.name}>
-                            <div><strong>{row.name}</strong><span>{percentage.toLocaleString("es-ES", { maximumFractionDigits: 0 })}%</span></div>
-                            <span className="trip-category-line" aria-hidden="true">
-                              <span style={{ width: `${Math.max(3, percentage)}%` }} />
+                  <Route size={22} aria-hidden="true" />
+                </div>
+                <p className="trip-breakdown-hint">Abre una categoría para ver cada concepto incluido.</p>
+                {categoryBreakdown.length ? (
+                  <div className="trip-category-list">
+                    {categoryBreakdown.map((row) => {
+                      const percentage = spent ? row.total / spent * 100 : 0;
+                      const isExpanded = Boolean(expandedCategories[row.id]);
+                      return (
+                        <article className={`trip-category-group${isExpanded ? " expanded" : ""}`} key={row.id}>
+                          <button
+                            className="trip-category-toggle"
+                            type="button"
+                            aria-expanded={isExpanded}
+                            onClick={() => setExpandedCategories((current) => ({
+                              ...current,
+                              [row.id]: !current[row.id],
+                            }))}
+                          >
+                            <span className="trip-category-chevron" aria-hidden="true">
+                              {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                            </span>
+                            <span className="trip-category-main">
+                              <span className="trip-category-label">
+                                <strong>{row.name}</strong>
+                                <span>{percentage.toLocaleString("es-ES", { maximumFractionDigits: 0 })}% · {row.transactions.length} {row.transactions.length === 1 ? "gasto" : "gastos"}</span>
+                              </span>
+                              <span className="trip-category-line" aria-hidden="true">
+                                <span style={{ width: `${Math.max(3, percentage)}%` }} />
+                              </span>
                             </span>
                             <strong className="amount">{formatCurrency(row.total)}</strong>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="empty-inline">Todavía no hay gastos en este viaje.</p>
-                  )}
-                </section>
-
-                <section className="trip-ledger" aria-labelledby="trip-ledger-title">
-                  <div className="trip-section-title">
-                    <div>
-                      <p className="eyebrow">Ticket a ticket</p>
-                      <h3 id="trip-ledger-title">Apuntes</h3>
-                    </div>
-                    <ReceiptText size={22} aria-hidden="true" />
-                  </div>
-                  {selectedTransactions.length ? (
-                    <div className="trip-transaction-list">
-                      {selectedTransactions.map((transaction: Transaction) => (
-                        <article className="trip-transaction" key={transaction.id}>
-                          <div>
-                            <strong>{transaction.name}</strong>
-                            <span>{formatDate(transaction.transaction_date)} · {categoryNames.get(transaction.category_id ?? "") ?? "Sin categoría"}</span>
-                          </div>
-                          <strong className={`amount${Number(transaction.amount) > 0 ? " positive" : ""}`}>
-                            {formatCurrency(Number(transaction.amount))}
-                          </strong>
+                          </button>
+                          {isExpanded ? (
+                            <div className="trip-category-expenses">
+                              {row.transactions.map((transaction) => (
+                                <article className="trip-transaction" key={transaction.id}>
+                                  <div>
+                                    <strong>{transaction.name}</strong>
+                                    <span>
+                                      {formatDate(transaction.transaction_date)}
+                                      {transaction.subcategory_id
+                                        ? ` · ${subcategoryNames.get(transaction.subcategory_id) ?? "Sin subcategoría"}`
+                                        : ""}
+                                    </span>
+                                  </div>
+                                  <strong className="amount">{formatCurrency(Math.abs(Number(transaction.amount)))}</strong>
+                                </article>
+                              ))}
+                            </div>
+                          ) : null}
                         </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="trip-ledger-empty">
-                      <WalletCards size={24} aria-hidden="true" />
-                      <p>Aún no has asignado ningún gasto a {selected.name}.</p>
-                    </div>
-                  )}
-                </section>
-              </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="empty-inline">Todavía no hay gastos en este viaje.</p>
+                )}
+              </section>
 
               <div className="trip-add-expense">
                 <div>

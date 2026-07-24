@@ -134,6 +134,8 @@ test.describe("mobile quality flows", () => {
     await page.goto("/viajes/");
     await page.getByRole("tab", { name: /Berlín/ }).click();
     await expect(page.getByRole("heading", { name: "Berlín", exact: true })).toBeVisible();
+    await expect(page.getByText("Coste neto", { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: /Casa.*1 gasto/ }).click();
     await expect(page.getByText("Metro de Berlín", { exact: true })).toBeVisible();
     await expect(page.getByText("25,00 €", { exact: true }).first()).toBeVisible();
     const width = await page.evaluate(() => ({
@@ -141,6 +143,13 @@ test.describe("mobile quality flows", () => {
       viewport: document.documentElement.clientWidth,
     }));
     expect(width.document).toBe(width.viewport);
+
+    page.once("dialog", (confirmation) => confirmation.accept());
+    await page.getByRole("button", { name: "Borrar" }).click();
+    await expect(page.getByRole("tab", { name: /Berlín/ })).toHaveCount(0);
+    await page.goto("/movimientos/");
+    await page.getByLabel("Buscar apuntes").fill("Metro de Berlín");
+    await expect(page.locator(".mobile-list").getByText("Metro de Berlín", { exact: true })).toBeVisible();
   });
 
   test("compact 320px screens keep dense tabs and touch targets usable", async ({ page }) => {

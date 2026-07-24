@@ -55,6 +55,7 @@ type FinanceContextValue = {
   updateTransaction: (id: string, input: TransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   saveTripProject: (project: TripProjectInput, id?: string) => Promise<void>;
+  deleteTripProject: (id: string) => Promise<void>;
   saveBooking: (booking: RentalBookingInput, id?: string) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
   savePropertyRecurring: (rule: PropertyRecurringInput, id?: string) => Promise<void>;
@@ -459,6 +460,19 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh, session, supabase]);
 
+  const deleteTripProject = useCallback(async (id: string) => {
+    if (!supabase || !session) throw new Error("Inicia sesión para borrar.");
+    if (!tripProjects.some((project) => project.id === id)) {
+      throw new Error("Ese viaje ya no existe o no te pertenece.");
+    }
+    const { error: deleteError } = await supabase
+      .from("trip_projects")
+      .delete()
+      .eq("id", id);
+    if (deleteError) throw deleteError;
+    await refresh();
+  }, [refresh, session, supabase, tripProjects]);
+
   const saveBooking = useCallback(async (booking: RentalBookingInput, id?: string) => {
     if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
     if (!hasMalagaAccess) throw new Error("Esta sección solo está disponible para la cuenta propietaria.");
@@ -644,6 +658,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     updateTransaction,
     deleteTransaction,
     saveTripProject,
+    deleteTripProject,
     saveBooking,
     deleteBooking,
     savePropertyRecurring,
@@ -653,7 +668,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     toggleRecurring,
   }), [
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
-    deleteRecurring, deleteTransaction, error, hasMalagaAccess, loading, notice, properties,
+    deleteRecurring, deleteTransaction, deleteTripProject, error, hasMalagaAccess, loading, notice, properties,
     recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, saveTripProject, session,
     sendAccessLink, signInWithPassword, signOut, signUp, subcategories, supabase,
     toggleRecurring, transactions, tripProjects, updatePassword, updateTransaction,
