@@ -1,4 +1,4 @@
-const CACHE = "finanzas-shell-v4";
+const CACHE = "finanzas-shell-v5";
 const APP_HOME = new URL("dashboard/", self.registration.scope).toString();
 
 self.addEventListener("install", (event) => {

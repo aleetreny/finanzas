@@ -10,8 +10,10 @@ import { formatCurrency, formatDate } from "@/lib/format";
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MES_LARGO = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-// Tintas de boli: negro primero; el resto solo para distinguir series.
-const PENS = ["#24211a", "#33518c", "#b23a2b", "#4c6b39", "#9a6d1f"];
+// Tintas para gastos. El verde se reserva siempre para los ingresos.
+const PENS = ["#24211a", "#33518c", "#b23a2b", "#9a6d1f", "#6f4d82"];
+const INCOME_PEN = { color: "#2f7a4b", dashed: true };
+const INCOME_SERIES_ID = "income-total";
 function penFor(order: number) {
   return { color: PENS[order % PENS.length], dashed: order >= PENS.length };
 }
@@ -113,14 +115,14 @@ export function DashboardView() {
   const expenseCategories = useMemo(
     () =>
       categories
-        .filter((c) => c.is_active && (catTotals.get(c.id) ?? 0) > 0)
+        .filter((c) => c.is_active && c.category_scope === "expense" && (catTotals.get(c.id) ?? 0) > 0)
         .sort((a, b) => (catTotals.get(b.id) ?? 0) - (catTotals.get(a.id) ?? 0)),
     [categories, catTotals],
   );
 
-  // Línea temporal continua desde el primer gasto hasta el mes actual
+  // Línea temporal continua desde el primer movimiento hasta el mes actual
   const allMonths = useMemo(() => {
-    const withData = personalTransactions.filter((t) => t.amount < 0).map((t) => t.transaction_date.slice(0, 7));
+    const withData = personalTransactions.filter((t) => t.amount !== 0).map((t) => t.transaction_date.slice(0, 7));
     if (!withData.length) return [] as string[];
     const first = withData.reduce((a, b) => (a < b ? a : b));
     const now = new Date();
@@ -160,6 +162,16 @@ export function DashboardView() {
     return map;
   }, [personalTransactions]);
 
+  const byIncomeMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    personalTransactions.forEach((transaction) => {
+      if (transaction.amount <= 0) return;
+      const key = transaction.transaction_date.slice(0, 7);
+      map.set(key, (map.get(key) ?? 0) + transaction.amount);
+    });
+    return map;
+  }, [personalTransactions]);
+
   const rangeOptions = useMemo(() => {
     const opts: { label: string; value: number | "all" }[] = [];
     [6, 12, 24].forEach((v) => { if (allMonths.length > v) opts.push({ label: String(v), value: v }); });
@@ -174,6 +186,7 @@ export function DashboardView() {
     const top = [...catTotals.entries()].sort((a, b) => b[1] - a[1])[0];
     return top ? [top[0]] : [];
   });
+  const [incomeSelected, setIncomeSelected] = useState(false);
   const [subSelected, setSubSelected] = useState<string[]>([]);
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -193,6 +206,10 @@ export function DashboardView() {
     setHover(null);
     setSubSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
+  function toggleIncome() {
+    setHover(null);
+    setIncomeSelected((current) => !current);
+  }
   function pickRange(v: number | "all") {
     setRange(v);
     setHover(null); // el índice de hover deja de ser válido al cambiar el rango
@@ -204,11 +221,12 @@ export function DashboardView() {
     return subcategories.filter((s) => s.category_id === selected[0] && bySubMonth.has(s.id));
   }, [selected, subcategories, bySubMonth]);
 
-  // Series a dibujar: categorías marcadas + subcategorías desglosadas
+  // Series a dibujar: gastos marcados, sus desgloses y los ingresos por separado.
   const series = useMemo(() => {
     const cats = selected.map((id, i) => ({
       id,
       name: categoryName.get(id) ?? "—",
+      kind: "expense" as const,
       pen: penFor(i),
       points: visibleMonths.map((mk) => byCatMonth.get(id)?.get(mk) ?? 0),
     }));
@@ -216,12 +234,22 @@ export function DashboardView() {
       ? subSelected.map((id, i) => ({
           id: `sub-${id}`,
           name: subcategoryName.get(id) ?? "—",
+          kind: "expense" as const,
           pen: penFor(selected.length + i),
           points: visibleMonths.map((mk) => bySubMonth.get(id)?.get(mk) ?? 0),
         }))
       : [];
-    return [...cats, ...subs];
-  }, [selected, subSelected, visibleMonths, byCatMonth, bySubMonth, categoryName, subcategoryName]);
+    const incomes = incomeSelected
+      ? [{
+          id: INCOME_SERIES_ID,
+          name: "Ingresos",
+          kind: "income" as const,
+          pen: INCOME_PEN,
+          points: visibleMonths.map((month) => byIncomeMonth.get(month) ?? 0),
+        }]
+      : [];
+    return [...cats, ...subs, ...incomes];
+  }, [selected, subSelected, incomeSelected, visibleMonths, byCatMonth, bySubMonth, byIncomeMonth, categoryName, subcategoryName]);
 
   const yMax = useMemo(() => niceCeil(Math.max(1, ...series.flatMap((s) => s.points))), [series]);
 
@@ -318,7 +346,7 @@ export function DashboardView() {
     const map = new Map<string, Array<{ id: string; name: string; now: number; usual: number; pct: number | null }>>();
     const completeMonths = allMonths.filter((m) => m < currentKey).slice(-6);
 
-    categories.forEach((cat) => {
+    expenseCategories.forEach((cat) => {
       const subs = subcategories.filter((s) => s.category_id === cat.id);
       const subList = subs
         .map((s) => {
@@ -354,7 +382,7 @@ export function DashboardView() {
       map.set(cat.id, subList);
     });
     return map;
-  }, [categories, subcategories, bySubMonth, byCatMonth, allMonths, currentKey]);
+  }, [expenseCategories, subcategories, bySubMonth, byCatMonth, allMonths, currentKey]);
 
   // La misma escala para todas las barras: si Comida es el triple, se ve el triple
   const budgetMax = Math.max(1, ...budget.map((r) => Math.max(r.now, r.usual))) * 1.08;
@@ -367,46 +395,7 @@ export function DashboardView() {
   const usualFullMonth = budgetAll.reduce((s, r) => s + r.usual, 0);
   const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
   const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
-  const incomeSnapshot = useMemo(() => {
-    const monthIncomeTransactions = personalTransactions.filter(
-      (transaction) => transaction.amount > 0 && transaction.transaction_date.startsWith(currentKey),
-    );
-    const income = monthIncomeTransactions.reduce((total, transaction) => total + transaction.amount, 0);
-    const comparisonMonths = Array.from({ length: 6 }, (_, index) => addMonths(currentKey, index - 6));
-    const comparisonTotals = comparisonMonths.map((month) =>
-      personalTransactions
-        .filter((transaction) => transaction.amount > 0 && transaction.transaction_date.startsWith(month))
-        .reduce((total, transaction) => total + transaction.amount, 0),
-    );
-    const average = comparisonTotals.reduce((total, value) => total + value, 0) / comparisonTotals.length;
-    const sourceTotals = new Map<string, number>();
-    monthIncomeTransactions.forEach((transaction) => {
-      const source = transaction.subcategory_id
-        ? subcategoryName.get(transaction.subcategory_id)
-        : transaction.category_id
-          ? categoryName.get(transaction.category_id)
-          : null;
-      const label = source ?? transaction.name;
-      sourceTotals.set(label, (sourceTotals.get(label) ?? 0) + transaction.amount);
-    });
-    const mainSource = [...sourceTotals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-    return {
-      income,
-      average,
-      trend: average > 0 ? (income - average) / average : null,
-      mainSource,
-    };
-  }, [categoryName, currentKey, personalTransactions, subcategoryName]);
-  const monthBalance = incomeSnapshot.income - monthTotal;
-  const retainedPercent = incomeSnapshot.income > 0
-    ? Math.round((monthBalance / incomeSnapshot.income) * 100)
-    : null;
-  const spentPercent = incomeSnapshot.income > 0
-    ? Math.min(100, Math.max(0, (monthTotal / incomeSnapshot.income) * 100))
-    : monthTotal > 0
-      ? 100
-      : 0;
+  const monthIncome = byIncomeMonth.get(currentKey) ?? 0;
 
   function addToChart(id: string) {
     if (!selected.includes(id)) toggle(id);
@@ -441,6 +430,9 @@ export function DashboardView() {
         <p className="hero-line">
           En {MES_LARGO[now.getMonth()]} has gastado <strong>{formatCurrency(monthTotal)}</strong>
         </p>
+        <p className="hero-income-line">
+          También has ingresado <strong>{formatCurrency(monthIncome)}</strong>
+        </p>
         {heroPct !== null ? (
           <p className="hero-note">
             lo normal a día {now.getDate()} serían ~{formatCurrency(usualToDate)} →{" "}
@@ -451,82 +443,50 @@ export function DashboardView() {
         ) : null}
       </div>
 
-      <section className={`money-flow-card${monthBalance < 0 ? " negative" : ""}`} aria-labelledby="money-flow-title">
-        <div className="money-flow-heading">
-          <div>
-            <p className="money-flow-kicker">La historia de este mes</p>
-            <h2 id="money-flow-title">Lo que entra, lo que sale y lo que queda</h2>
-          </div>
-          {incomeSnapshot.mainSource ? <span className="money-flow-source">Entrada principal · {incomeSnapshot.mainSource}</span> : null}
-        </div>
-
-        <div className="money-flow-values">
-          <div className="income">
-            <span>Ha entrado</span>
-            <strong>+{formatCurrency(incomeSnapshot.income)}</strong>
-          </div>
-          <div className="expense">
-            <span>Ha salido</span>
-            <strong>−{formatCurrency(monthTotal)}</strong>
-          </div>
-          <div className={`balance ${monthBalance < 0 ? "negative" : ""}`}>
-            <span>Balance</span>
-            <strong>{monthBalance > 0 ? "+" : ""}{formatCurrency(monthBalance)}</strong>
-          </div>
-        </div>
-
-        <div
-          className="money-flow-track"
-          role="img"
-          aria-label={incomeSnapshot.income > 0
-            ? `${Math.round(spentPercent)} por ciento de los ingresos del mes ya se ha destinado a gastos`
-            : "Todavía no hay ingresos anotados este mes"}
-        >
-          <span className="money-flow-retained" />
-          <span className="money-flow-spent" style={{ width: `${spentPercent}%` }} />
-          {monthBalance < 0 ? <span className="money-flow-overflow">te has pasado de lo que entró</span> : null}
-        </div>
-
-        <div className="money-flow-insights">
-          <p>
-            {incomeSnapshot.income <= 0
-              ? "Aún no has anotado ingresos este mes; cuando lo hagas verás aquí cuánto consigues conservar."
-              : monthBalance >= 0
-                ? `De cada 100 € que han entrado, te quedan ${Math.max(0, retainedPercent ?? 0)} € sin gastar.`
-                : `Este mes han salido ${formatCurrency(Math.abs(monthBalance))} más de los que han entrado.`}
-          </p>
-          {incomeSnapshot.income > 0 ? (
-            <span className={`money-flow-trend${incomeSnapshot.trend !== null && incomeSnapshot.trend < 0 ? " down" : ""}`}>
-              {incomeSnapshot.trend === null
-                ? "Primer mes con ingresos comparables"
-                : `${incomeSnapshot.trend >= 0 ? "+" : ""}${Math.round(incomeSnapshot.trend * 100)}% frente a tu media de 6 meses`}
-            </span>
-          ) : null}
-        </div>
-      </section>
-
       <p className="evo-ask">¿Qué quiero mirar?</p>
-      <div className="pick-list">
-        {expenseCategories.map((c) => {
-          const idx = selected.indexOf(c.id);
-          const on = idx >= 0;
-          const pen = on ? penFor(idx) : null;
-          return (
+      <div className="chart-pick-groups">
+        <fieldset className="chart-pick-group expense">
+          <legend>Gastos</legend>
+          <div className="pick-list">
+            {expenseCategories.map((c) => {
+              const idx = selected.indexOf(c.id);
+              const on = idx >= 0;
+              const pen = on ? penFor(idx) : null;
+              return (
+                <button
+                  type="button"
+                  key={c.id}
+                  className={`pick ${on ? "on" : ""}`}
+                  onClick={() => toggle(c.id)}
+                  aria-pressed={on}
+                  style={on && pen ? { borderColor: pen.color } : undefined}
+                >
+                  <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
+                    {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
+                  </span>
+                  <span>{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <fieldset className="chart-pick-group income">
+          <legend>Ingresos</legend>
+          <div className="pick-list">
             <button
               type="button"
-              key={c.id}
-              className={`pick ${on ? "on" : ""}`}
-              onClick={() => toggle(c.id)}
-              aria-pressed={on}
-              style={on && pen ? { borderColor: pen.color } : undefined}
+              className={`pick income-pick ${incomeSelected ? "on" : ""}`}
+              onClick={toggleIncome}
+              aria-pressed={incomeSelected}
             >
-              <span className="box" style={on && pen ? { borderColor: pen.color, backgroundColor: `${pen.color}18` } : undefined}>
-                {on && pen ? <span className="box-check" style={{ color: pen.color }}>✓</span> : null}
+              <span className="box">
+                {incomeSelected ? <span className="box-check">✓</span> : null}
               </span>
-              <span>{c.name}</span>
+              <span>Total ingresado</span>
             </button>
-          );
-        })}
+          </div>
+        </fieldset>
       </div>
 
       {/* Desglose de una categoría en sus subcategorías */}
@@ -601,10 +561,10 @@ export function DashboardView() {
                 <div className="hover-series-list">
                   {hi !== null && visibleMonths[hi] ? (
                     roughSeries.map((s) => (
-                      <div key={s.id} className="hover-series-item">
+                      <div key={s.id} className={`hover-series-item ${s.kind}`}>
                         <span className="stroke-icon" style={{ borderTopColor: s.pen.color, borderTopStyle: s.pen.dashed ? "dashed" : "solid" }} />
                         <span className="series-name">{s.name}:</span>
-                        <strong className="series-amount" style={{ color: s.pen.color }}>{formatCurrency(s.points[hi])}</strong>
+                        <strong className="series-amount" style={{ color: s.pen.color }}>{s.kind === "income" ? "+" : ""}{formatCurrency(s.points[hi])}</strong>
                       </div>
                     ))
                   ) : null}
@@ -633,7 +593,7 @@ export function DashboardView() {
               className={`evo-chart ${compact ? "compact" : ""}`}
               viewBox={`0 0 ${W} ${H}`}
               role="img"
-              aria-label="Evolución del gasto por categoría"
+              aria-label="Evolución de los gastos e ingresos seleccionados"
               onPointerMove={onMove}
               onPointerDown={onMove}
               onTouchStart={onTouch}
@@ -645,7 +605,7 @@ export function DashboardView() {
                 ))}
                 <path d={roughAxis} fill="none" stroke="#24211a" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
                 {roughSeries.map((s) => (
-                  <path key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={compact ? 3.4 : 2.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
+                  <path className={s.kind === "income" ? "income-series" : undefined} key={s.id} d={s.d} fill="none" stroke={s.pen.color} strokeWidth={s.kind === "income" ? (compact ? 4 : 3.4) : (compact ? 3.4 : 2.8)} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={s.pen.dashed ? "9 6" : undefined} />
                 ))}
                 {roughSeries.map((s) => s.pts.map(([cx, cy], i) => (
                   <circle key={`${s.id}-${i}`} cx={cx} cy={cy} r={compact ? 3.6 : 2.7} fill={s.pen.color} />
@@ -672,7 +632,7 @@ export function DashboardView() {
             </svg>
           </>
         ) : (
-          <div className="chart-empty">Marca al menos una categoría arriba para dibujar su evolución.</div>
+          <div className="chart-empty">Marca un gasto o los ingresos para dibujar su evolución.</div>
         )}
       </div>
 

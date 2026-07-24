@@ -357,106 +357,18 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .hero-month { margin: 10px 0 4px; }
 .hero-line { margin: 0; font-family: var(--font-display), cursive; font-size: clamp(26px, 5vw, 34px); font-weight: 700; }
 .hero-line strong { font-size: clamp(34px, 7vw, 46px); border-bottom: 3px solid var(--ink); padding: 0 2px; }
+.hero-income-line { margin: 7px 0 0; color: var(--pencil); font-family: var(--font-display), cursive; font-size: clamp(21px, 4vw, 28px); font-weight: 700; }
+.hero-income-line strong { padding: 0 2px; border-bottom: 2.5px dashed var(--green-pen); color: var(--green-pen); font-size: clamp(27px, 5vw, 36px); white-space: nowrap; }
 .hero-note { margin: 6px 0 0; font-family: var(--font-hand), cursive; font-size: 16px; color: var(--pencil); }
 .hero-note .up { color: var(--red-pen); font-weight: 700; }
 .hero-note .down { color: var(--green-pen); font-weight: 700; }
 
-/* El recorrido mensual une ingresos, gastos y balance en una sola lectura. */
-.money-flow-card {
-  position: relative;
-  display: grid;
-  gap: 16px;
-  overflow: hidden;
-  margin: 24px 0 8px;
-  padding: 20px 22px 18px;
-  border: 2px solid var(--ink);
-  border-radius: 14px 220px 18px 200px / 190px 16px 180px 18px;
-  background:
-    linear-gradient(115deg, color-mix(in srgb, var(--green-pen) 7%, transparent), transparent 46%),
-    var(--paper-solid);
-}
-.money-flow-card::after {
-  position: absolute;
-  right: -18px;
-  bottom: -24px;
-  width: 105px;
-  height: 72px;
-  border: 2px solid color-mix(in srgb, var(--green-pen) 24%, transparent);
-  border-radius: 50%;
-  content: "";
-  transform: rotate(-11deg);
-  pointer-events: none;
-}
-.money-flow-card.negative::after { border-color: color-mix(in srgb, var(--red-pen) 30%, transparent); }
-.money-flow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.money-flow-heading h2 { margin: 0; font-family: var(--font-display), cursive; font-size: clamp(23px, 4vw, 31px); line-height: 1.05; }
-.money-flow-kicker { margin: 0 0 3px; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 14px; letter-spacing: .04em; }
-.money-flow-source {
-  flex: 0 1 auto;
-  border-bottom: 1.5px solid var(--green-pen);
-  color: var(--green-pen);
-  font-family: var(--font-hand), cursive;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: right;
-}
-.money-flow-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.money-flow-values > div { min-width: 0; }
-.money-flow-values span { display: block; margin-bottom: 2px; color: var(--pencil); font-size: 13px; }
-.money-flow-values strong {
-  display: block;
-  overflow: hidden;
-  font-family: var(--font-display), cursive;
-  font-size: clamp(20px, 4.4vw, 31px);
-  line-height: 1.05;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.money-flow-values .income strong { color: var(--green-pen); }
-.money-flow-values .expense strong { color: var(--red-pen); }
-.money-flow-values .balance { text-align: right; }
-.money-flow-values .balance strong { color: var(--green-pen); }
-.money-flow-values .balance.negative strong { color: var(--red-pen); }
-.money-flow-track {
-  position: relative;
-  height: 14px;
-  overflow: visible;
-  border: 2px solid var(--ink);
-  border-radius: 70% 38% 64% 42% / 56% 65% 45% 52%;
-  background: var(--paper-2);
-}
-.money-flow-retained, .money-flow-spent { position: absolute; inset-block: 0; left: 0; }
-.money-flow-retained { right: 0; background: color-mix(in srgb, var(--green-pen) 62%, var(--paper)); }
-.money-flow-spent {
-  max-width: 100%;
-  border-right: 2px solid var(--ink);
-  background: color-mix(in srgb, var(--red-pen) 70%, var(--paper));
-  transition: width .35s ease;
-}
-.money-flow-overflow {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 5px);
-  color: var(--red-pen);
-  font-family: var(--font-hand), cursive;
-  font-size: 12px;
-  font-weight: 700;
-}
-.money-flow-insights { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.money-flow-insights p { max-width: 620px; margin: 0; font-family: var(--font-hand), cursive; font-size: 15px; }
-.money-flow-trend {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border: 1.5px solid var(--green-pen);
-  border-radius: 12px 100px 10px 90px / 90px 12px 80px 10px;
-  color: var(--green-pen);
-  font-family: var(--font-hand), cursive;
-  font-size: 12px;
-  font-weight: 700;
-}
-.money-flow-trend.down { border-color: var(--red-pen); color: var(--red-pen); }
-
 /* Lista de categorías para marcar (casillas hechas a mano) */
+.chart-pick-groups { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .38fr); gap: 18px; align-items: start; }
+.chart-pick-group { min-width: 0; margin: 0; padding: 8px 0 0; border: 0; }
+.chart-pick-group legend { padding: 0 8px 0 0; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 14px; font-weight: 700; }
+.chart-pick-group.income { padding-left: 18px; border-left: 1.5px dashed color-mix(in srgb, var(--green-pen) 58%, transparent); }
+.chart-pick-group.income legend { color: var(--green-pen); }
 .pick-list {
   display: flex;
   flex-wrap: wrap;
@@ -491,6 +403,11 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   border-color: var(--ink);
   background: var(--paper-solid);
 }
+.pick.income-pick { border-color: color-mix(in srgb, var(--green-pen) 58%, var(--paper)); color: var(--green-pen); }
+.pick.income-pick:hover { border-color: var(--green-pen); color: var(--green-pen); background: color-mix(in srgb, var(--green-pen) 7%, var(--paper-solid)); }
+.pick.income-pick.on { border-color: var(--green-pen); color: var(--green-pen); background: color-mix(in srgb, var(--green-pen) 9%, var(--paper-solid)); }
+.pick.income-pick .box { border-color: var(--green-pen); }
+.pick.income-pick .box-check { color: var(--green-pen); }
 .pick .box {
   display: inline-flex;
   align-items: center;
@@ -657,6 +574,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .hover-series-item .series-amount {
   font-weight: 700;
 }
+.hover-series-item.income { border-color: color-mix(in srgb, var(--green-pen) 50%, var(--rule-ink)); background: color-mix(in srgb, var(--green-pen) 6%, var(--paper)); }
+.hover-series-item.income .series-name { color: var(--green-pen); font-weight: 700; }
 
 /* Este mes vs. lo habitual — todas las barras a la misma escala */
 .budget-list { display: grid; gap: 14px; margin-top: 12px; }
@@ -1211,14 +1130,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
     color: var(--paper);
     box-shadow: 2px 3px 0 var(--pencil-faint);
   }
-  .money-flow-card { gap: 14px; margin-top: 20px; padding: 16px 15px 15px; }
-  .money-flow-heading { display: grid; gap: 8px; }
-  .money-flow-source { justify-self: start; text-align: left; }
-  .money-flow-values { gap: 7px; }
-  .money-flow-values span { font-size: 11.5px; }
-  .money-flow-values strong { font-size: clamp(17px, 5.3vw, 23px); }
-  .money-flow-insights { align-items: flex-start; flex-direction: column; gap: 9px; }
-  .money-flow-trend { flex: 0 1 auto; }
+  .chart-pick-groups { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .chart-pick-group.income { padding: 12px 0 0; border-top: 1.5px dashed color-mix(in srgb, var(--green-pen) 58%, transparent); border-left: 0; }
   .evo, .chart-card, .budget-list, .budget-row-container, .budget-row, .budget-top, .budget-title-group { min-width: 0; max-width: 100%; }
   .budget-top { align-items: flex-start; flex-wrap: wrap; }
   .budget-title-group { flex: 1 1 190px; flex-wrap: wrap; }

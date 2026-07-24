@@ -56,6 +56,16 @@ test.describe("desktop quality flows", () => {
       }
     }
     await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeHidden();
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/dashboard/");
+    await expect(page.locator(".hero-income-line")).toContainText("También has ingresado 2400,00 €");
+    const incomeGroup = page.getByRole("group", { name: "Ingresos" });
+    await incomeGroup.getByRole("button", { name: "Total ingresado" }).click();
+    await expect(page.locator(".evo-chart .income-series")).toHaveCount(1);
+    await expect(page.locator(".hover-series-item.income .series-name")).toHaveText("Ingresos:");
+    await expect(page.locator(".hover-series-item.income .series-amount")).toHaveText("+2400,00 €");
+    await expect(page.locator(".budget-list")).not.toContainText("Ingresos");
   });
 
   test("expense and income creation, filtering, editing and deletion work end to end", async ({ page }) => {

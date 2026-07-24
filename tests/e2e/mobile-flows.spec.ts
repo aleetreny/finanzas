@@ -63,10 +63,15 @@ test.describe("mobile quality flows", () => {
     await expect(page).toHaveURL(/\/recurrentes\/?$/);
 
     await page.goto("/dashboard/");
-    const flow = page.getByRole("region", { name: "Lo que entra, lo que sale y lo que queda" });
-    await expect(flow.getByText("Ha entrado")).toBeVisible();
-    await expect(flow.getByText("+2400,00 €")).toBeVisible();
-    await expect(flow.getByText("Entrada principal · Nómina")).toBeVisible();
+    await expect(page.locator(".hero-income-line")).toContainText("También has ingresado 2400,00 €");
+    const incomeGroup = page.getByRole("group", { name: "Ingresos" });
+    const incomeToggle = incomeGroup.getByRole("button", { name: "Total ingresado" });
+    await incomeToggle.click();
+    await expect(incomeToggle).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".evo-chart .income-series")).toHaveCount(1);
+    await expect(page.locator(".hover-series-item.income .series-name")).toHaveText("Ingresos:");
+    await expect(page.locator(".hover-series-item.income .series-amount")).toHaveText("+2400,00 €");
+    await expect(page.locator(".budget-list")).not.toContainText("Ingresos");
   });
 
   test("a long new-expense form uses document scroll and remains saveable with a short viewport", async ({ page }) => {
