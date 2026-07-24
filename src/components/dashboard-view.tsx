@@ -396,6 +396,7 @@ export function DashboardView() {
   const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
   const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
   const monthIncome = byIncomeMonth.get(currentKey) ?? 0;
+  const monthNet = monthIncome - monthTotal;
 
   function addToChart(id: string) {
     if (!selected.includes(id)) toggle(id);
@@ -430,9 +431,6 @@ export function DashboardView() {
         <p className="hero-line">
           En {MES_LARGO[now.getMonth()]} has gastado <strong>{formatCurrency(monthTotal)}</strong>
         </p>
-        <p className="hero-income-line">
-          También has ingresado <strong>{formatCurrency(monthIncome)}</strong>
-        </p>
         {heroPct !== null ? (
           <p className="hero-note">
             lo normal a día {now.getDate()} serían ~{formatCurrency(usualToDate)} →{" "}
@@ -441,6 +439,15 @@ export function DashboardView() {
               : <span className={heroPct > 0 ? "up" : "down"}>{heroPct > 0 ? "+" : ""}{Math.round(heroPct * 100)}% {heroPct > 0 ? "por encima" : "por debajo"}</span>}
           </p>
         ) : null}
+        <p className="hero-income-line">
+          También has ingresado <strong>{formatCurrency(monthIncome)}</strong>
+        </p>
+        <p className="hero-net-line">
+          Tu balance neto es de{" "}
+          <strong className={monthNet >= 0 ? "positive" : "negative"}>
+            {monthNet >= 0 ? "+" : ""}{formatCurrency(monthNet)}
+          </strong>
+        </p>
       </div>
 
       <p className="evo-ask">¿Qué quiero mirar?</p>

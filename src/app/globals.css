@@ -357,11 +357,15 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .hero-month { margin: 10px 0 4px; }
 .hero-line { margin: 0; font-family: var(--font-display), cursive; font-size: clamp(26px, 5vw, 34px); font-weight: 700; }
 .hero-line strong { font-size: clamp(34px, 7vw, 46px); border-bottom: 3px solid var(--ink); padding: 0 2px; }
-.hero-income-line { margin: 7px 0 0; color: var(--pencil); font-family: var(--font-display), cursive; font-size: clamp(21px, 4vw, 28px); font-weight: 700; }
-.hero-income-line strong { padding: 0 2px; border-bottom: 2.5px dashed var(--green-pen); color: var(--green-pen); font-size: clamp(27px, 5vw, 36px); white-space: nowrap; }
-.hero-note { margin: 6px 0 0; font-family: var(--font-hand), cursive; font-size: 16px; color: var(--pencil); }
+.hero-note { margin: 4px 0 10px; font-family: var(--font-hand), cursive; font-size: 16px; color: var(--pencil); }
 .hero-note .up { color: var(--red-pen); font-weight: 700; }
 .hero-note .down { color: var(--green-pen); font-weight: 700; }
+.hero-income-line { margin: 10px 0 0; color: var(--pencil); font-family: var(--font-display), cursive; font-size: clamp(21px, 4vw, 28px); font-weight: 700; }
+.hero-income-line strong { padding: 0 2px; border-bottom: 2.5px dashed var(--green-pen); color: var(--green-pen); font-size: clamp(27px, 5vw, 36px); white-space: nowrap; }
+.hero-net-line { margin: 10px 0 0; color: var(--pencil); font-family: var(--font-display), cursive; font-size: clamp(21px, 4vw, 28px); font-weight: 700; }
+.hero-net-line strong { padding: 0 2px; font-size: clamp(27px, 5vw, 36px); white-space: nowrap; }
+.hero-net-line strong.positive { color: var(--blue-pen); border-bottom: 3px double var(--blue-pen); }
+.hero-net-line strong.negative { color: var(--red-pen); border-bottom: 3px double var(--red-pen); }
 
 /* Lista de categorías para marcar (casillas hechas a mano) */
 .chart-pick-groups { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .38fr); gap: 18px; align-items: start; }
