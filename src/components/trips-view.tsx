@@ -272,25 +272,24 @@ export function TripsView() {
                     ) : "Fechas por definir"}
                   </p>
                 </div>
-                <div className="trip-hero-actions">
-                  <button className="button small" type="button" onClick={() => setEditing(selected)} disabled={deleting}>
-                    <Pencil size={15} />Editar
-                  </button>
-                  <button className="button small danger" type="button" onClick={() => void removeSelectedTrip()} disabled={deleting}>
-                    {deleting ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}
-                    {deleting ? "Borrando…" : "Borrar"}
-                  </button>
+                <div className="trip-hero-side">
+                  <div className="trip-hero-actions">
+                    <button className="button small" type="button" onClick={() => setEditing(selected)} disabled={deleting}>
+                      <Pencil size={15} />Editar
+                    </button>
+                    <button className="button small danger" type="button" onClick={() => void removeSelectedTrip()} disabled={deleting}>
+                      {deleting ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}
+                      {deleting ? "Borrando…" : "Borrar"}
+                    </button>
+                  </div>
+                  <div className="trip-spent-summary" aria-label={`Resumen de ${selected.name}`}>
+                    <span>Total gastado</span>
+                    <strong>{formatCurrency(spent)}</strong>
+                    <small>{expenses.length} {expenses.length === 1 ? "gasto" : "gastos"}</small>
+                  </div>
                 </div>
               </div>
               {deleteError ? <p className="notice error" role="alert">{deleteError}</p> : null}
-
-              <div className="trip-summary" aria-label={`Resumen de ${selected.name}`}>
-                <div>
-                  <span>Gastado</span>
-                  <strong>{formatCurrency(spent)}</strong>
-                  <small>{expenses.length} {expenses.length === 1 ? "gasto" : "gastos"}</small>
-                </div>
-              </div>
 
               <section className="trip-breakdown trip-breakdown-wide" aria-labelledby="trip-breakdown-title">
                 <div className="trip-section-title">

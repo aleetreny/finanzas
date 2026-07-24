@@ -3187,17 +3187,39 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .trip-status-dot.closed { background: var(--pencil-faint); }
 
 .trip-notebook { min-width: 0; }
-.trip-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.trip-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 320px); align-items: start; gap: 28px 52px; margin-bottom: 38px; }
 .trip-hero h2 { overflow-wrap: anywhere; font-size: clamp(36px, 6vw, 58px); }
 .trip-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 7px 0 0; color: var(--pencil); font-size: 15px; }
-.trip-summary { display: grid; grid-template-columns: minmax(0, 420px); gap: 14px; margin-bottom: 30px; }
-.trip-summary > div { display: grid; min-width: 0; gap: 1px; border-bottom: 2px solid var(--ink); padding: 5px 4px 11px; }
-.trip-summary span, .trip-summary small { color: var(--pencil); }
-.trip-summary span { font-size: 14px; font-weight: 700; }
-.trip-summary strong { overflow-wrap: anywhere; font-family: var(--font-display), cursive; font-size: clamp(27px, 4vw, 38px); font-variant-numeric: tabular-nums; line-height: 1.05; }
-.trip-summary small { font-size: 13px; line-height: 1.3; }
 
+.trip-hero-side { display: grid; min-width: 0; align-content: start; gap: 30px; }
 .trip-hero-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.trip-spent-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: end;
+  gap: 1px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 7px 19px 8px 16px / 17px 7px 16px 8px;
+  background: color-mix(in srgb, var(--paper-2) 52%, var(--paper));
+  box-shadow: 2px 3px 0 var(--rule-ink);
+  padding: 12px 15px;
+  transform: rotate(.25deg);
+}
+.trip-spent-summary span, .trip-spent-summary small { color: var(--pencil); }
+.trip-spent-summary span { align-self: end; font-size: 13px; font-weight: 700; }
+.trip-spent-summary strong {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display), cursive;
+  font-size: clamp(27px, 3vw, 36px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.trip-spent-summary small { font-size: 13px; line-height: 1.3; }
 .trip-breakdown { min-width: 0; }
 .trip-breakdown-wide { width: 100%; }
 .trip-section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding: 0 2px 9px; }
@@ -3256,9 +3278,18 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .trip-picker-controls .button { width: 100%; }
   .trip-project-rail { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; }
   .trip-project-tab { min-width: 142px; }
-  .trip-hero { align-items: stretch; flex-direction: column; }
+  .trip-hero { display: flex; align-items: stretch; flex-direction: column; gap: 18px; margin-bottom: 30px; }
+  .trip-hero-side { gap: 20px; }
   .trip-hero-actions { justify-content: flex-start; }
-  .trip-summary { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .trip-spent-summary {
+    border: 0;
+    border-bottom: 2px solid var(--ink);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 5px 4px 11px;
+    transform: none;
+  }
   .trip-category-toggle { gap: 7px; }
   .trip-category-label { align-items: flex-start; flex-direction: column; gap: 1px; }
   .trip-category-expenses { margin-left: 22px; padding-left: 10px; }
@@ -3272,8 +3303,8 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 @media (max-width: 380px) {
   .mobile-header-tools .mobile-owner-tool { gap: 3px; padding-inline: 6px; }
   .malaga-owner .mobile-header-tools .mobile-owner-tool span { display: none; }
-  .trip-summary { grid-template-columns: minmax(0, 1fr); }
-  .trip-summary strong { font-size: 25px; }
+  .trip-spent-summary { grid-template-columns: minmax(0, 1fr); }
+  .trip-spent-summary strong { grid-column: 1; grid-row: auto; justify-self: start; font-size: 25px; }
   .trip-category-toggle { grid-template-columns: auto minmax(0, 1fr); }
   .trip-category-toggle > .amount { grid-column: 2; justify-self: start; }
 }
