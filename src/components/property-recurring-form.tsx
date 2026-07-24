@@ -28,7 +28,7 @@ type RecurringValues = z.infer<typeof recurringSchema>;
 function defaultValues(initial?: RecurringRule): RecurringValues {
   return {
     name: initial?.name ?? "",
-    amount: Math.abs(Number(initial?.amount ?? 0)),
+    amount: initial ? Math.abs(Number(initial.amount)) : (undefined as unknown as number),
     frequency: initial?.frequency === "quarterly" || initial?.frequency === "yearly" ? initial.frequency : "monthly",
     effective_from: initial?.effective_from ?? todayIso(),
     effective_until: initial?.effective_until ?? "",

@@ -27,7 +27,7 @@ const bookingSchema = z.object({
   commission_model: z.enum(["airbnb_shared_legacy", "airbnb_host_only", "booking_standard", "direct", "other"]),
   accommodation_final: z.number().min(0, "El alojamiento no puede ser negativo."),
   cleaning_fee: z.number().min(0, "La limpieza no puede ser negativa."),
-  discount_amount: z.number().min(0, "El ajuste no puede ser negativo."),
+  discount_amount: z.number().min(0, "El ajuste no puede ser negativo.").optional(),
   platform_commission_override_amount: z.number().min(0, "La comisión real no puede ser negativa.").nullable(),
   manager_payment_override_amount: z.number().min(0, "El pago real no puede ser negativo.").nullable(),
   platform_rate_percent: z.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede superar el 100 %."),
@@ -62,9 +62,15 @@ function defaultValues(initial?: RentalBooking): BookingValues {
     check_out_date: initial?.check_out_date ?? addIsoDays(checkIn, 1),
     platform,
     commission_model: commissionModel,
-    accommodation_final: Number(initial?.accommodation_final ?? 0),
-    cleaning_fee: Number(initial?.cleaning_fee ?? 0),
-    discount_amount: Number(initial?.discount_amount ?? 0),
+    accommodation_final: initial
+      ? Number(initial.accommodation_final)
+      : (undefined as unknown as number),
+    cleaning_fee: initial
+      ? Number(initial.cleaning_fee)
+      : (undefined as unknown as number),
+    discount_amount: initial
+      ? Number(initial.discount_amount)
+      : undefined,
     platform_commission_override_amount: initial?.platform_commission_override_amount == null
       ? null
       : Number(initial.platform_commission_override_amount),
@@ -132,7 +138,7 @@ export function RentalBookingForm({
       commission_model: formValues.commission_model,
       accommodation_final: formValues.accommodation_final,
       cleaning_fee: formValues.cleaning_fee,
-      discount_amount: formValues.discount_amount,
+      discount_amount: formValues.discount_amount ?? 0,
       platform_commission_rate: formValues.platform_rate_percent / 100,
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
@@ -232,7 +238,7 @@ export function RentalBookingForm({
             label="Descuento o ajuste"
             help="Solo informativo: no se vuelve a restar del alojamiento final."
             error={errors.discount_amount?.message}
-            register={register("discount_amount", { valueAsNumber: true })}
+            register={register("discount_amount", { setValueAs: optionalUndefinedNumber })}
           />
           <MoneyField
             id="booking-platform-real"
@@ -283,6 +289,12 @@ function optionalNumber(value: unknown) {
   if (value === "" || value === null || value === undefined) return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function optionalUndefinedNumber(value: unknown) {
+  if (value === "" || value === null || value === undefined) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
 }
 
 function PreviewRow({ label, value, total = false }: { label: string; value: number; total?: boolean }) {

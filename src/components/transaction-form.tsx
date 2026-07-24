@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronDown, LoaderCircle, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -61,6 +62,7 @@ export function TransactionForm({
   fixedDirection?: "income" | "expense";
 }) {
   const { categories, subcategories, addTransaction, updateTransaction } = useFinance();
+  const router = useRouter();
   const [advanced, setAdvanced] = useState(Boolean(initial?.context || initial?.notes));
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export function TransactionForm({
       if (initial) await updateTransaction(initial.id, input);
       else await addTransaction(input);
       if (onSaved) onSaved();
-      else window.location.assign(appRouteHref(scope === "property" ? "/piso-malaga" : "/movimientos"));
+      else router.push(appRouteHref(scope === "property" ? "/piso-malaga" : "/movimientos"));
     } catch (caught) {
       setSubmitError(caught instanceof Error ? caught.message : "No se pudo guardar el movimiento.");
     }

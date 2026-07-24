@@ -1,7 +1,8 @@
 "use client";
 
-import { CalendarRange, Pencil, Plus, Repeat2, Trash2, X } from "lucide-react";
+import { CalendarRange, Pencil, Plus, Repeat2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AppModal } from "@/components/app-modal";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
 import { PropertyRecurringForm } from "@/components/property-recurring-form";
@@ -402,21 +403,21 @@ export function MalagaView() {
       </section>
 
       {bookingOpen ? (
-        <Modal title={editingBooking ? "Editar reserva" : "Nueva reserva"} eyebrow="Ingreso del piso" onClose={() => { setBookingOpen(false); setEditingBooking(null); }}>
+        <AppModal className="property-modal" title={editingBooking ? "Editar reserva" : "Nueva reserva"} eyebrow="Ingreso del piso" onClose={() => { setBookingOpen(false); setEditingBooking(null); }}>
           <RentalBookingForm initial={editingBooking ?? undefined} onSaved={() => { setBookingOpen(false); setEditingBooking(null); }} onCancel={() => { setBookingOpen(false); setEditingBooking(null); }} />
-        </Modal>
+        </AppModal>
       ) : null}
 
       {expenseOpen ? (
-        <Modal title="Nuevo gasto" eyebrow="Piso Málaga" onClose={() => setExpenseOpen(false)}>
+        <AppModal className="property-modal" title="Nuevo gasto" eyebrow="Piso Málaga" onClose={() => setExpenseOpen(false)}>
           <TransactionForm scope="property" fixedDirection="expense" onSaved={() => setExpenseOpen(false)} onCancel={() => setExpenseOpen(false)} />
-        </Modal>
+        </AppModal>
       ) : null}
 
       {recurringOpen ? (
-        <Modal title={editingRecurring ? "Editar gasto periódico" : "Nuevo gasto periódico"} eyebrow="Automático" onClose={() => { setRecurringOpen(false); setEditingRecurring(null); }}>
+        <AppModal className="property-modal" title={editingRecurring ? "Editar gasto periódico" : "Nuevo gasto periódico"} eyebrow="Automático" onClose={() => { setRecurringOpen(false); setEditingRecurring(null); }}>
           <PropertyRecurringForm initial={editingRecurring ?? undefined} onSaved={() => { setRecurringOpen(false); setEditingRecurring(null); }} onCancel={() => { setRecurringOpen(false); setEditingRecurring(null); }} />
-        </Modal>
+        </AppModal>
       ) : null}
     </div>
   );
@@ -425,28 +426,4 @@ export function MalagaView() {
 function MoneyCell({ value, positive = false, negative = false, signed = false }: { value: number; positive?: boolean; negative?: boolean; signed?: boolean }) {
   const tone = positive && value > 0 ? "positive" : negative && value > 0 ? "negative" : signed && value > 0 ? "positive" : signed && value < 0 ? "negative" : "";
   return <td className={`amount ${tone}`}>{value ? formatCurrency(negative ? -Math.abs(value) : value) : "—"}</td>;
-}
-
-function Modal({ title, eyebrow, onClose, children }: { title: string; eyebrow: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div
-      className="modal-backdrop"
-      role="presentation"
-      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
-    >
-      <section
-        className="modal-card property-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}
-      >
-        <div className="card-header">
-          <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>
-          <button autoFocus className="icon-button modal-close" type="button" onClick={onClose} aria-label={`Cerrar ${title}`}><X size={20} /></button>
-        </div>
-        <div className="card-body">{children}</div>
-      </section>
-    </div>
-  );
 }

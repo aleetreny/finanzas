@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { MalagaView } from "@/components/malaga-view";
+import { MalagaAccessGate } from "@/components/malaga-access-gate";
 
 export const metadata: Metadata = { title: "Piso Málaga" };
 
 export default function MalagaPage() {
-  return <MalagaView />;
+  return <MalagaAccessGate />;
 }

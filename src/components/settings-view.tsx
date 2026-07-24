@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, ChevronDown, ChevronUp, KeyRound, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, KeyRound, Pencil, Plus, Smartphone, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
 import { getSupabase } from "@/lib/supabase";
@@ -20,7 +21,7 @@ function readableError(message: string) {
 }
 
 export function SettingsView() {
-  const { categories, subcategories, session, refresh, updatePassword } = useFinance();
+  const { categories, hasMalagaAccess, subcategories, session, refresh, updatePassword } = useFinance();
   const supabase = getSupabase();
   const [newCategory, setNewCategory] = useState("");
   const [newCategoryScope, setNewCategoryScope] = useState<CategoryScope>("expense");
@@ -62,7 +63,7 @@ export function SettingsView() {
       await updatePassword(accessPassword);
       setAccessPassword("");
       setAccessPasswordRepeat("");
-      setAccessMessage("Clave guardada. Ya puedes cerrar Safari, volver al icono Mis gastos y entrar con tu correo y esta clave.");
+      setAccessMessage("Clave guardada. Ya puedes usarla para entrar con tu correo en cualquier dispositivo.");
     } catch (caught) {
       setAccessError(caught instanceof Error ? caught.message : "No se pudo guardar la clave.");
     } finally {
@@ -188,7 +189,7 @@ export function SettingsView() {
       <PageHeader
         eyebrow=""
         title="Ajustes"
-        description="Añade, renombra, organiza o elimina todas tus categorías y subcategorías."
+        description="Gestiona tu acceso, la instalación y las categorías de tu libreta."
       />
 
       <section className="access-setup card">
@@ -236,6 +237,15 @@ export function SettingsView() {
         {accessError ? <p className="notice error" role="alert">{accessError}</p> : null}
       </section>
 
+      <section className="settings-install card">
+        <span className="auth-icon"><Smartphone size={22} /></span>
+        <div>
+          <h2>Instalar en el móvil</h2>
+          <p>Añade Mis gastos a la pantalla de inicio de iPhone o Android para abrirla como cualquier otra app.</p>
+        </div>
+        <AppLink href="/instalar" className="button">Ver instrucciones</AppLink>
+      </section>
+
       <section className="settings-add card">
         <div className="field">
           <label htmlFor="new-category">Nueva categoría</label>
@@ -254,7 +264,9 @@ export function SettingsView() {
             value={newCategoryScope}
             onChange={(event) => setNewCategoryScope(event.target.value as CategoryScope)}
           >
-            {Object.entries(SCOPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            {Object.entries(SCOPE_LABELS)
+              .filter(([value]) => hasMalagaAccess || value !== "property")
+              .map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </div>
         <button className="button primary" disabled={busy || !newCategory.trim()} onClick={() => void addCategory()}>
@@ -263,7 +275,9 @@ export function SettingsView() {
       </section>
 
       <div className="settings-categories">
-        {categories.map((category) => {
+        {categories
+          .filter((category) => hasMalagaAccess || category.category_scope !== "property")
+          .map((category) => {
           const children = subcategories.filter((item) => item.category_id === category.id);
           const expanded = expandedId === category.id;
           const editing = editingCategoryId === category.id;
@@ -285,7 +299,9 @@ export function SettingsView() {
                   <div className="settings-inline-edit">
                     <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} aria-label="Nombre de categoría" autoFocus />
                     <select value={categoryScope} onChange={(event) => setCategoryScope(event.target.value as CategoryScope)} aria-label="Uso de la categoría">
-                      {Object.entries(SCOPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      {Object.entries(SCOPE_LABELS)
+                        .filter(([value]) => hasMalagaAccess || value !== "property")
+                        .map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </div>
                 ) : (

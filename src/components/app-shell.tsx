@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Building2, House, LogOut, Plus, ReceiptText, Settings } from "lucide-react";
+import { Building2, CalendarClock, House, LogOut, Plus, ReceiptText, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
@@ -10,7 +10,7 @@ const navigation = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/movimientos", label: "Apuntes" },
   { href: "/movimientos/nuevo", label: "Anotar" },
-  { href: "/piso-malaga", label: "Piso Málaga" },
+  { href: "/recurrentes", label: "Recurrentes" },
   { href: "/importar-exportar", label: "Importar" },
   { href: "/ajustes", label: "Ajustes" },
 ];
@@ -19,7 +19,7 @@ const mobileNavigation = [
   { href: "/dashboard", label: "Resumen", Icon: House },
   { href: "/movimientos", label: "Apuntes", Icon: ReceiptText },
   { href: "/movimientos/nuevo", label: "Anotar", Icon: Plus, quick: true },
-  { href: "/piso-malaga", label: "Piso", Icon: Building2 },
+  { href: "/recurrentes", label: "Fijos", Icon: CalendarClock },
   { href: "/ajustes", label: "Ajustes", Icon: Settings },
 ];
 
@@ -30,18 +30,21 @@ function isRouteActive(path: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { session, signOut } = useFinance();
+  const { hasMalagaAccess, session, signOut } = useFinance();
   // En la exportación estática las URL llevan barra final: se normaliza para
   // que el subrayado de "activo" funcione igual en local y en GitHub Pages.
   const path = (pathname ?? "/").replace(/\/+$/, "") || "/";
 
   return (
-    <div className={`app-frame${session ? " authenticated" : ""}`}>
+    <div className={`app-frame${session ? " authenticated" : ""}${hasMalagaAccess ? " malaga-owner" : ""}`}>
+      <a href="#main-content" className="skip-link">Saltar al contenido</a>
       <header className="nb-top">
         <AppLink href="/dashboard" className="nb-brand" aria-label="Ir al resumen">Mis&nbsp;gastos</AppLink>
         {session ? (
           <nav className="nb-nav" aria-label="Navegación principal">
-            {navigation.map((item) => {
+            {[...navigation.slice(0, 4),
+              ...(hasMalagaAccess ? [{ href: "/piso-malaga", label: "Piso Málaga" }] : []),
+              ...navigation.slice(4)].map((item) => {
               const active = isRouteActive(path, item.href);
               return (
                 <AppLink href={item.href} key={item.href} className={active ? "active" : ""} aria-current={active ? "page" : undefined}>
@@ -62,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         ) : null}
       </header>
 
-      <main className="main-content">{children}</main>
+      <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
 
       {/* En la propia página de anotar sobra (y taparía el botón de guardar) */}
       {session && path !== "/movimientos/nuevo" ? (
@@ -73,7 +76,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       ) : null}
 
       {session ? <nav className="mobile-nav" aria-label="Navegación móvil">
-          {mobileNavigation.map(({ href, label, Icon, quick }) => {
+          {[...mobileNavigation.slice(0, 4),
+            ...(hasMalagaAccess ? [{ href: "/piso-malaga", label: "Piso", Icon: Building2 }] : []),
+            ...mobileNavigation.slice(4)].map(({ href, label, Icon, quick }) => {
             const active = isRouteActive(path, href);
             return (
               <AppLink

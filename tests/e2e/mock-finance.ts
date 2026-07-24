@@ -223,7 +223,12 @@ export function createMockFinanceDatabase(): MockFinanceDatabase {
   };
 }
 
-export async function installMockFinanceBackend(page: Page, db = createMockFinanceDatabase()) {
+export async function installMockFinanceBackend(
+  page: Page,
+  db = createMockFinanceDatabase(),
+  options: { hasMalagaAccess?: boolean } = {},
+) {
+  const hasMalagaAccess = options.hasMalagaAccess ?? true;
   await page.route("**/auth/v1/**", async (route) => {
     const request = route.request();
     if (request.method() === "OPTIONS") {
@@ -248,7 +253,19 @@ export async function installMockFinanceBackend(page: Page, db = createMockFinan
       await route.fulfill({ status: 204, headers: corsHeaders() });
       return;
     }
+    if (url.pathname.endsWith("/signup")) {
+      await fulfillJson(route, { user: mockUser(), session: null });
+      return;
+    }
     await fulfillJson(route, { user: mockUser() });
+  });
+
+  await page.route("**/functions/v1/public-signup", async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: corsHeaders() });
+      return;
+    }
+    await fulfillJson(route, { created: true }, 201);
   });
 
   await page.route("**/rest/v1/**", async (route) => {
@@ -265,7 +282,17 @@ export async function installMockFinanceBackend(page: Page, db = createMockFinan
       return;
     }
     if (resource.startsWith("rpc/")) {
-      await fulfillJson(route, null);
+      if (resource === "rpc/bootstrap_user_workspace") {
+        await fulfillJson(route, {
+          claimed: hasMalagaAccess,
+          seeded: false,
+          has_malaga_access: hasMalagaAccess,
+        });
+      } else if (resource === "rpc/generate_due_recurring_transactions") {
+        await fulfillJson(route, 0);
+      } else {
+        await fulfillJson(route, null);
+      }
       return;
     }
 
@@ -335,8 +362,8 @@ export async function signInToMockFinance(page: Page) {
   await page.getByLabel("Correo electrónico").fill("movil@example.com");
   await page.getByLabel("Clave").fill("clave-segura-movil");
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible();
   await expect(page.locator(".loading-state")).toHaveCount(0);
+  await expect(page.locator(".app-frame.authenticated")).toBeVisible();
   await page.waitForFunction(() =>
     Object.entries(localStorage).some(([key, value]) => key.startsWith("sb-") && value.includes("mock-refresh-token")),
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { LoaderCircle, Pencil, Trash2, X } from "lucide-react";
+import { LoaderCircle, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AppModal } from "@/components/app-modal";
 import { useFinance } from "@/components/finance-provider";
 import { TransactionForm } from "@/components/transaction-form";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -92,35 +93,17 @@ export function TransactionList({
       </div>
 
       {editing ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}
-        >
-          <section
-            className="modal-card"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Editar movimiento"
-            onKeyDown={(event) => { if (event.key === "Escape") setEditing(null); }}
-          >
-            <div className="card-header">
-              <div><p className="eyebrow">Edición</p><h2>Modificar movimiento</h2></div>
-              <button autoFocus className="icon-button modal-close" type="button" onClick={() => setEditing(null)} aria-label="Cerrar edición"><X size={20} /></button>
-            </div>
-            <div className="card-body">
-              {deleteError ? <p className="notice error" style={{ marginBottom: 16 }}>{deleteError}</p> : null}
-              <TransactionForm
-                initial={editing}
-                scope={formScope}
-                onSaved={() => setEditing(null)}
-                onCancel={() => setEditing(null)}
-                onDelete={() => remove(editing)}
-                isDeleting={deletingId === editing.id}
-              />
-            </div>
-          </section>
-        </div>
+        <AppModal title="Editar movimiento" eyebrow="Edición" onClose={() => setEditing(null)}>
+          {deleteError ? <p className="notice error" style={{ marginBottom: 16 }}>{deleteError}</p> : null}
+          <TransactionForm
+            initial={editing}
+            scope={formScope}
+            onSaved={() => setEditing(null)}
+            onCancel={() => setEditing(null)}
+            onDelete={() => remove(editing)}
+            isDeleting={deletingId === editing.id}
+          />
+        </AppModal>
       ) : null}
     </>
   );

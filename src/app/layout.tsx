@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   description: "Mi libreta de gastos, escrita a mano.",
   applicationName: "Mis gastos",
-  manifest: "/manifest.webmanifest",
+  manifest: `${basePath}/manifest.webmanifest`,
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Mis gastos",
     short_name: "Mis gastos",
-    description: "Mi libreta de gastos, escrita a mano.",
+    description: "Tu libreta privada de gastos e ingresos.",
     start_url: `${basePath}/dashboard/`,
     scope: `${basePath}/`,
     display: "standalone",

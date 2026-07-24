@@ -9,7 +9,7 @@ import { TransactionList } from "@/components/transaction-list";
 import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 
 export function MovementsView() {
-  const { transactions, categories } = useFinance();
+  const { transactions, categories, hasMalagaAccess } = useFinance();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [direction, setDirection] = useState("all");
@@ -44,7 +44,9 @@ export function MovementsView() {
       <PageHeader
         eyebrow=""
         title="Apuntes"
-        description="Tus gastos e ingresos personales. El Piso Málaga vive únicamente en su propia pestaña."
+        description={hasMalagaAccess
+          ? "Tus gastos e ingresos personales. El Piso Málaga vive únicamente en su propia pestaña."
+          : "Todos tus gastos e ingresos, ordenados y fáciles de encontrar."}
         action={<AppLink href="/movimientos/nuevo" className="button primary"><Plus size={16} />Anotar</AppLink>}
       />
       <div className="toolbar">

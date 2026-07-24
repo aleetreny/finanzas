@@ -146,6 +146,20 @@ export type PropertyRecurringInput = Pick<
   | "notes"
 >;
 
+export type RecurringInput = Pick<
+  RecurringRule,
+  | "name"
+  | "amount"
+  | "frequency"
+  | "effective_from"
+  | "effective_until"
+  | "category_id"
+  | "subcategory_id"
+  | "notes"
+> & {
+  direction: "income" | "expense";
+};
+
 export type Property = {
   id: string;
   name: string;

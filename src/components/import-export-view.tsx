@@ -22,11 +22,12 @@ export function ImportExportView() {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
   const categoryById = useMemo(() => new Map(categories.map((item) => [item.id, item.name])), [categories]);
   const subcategoryById = useMemo(() => new Map(subcategories.map((item) => [item.id, item.name])), [subcategories]);
 
   function selectFile(next: File | undefined) {
-    setFile(next ?? null); setRows([]); setParseErrors([]); setMessage(null);
+    setFile(next ?? null); setRows([]); setParseErrors([]); setMessage(null); setMessageType("success");
     if (!next) return;
     Papa.parse<CsvRow>(next, {
       header: true,
@@ -60,7 +61,7 @@ export function ImportExportView() {
     anchor.href = url;
     anchor.download = `finanzas-${new Date().toISOString().slice(0, 10)}.csv`;
     anchor.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   async function importCsv() {
@@ -70,6 +71,7 @@ export function ImportExportView() {
       const hash = await sha256(file);
       const { data: existing } = await supabase.from("import_batches").select("id,imported_rows").eq("file_hash", hash).maybeSingle();
       if (existing) {
+        setMessageType("success");
         setMessage(`Este archivo ya se importó (${existing.imported_rows} filas). No se ha duplicado nada.`);
         return;
       }
@@ -125,9 +127,11 @@ export function ImportExportView() {
       await supabase.from("import_batches").update({ imported_rows: imported, rejected_rows: rejected.length, completed_at: new Date().toISOString() }).eq("id", batch.id);
       setParseErrors(rejected);
       const skipped = valid.length - imported;
+      setMessageType("success");
       setMessage(`Importación terminada: ${imported} filas nuevas, ${skipped} duplicadas omitidas y ${rejected.length} rechazadas.`);
       await refresh();
     } catch (caught) {
+      setMessageType("error");
       setMessage(caught instanceof Error ? caught.message : "No se pudo importar el archivo.");
     } finally {
       setWorking(false);
@@ -160,7 +164,7 @@ export function ImportExportView() {
           </div>
         </article>
       </section>
-      {message ? <p className="notice success">{message}</p> : null}
+      {message ? <p className={`notice ${messageType}`} role={messageType === "error" ? "alert" : "status"}>{message}</p> : null}
       {parseErrors.length ? <article className="card" style={{ marginTop: 18 }}><div className="card-header"><div><h2>Errores de validación</h2><p>Corrige estas filas antes de confirmar</p></div></div><div className="card-body">{parseErrors.slice(0, 20).map((error) => <p className="notice error" key={error}>{error}</p>)}</div></article> : null}
     </div>
   );

@@ -7,7 +7,7 @@ describe("mensajes de errores de acceso", () => {
       code: "over_email_send_rate_limit",
     });
 
-    expect(messageFrom(hourlyLimit)).toContain("dos correos permitidos en esta hora");
-    expect(messageFrom(new Error("rate limit exceeded"))).toContain("60 segundos");
+    expect(messageFrom(hourlyLimit)).toContain("límite de correos");
+    expect(messageFrom(new Error("rate limit exceeded"))).toContain("un minuto");
   });
 });

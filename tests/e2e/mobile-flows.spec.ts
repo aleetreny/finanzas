@@ -27,9 +27,11 @@ test.describe("mobile quality flows", () => {
       { path: "/dashboard/", heading: "Mis gastos, mes a mes" },
       { path: "/movimientos/", heading: "Apuntes" },
       { path: "/movimientos/nuevo/", heading: "Anotar un gasto" },
+      { path: "/recurrentes/", heading: "Gastos e ingresos recurrentes" },
       { path: "/piso-malaga/", heading: "Piso Málaga" },
       { path: "/importar-exportar/", heading: "Importar y exportar" },
       { path: "/ajustes/", heading: "Ajustes" },
+      { path: "/instalar/", heading: "Pon Mis gastos en tu móvil" },
     ];
 
     for (const route of routes) {
@@ -47,6 +49,7 @@ test.describe("mobile quality flows", () => {
       { name: "Resumen", url: /\/dashboard\/?$/ },
       { name: "Apuntes", url: /\/movimientos\/?$/ },
       { name: "Anotar", url: /\/movimientos\/nuevo\/?$/ },
+      { name: "Fijos", url: /\/recurrentes\/?$/ },
       { name: "Piso", url: /\/piso-malaga\/?$/ },
       { name: "Ajustes", url: /\/ajustes\/?$/ },
     ]) {
@@ -136,10 +139,13 @@ test.describe("mobile quality flows", () => {
 
     const dialog = page.getByRole("dialog", { name: "Nueva reserva" });
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel("Alojamiento final")).toHaveValue("");
+    await expect(dialog.getByLabel("Limpieza")).toHaveValue("");
     await dialog.getByLabel("Concepto").fill("Reserva móvil");
     await dialog.getByLabel("Alojamiento final").fill("720");
     await dialog.getByLabel("Limpieza").fill("60");
     await dialog.getByText("Ajustes avanzados").click();
+    await expect(dialog.getByLabel("Descuento o ajuste")).toHaveValue("");
     await dialog.getByLabel("Descuento o ajuste").fill("20");
 
     const save = dialog.getByRole("button", { name: "Añadir reserva" });
@@ -185,6 +191,7 @@ test.describe("mobile quality flows", () => {
     await page.getByRole("button", { name: "Gasto periódico", exact: true }).click();
     const recurringDialog = page.getByRole("dialog", { name: "Nuevo gasto periódico" });
     await recurringDialog.getByLabel("Concepto").fill("Seguro anual");
+    await expect(recurringDialog.getByLabel("Importe")).toHaveValue("");
     await recurringDialog.getByLabel("Importe").fill("240");
     await recurringDialog.getByLabel("Periodicidad").selectOption("yearly");
     await recurringDialog.getByLabel("Categoría").selectOption("sub-community");
@@ -194,6 +201,41 @@ test.describe("mobile quality flows", () => {
     await recurringSave.click();
     await expect(recurringDialog).toHaveCount(0);
     await expect(page.getByText("Seguro anual")).toBeVisible();
+  });
+
+  test("general recurring income and expense forms scroll, save and can be paused", async ({ page }) => {
+    await page.goto("/recurrentes/");
+    await page.setViewportSize({ width: 412, height: 520 });
+
+    await page.getByRole("button", { name: "Nuevo recurrente" }).click();
+    const expenseDialog = page.getByRole("dialog", { name: "Nuevo recurrente" });
+    await expenseDialog.getByLabel("Concepto").fill("Internet");
+    await expect(expenseDialog.getByLabel("Importe")).toHaveValue("");
+    await expenseDialog.getByLabel("Importe").fill("39.90");
+    await expenseDialog.getByLabel("Periodicidad").selectOption("monthly");
+    await expenseDialog.getByLabel("Categoría", { exact: true }).selectOption("cat-home");
+    await expenseDialog.getByLabel("Subcategoría", { exact: false }).selectOption("sub-home");
+    const createExpense = expenseDialog.getByRole("button", { name: "Crear recurrente" });
+    await createExpense.scrollIntoViewIfNeeded();
+    await expect(createExpense).toBeVisible();
+    expect(await expenseDialog.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+    await createExpense.click();
+
+    const internet = page.locator(".recurring-rule-card").filter({ hasText: "Internet" });
+    await expect(internet).toBeVisible();
+    await internet.getByRole("button", { name: "Pausar" }).click();
+    await expect(internet.getByText("En pausa")).toBeVisible();
+
+    await page.getByRole("button", { name: "Nuevo recurrente" }).click();
+    const incomeDialog = page.getByRole("dialog", { name: "Nuevo recurrente" });
+    await incomeDialog.getByRole("button", { name: "Ingreso" }).click();
+    await incomeDialog.getByLabel("Concepto").fill("Nómina mensual");
+    await incomeDialog.getByLabel("Importe").fill("2450");
+    await incomeDialog.getByLabel("Categoría", { exact: true }).selectOption("cat-income");
+    await incomeDialog.getByLabel("Subcategoría", { exact: false }).selectOption("sub-salary");
+    await incomeDialog.getByRole("button", { name: "Crear recurrente" }).scrollIntoViewIfNeeded();
+    await incomeDialog.getByRole("button", { name: "Crear recurrente" }).click();
+    await expect(page.locator(".recurring-rule-card").filter({ hasText: "Nómina mensual" }).getByText("Ingreso", { exact: true })).toBeVisible();
   });
 
   test("settings category flow and CSV import/export are usable on mobile", async ({ page }) => {
