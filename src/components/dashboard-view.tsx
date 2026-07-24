@@ -296,10 +296,13 @@ export function DashboardView() {
     () =>
       series.map((s, si) => {
         const rand = mulberry32(101 + si * 97 + n * 7 + Math.round(yMax));
-        const pts = s.points.map((v, i) => [xAt(i), yAt(v)] as [number, number]);
+        const pts = s.points.map((v, i) => [
+          n <= 1 ? padL + plotW / 2 : padL + (i / (n - 1)) * plotW,
+          padT + (1 - v / yMax) * plotH,
+        ] as [number, number]);
         return { ...s, d: roughPath(pts, rand, compact ? 1.1 : 1.3), pts };
       }),
-    [series, n, yMax, compact],
+    [series, n, yMax, compact, padL, plotW, padT, plotH],
   );
   const roughAxis = roughPath([[padL, padT], [padL, padT + plotH], [padL + plotW, padT + plotH]], mulberry32(7), 1.1);
 

@@ -26,6 +26,8 @@ import type {
   Subcategory,
   Transaction,
   TransactionInput,
+  TripProject,
+  TripProjectInput,
 } from "@/lib/types";
 
 type FinanceContextValue = {
@@ -39,6 +41,7 @@ type FinanceContextValue = {
   categories: Category[];
   subcategories: Subcategory[];
   transactions: Transaction[];
+  tripProjects: TripProject[];
   recurringRules: RecurringRule[];
   bookings: RentalBooking[];
   properties: Property[];
@@ -51,6 +54,7 @@ type FinanceContextValue = {
   addTransaction: (input: TransactionInput) => Promise<void>;
   updateTransaction: (id: string, input: TransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  saveTripProject: (project: TripProjectInput, id?: string) => Promise<void>;
   saveBooking: (booking: RentalBookingInput, id?: string) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
   savePropertyRecurring: (rule: PropertyRecurringInput, id?: string) => Promise<void>;
@@ -89,6 +93,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [tripProjects, setTripProjects] = useState<TripProject[]>([]);
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
   const [bookings, setBookings] = useState<RentalBooking[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -104,6 +109,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setCategories([]);
     setSubcategories([]);
     setTransactions([]);
+    setTripProjects([]);
     setRecurringRules([]);
     setBookings([]);
     setProperties([]);
@@ -122,12 +128,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         categoriesResult,
         subcategoriesResult,
         transactionsResult,
+        tripProjectsResult,
         recurringResult,
       ] = await Promise.all([
         supabase.from("accounts").select("id,name,currency,is_default").order("name"),
         supabase.from("categories").select("id,name,sort_order,is_active,category_scope").order("sort_order"),
         supabase.from("subcategories").select("id,category_id,name,sort_order,is_active").order("sort_order"),
         supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).range(0, 4999),
+        supabase.from("trip_projects").select("*").order("start_date", { ascending: false }),
         supabase.from("recurring_rules").select("*").order("effective_from", { ascending: false }),
       ]);
 
@@ -136,6 +144,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         categoriesResult,
         subcategoriesResult,
         transactionsResult,
+        tripProjectsResult,
         recurringResult,
       ].find((result) => result.error)?.error;
       if (firstError) throw firstError;
@@ -157,6 +166,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         : loadedTransactions.filter((transaction) =>
           (!transaction.category_id || visibleCategoryIds.has(transaction.category_id))
           && transaction.context?.toLocaleLowerCase("es") !== "piso málaga"));
+      setTripProjects((tripProjectsResult.data ?? []) as TripProject[]);
       setRecurringRules(includeMalaga
         ? loadedRecurring
         : loadedRecurring.filter((rule) =>
@@ -387,6 +397,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
     const account = accounts.find((item) => item.is_default) ?? accounts[0];
     if (!account) throw new Error("No existe una cuenta por defecto.");
+    if (input.trip_project_id && !tripProjects.some((project) => project.id === input.trip_project_id)) {
+      throw new Error("Selecciona un viaje válido.");
+    }
     const { error: insertError } = await supabase.from("transactions").insert({
       ...input,
       user_id: session.user.id,
@@ -395,17 +408,20 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     });
     if (insertError) throw insertError;
     await refresh();
-  }, [accounts, refresh, session, supabase]);
+  }, [accounts, refresh, session, supabase, tripProjects]);
 
   const updateTransaction = useCallback(async (id: string, input: TransactionInput) => {
     if (!supabase) throw new Error("Supabase no está configurado.");
+    if (input.trip_project_id && !tripProjects.some((project) => project.id === input.trip_project_id)) {
+      throw new Error("Selecciona un viaje válido.");
+    }
     const { error: updateError } = await supabase
       .from("transactions")
       .update(input)
       .eq("id", id);
     if (updateError) throw updateError;
     await refresh();
-  }, [refresh, supabase]);
+  }, [refresh, supabase, tripProjects]);
 
   const deleteTransaction = useCallback(async (id: string) => {
     if (!supabase) throw new Error("Supabase no está configurado.");
@@ -413,6 +429,35 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (deleteError) throw deleteError;
     setTransactions((current) => current.filter((row) => row.id !== id));
   }, [supabase]);
+
+  const saveTripProject = useCallback(async (project: TripProjectInput, id?: string) => {
+    if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
+    const name = project.name.trim();
+    if (name.length < 2) throw new Error("Ponle un nombre al viaje.");
+    if (project.end_date < project.start_date) {
+      throw new Error("La fecha final no puede ser anterior a la inicial.");
+    }
+    const payload = {
+      name,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      is_active: project.is_active,
+    };
+    const query = id
+      ? supabase.from("trip_projects").update(payload).eq("id", id)
+      : supabase.from("trip_projects").insert({
+          ...payload,
+          user_id: session.user.id,
+        });
+    const { error: projectError } = await query;
+    if (projectError) {
+      if (projectError.code === "23505") {
+        throw new Error("Ya tienes un viaje con ese nombre.");
+      }
+      throw projectError;
+    }
+    await refresh();
+  }, [refresh, session, supabase]);
 
   const saveBooking = useCallback(async (booking: RentalBookingInput, id?: string) => {
     if (!supabase || !session) throw new Error("Inicia sesión para guardar.");
@@ -585,6 +630,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     categories,
     subcategories,
     transactions,
+    tripProjects,
     recurringRules,
     bookings,
     properties,
@@ -597,6 +643,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    saveTripProject,
     saveBooking,
     deleteBooking,
     savePropertyRecurring,
@@ -607,9 +654,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }), [
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
     deleteRecurring, deleteTransaction, error, hasMalagaAccess, loading, notice, properties,
-    recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, session,
+    recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, saveTripProject, session,
     sendAccessLink, signInWithPassword, signOut, signUp, subcategories, supabase,
-    toggleRecurring, transactions, updatePassword, updateTransaction,
+    toggleRecurring, transactions, tripProjects, updatePassword, updateTransaction,
   ]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

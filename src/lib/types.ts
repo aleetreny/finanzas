@@ -56,9 +56,28 @@ export type TransactionInput = Pick<
   | "subcategory_id"
   | "context"
   | "platform"
+  | "trip_project_id"
   | "fiscal_property_status"
   | "notes"
 >;
+
+export type TripProject = {
+  id: string;
+  user_id: string | null;
+  name: string;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TripProjectInput = {
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+};
 
 export type RecurringRule = {
   id: string;

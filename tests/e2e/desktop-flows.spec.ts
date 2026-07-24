@@ -29,10 +29,11 @@ test.describe("desktop quality flows", () => {
   test("every tab is addressable, selected correctly and contained at desktop widths", async ({ page }) => {
     test.setTimeout(90_000);
     const routes = [
-      { path: "/dashboard/", heading: "Tu dinero, en movimiento", nav: "Resumen" },
+      { path: "/dashboard/", heading: /A día \d+ de .+ llevas\.\.\./, nav: "Resumen" },
       { path: "/movimientos/", heading: "Apuntes", nav: "Apuntes" },
       { path: "/movimientos/nuevo/", heading: "Anotar un gasto", nav: "Anotar" },
       { path: "/recurrentes/", heading: "Gastos e ingresos recurrentes", nav: "Recurrentes" },
+      { path: "/viajes/", heading: "Viajes", nav: "Viajes" },
       { path: "/piso-malaga/", heading: "Piso Málaga", nav: "Piso Málaga" },
       { path: "/importar-exportar/", heading: "Importar y exportar", nav: "Importar" },
       { path: "/ajustes/", heading: "Ajustes", nav: "Ajustes" },
@@ -59,9 +60,8 @@ test.describe("desktop quality flows", () => {
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dashboard/");
-    await expect(page.locator(".hero-income-line")).toContainText("También has ingresado 2400,00 €");
-    const incomeGroup = page.getByRole("group", { name: "Ingresos" });
-    await incomeGroup.getByRole("button", { name: "Total ingresado" }).click();
+    await expect(page.locator(".c7-card").filter({ hasText: "Ingresos" }).locator(".c7-val")).toHaveText("+2400,00 €");
+    await page.getByRole("button", { name: /Ingresos totales/ }).click();
     await expect(page.locator(".evo-chart .income-series")).toHaveCount(1);
     await expect(page.locator(".hover-series-item.income .series-name")).toHaveText("Ingresos:");
     await expect(page.locator(".hover-series-item.income .series-amount")).toHaveText("+2400,00 €");
@@ -229,6 +229,7 @@ test.describe("public account and isolation", () => {
   test("any visitor can register a fresh isolated account and read the public install guide", async ({ page }) => {
     const db = createMockFinanceDatabase();
     db.transactions = [];
+    db.trip_projects = [];
     db.recurring_rules = [];
     db.rental_bookings = [];
     db.properties = [];
@@ -250,6 +251,7 @@ test.describe("public account and isolation", () => {
   test("a non-owner cannot see, navigate to or configure Malaga", async ({ page, isMobile }) => {
     const db = createMockFinanceDatabase();
     db.transactions = [];
+    db.trip_projects = [];
     db.recurring_rules = [];
     db.rental_bookings = [];
     db.properties = [];
@@ -261,8 +263,10 @@ test.describe("public account and isolation", () => {
     if (isMobile) {
       const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
       await expect(mobileNav.getByRole("link")).toHaveCount(5);
-      await expect(mobileNav.getByRole("link", { name: "Fijos" })).toBeVisible();
-      await expect(page.locator(".mobile-owner-tool")).toHaveCount(0);
+      await expect(mobileNav.getByRole("link", { name: "Viajes" })).toBeVisible();
+      await expect(mobileNav.getByRole("link", { name: "Fijos" })).toHaveCount(0);
+      await expect(page.locator(".mobile-owner-tool")).toHaveCount(1);
+      await expect(page.locator(".mobile-owner-tool")).toHaveAccessibleName("Recurrentes");
     }
     await page.goto("/piso-malaga/");
     await expect(page.getByRole("heading", { name: "Sección privada" })).toBeVisible();

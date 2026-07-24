@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Building2, CalendarClock, House, LogOut, Plus, ReceiptText, Settings } from "lucide-react";
+import { Building2, CalendarClock, House, LogOut, MapPinned, Plus, ReceiptText, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
@@ -11,6 +11,7 @@ const navigation = [
   { href: "/movimientos", label: "Apuntes" },
   { href: "/movimientos/nuevo", label: "Anotar" },
   { href: "/recurrentes", label: "Recurrentes" },
+  { href: "/viajes", label: "Viajes" },
   { href: "/importar-exportar", label: "Importar" },
   { href: "/ajustes", label: "Ajustes" },
 ];
@@ -19,7 +20,7 @@ const mobileNavigation = [
   { href: "/dashboard", label: "Resumen", Icon: House },
   { href: "/movimientos", label: "Apuntes", Icon: ReceiptText },
   { href: "/movimientos/nuevo", label: "Anotar", Icon: Plus, quick: true },
-  { href: "/recurrentes", label: "Fijos", Icon: CalendarClock },
+  { href: "/viajes", label: "Viajes", Icon: MapPinned },
   { href: "/ajustes", label: "Ajustes", Icon: Settings },
 ];
 
@@ -50,9 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <AppLink href="/dashboard" className="nb-brand" aria-label="Ir al resumen">Mis&nbsp;gastos</AppLink>
         {session ? (
           <nav className="nb-nav" aria-label="Navegación principal">
-            {[...navigation.slice(0, 4),
-              ...(hasMalagaAccess ? [{ href: "/piso-malaga", label: "Piso Málaga" }] : []),
-              ...navigation.slice(4)].map((item) => {
+            {navigation.flatMap((item) => (
+              item.href === "/viajes" && hasMalagaAccess
+                ? [item, { href: "/piso-malaga", label: "Piso Málaga" }]
+                : [item]
+            )).map((item) => {
               const active = isRouteActive(path, item.href);
               return (
                 <AppLink href={item.href} key={item.href} className={active ? "active" : ""} aria-current={active ? "page" : undefined}>
@@ -63,16 +66,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
         <span className="nb-spacer" />
-        {session && hasMalagaAccess ? (
-          <AppLink
-            href="/recurrentes"
-            className={`mobile-owner-tool${isRouteActive(path, "/recurrentes") ? " active" : ""}`}
-            aria-label="Recurrentes"
-            aria-current={isRouteActive(path, "/recurrentes") ? "page" : undefined}
-          >
-            <CalendarClock size={18} aria-hidden="true" />
-            <span>Fijos</span>
-          </AppLink>
+        {session ? (
+          <span className="mobile-header-tools">
+            <AppLink
+              href="/recurrentes"
+              className={`mobile-owner-tool${isRouteActive(path, "/recurrentes") ? " active" : ""}`}
+              aria-label="Recurrentes"
+              aria-current={isRouteActive(path, "/recurrentes") ? "page" : undefined}
+            >
+              <CalendarClock size={18} aria-hidden="true" />
+              <span>Fijos</span>
+            </AppLink>
+            {hasMalagaAccess ? (
+              <AppLink
+                href="/viajes"
+                className={`mobile-owner-tool${isRouteActive(path, "/viajes") ? " active" : ""}`}
+                aria-label="Viajes"
+                aria-current={isRouteActive(path, "/viajes") ? "page" : undefined}
+              >
+                <MapPinned size={18} aria-hidden="true" />
+                <span>Viajes</span>
+              </AppLink>
+            ) : null}
+          </span>
         ) : null}
         {session ? (
           <span className="nb-account">
@@ -87,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
 
       {/* En la propia página de anotar sobra (y taparía el botón de guardar) */}
-      {session && path !== "/movimientos/nuevo" ? (
+      {session && path !== "/movimientos/nuevo" && path !== "/viajes" ? (
         <AppLink href="/movimientos/nuevo" className="floating-action" aria-label="Anotar un gasto">
           <Plus size={20} />
           <span>Anotar</span>

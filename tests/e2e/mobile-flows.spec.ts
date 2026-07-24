@@ -24,10 +24,11 @@ test.describe("mobile quality flows", () => {
   test("all application tabs load, navigate and stay inside the viewport", async ({ page }) => {
     test.setTimeout(90_000);
     const routes = [
-      { path: "/dashboard/", heading: "Tu dinero, en movimiento" },
+      { path: "/dashboard/", heading: /A día \d+ de .+ llevas\.\.\./ },
       { path: "/movimientos/", heading: "Apuntes" },
       { path: "/movimientos/nuevo/", heading: "Anotar un gasto" },
       { path: "/recurrentes/", heading: "Gastos e ingresos recurrentes" },
+      { path: "/viajes/", heading: "Viajes" },
       { path: "/piso-malaga/", heading: "Piso Málaga" },
       { path: "/importar-exportar/", heading: "Importar y exportar" },
       { path: "/ajustes/", heading: "Ajustes" },
@@ -47,6 +48,7 @@ test.describe("mobile quality flows", () => {
     const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
     await expect(mobileNav.getByRole("link")).toHaveCount(5);
     await expect(mobileNav.getByRole("link", { name: "Fijos" })).toHaveCount(0);
+    await expect(mobileNav.getByRole("link", { name: "Viajes" })).toHaveCount(0);
     for (const item of [
       { name: "Resumen", url: /\/dashboard\/?$/ },
       { name: "Apuntes", url: /\/movimientos\/?$/ },
@@ -57,15 +59,18 @@ test.describe("mobile quality flows", () => {
       await mobileNav.getByRole("link", { name: item.name }).click();
       await expect(page).toHaveURL(item.url);
     }
-    const ownerRecurring = page.locator(".mobile-owner-tool");
+    const ownerRecurring = page.locator(".mobile-owner-tool").filter({ hasText: "Fijos" });
     await expect(ownerRecurring).toHaveAccessibleName("Recurrentes");
     await ownerRecurring.click();
     await expect(page).toHaveURL(/\/recurrentes\/?$/);
+    const ownerTrips = page.locator(".mobile-owner-tool").filter({ hasText: "Viajes" });
+    await expect(ownerTrips).toHaveAccessibleName("Viajes");
+    await ownerTrips.click();
+    await expect(page).toHaveURL(/\/viajes\/?$/);
 
     await page.goto("/dashboard/");
-    await expect(page.locator(".hero-income-line")).toContainText("También has ingresado 2400,00 €");
-    const incomeGroup = page.getByRole("group", { name: "Ingresos" });
-    const incomeToggle = incomeGroup.getByRole("button", { name: "Total ingresado" });
+    await expect(page.locator(".c7-card").filter({ hasText: "Ingresos" }).locator(".c7-val")).toHaveText("+2400,00 €");
+    const incomeToggle = page.getByRole("button", { name: /Ingresos totales/ });
     await incomeToggle.click();
     await expect(incomeToggle).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".evo-chart .income-series")).toHaveCount(1);
@@ -81,8 +86,8 @@ test.describe("mobile quality flows", () => {
     await page.getByLabel("Importe en euros").fill("34,75");
     await page.getByRole("button", { name: "Comida", exact: true }).click();
     await page.getByLabel("Concepto").fill("Compra móvil");
+    await page.getByLabel("Asignar a").selectOption({ label: "Eclipse" });
     await page.getByRole("button", { name: "Más detalles" }).click();
-    await page.getByLabel("Contexto").fill("Prueba responsive");
     await page.getByLabel("Notas").fill("El botón debe seguir siendo alcanzable con el teclado abierto.");
 
     const submit = page.getByRole("button", { name: "Anotar", exact: true });
@@ -105,10 +110,44 @@ test.describe("mobile quality flows", () => {
     await expect(page.locator(".mobile-list").getByText("Compra móvil")).toBeVisible();
   });
 
+  test("trip groups can be created, selected on an expense and reviewed without overflow", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto("/viajes/");
+    await expect(page.getByRole("heading", { name: "Eclipse", exact: true })).toBeVisible();
+    await expect(page.getByText("42,50 €", { exact: true }).first()).toBeVisible();
+
+    await page.getByRole("button", { name: "Nuevo viaje" }).click();
+    const dialog = page.getByRole("dialog", { name: "Nuevo viaje" });
+    await dialog.getByLabel("Nombre del viaje").fill("Berlín");
+    await dialog.getByRole("button", { name: "Guardar viaje" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: /Berlín/ })).toBeVisible();
+
+    await page.goto("/movimientos/nuevo/");
+    await expect(page.getByLabel("Importe en euros")).toHaveValue("");
+    await page.getByLabel("Importe en euros").fill("25");
+    await page.getByRole("button", { name: "Casa", exact: true }).click();
+    await page.getByLabel("Concepto").fill("Metro de Berlín");
+    await page.getByLabel("Asignar a").selectOption({ label: "Berlín" });
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+
+    await page.goto("/viajes/");
+    await page.getByRole("tab", { name: /Berlín/ }).click();
+    await expect(page.getByRole("heading", { name: "Berlín", exact: true })).toBeVisible();
+    await expect(page.getByText("Metro de Berlín", { exact: true })).toBeVisible();
+    await expect(page.getByText("25,00 €", { exact: true }).first()).toBeVisible();
+    const width = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: document.documentElement.clientWidth,
+    }));
+    expect(width.document).toBe(width.viewport);
+  });
+
   test("compact 320px screens keep dense tabs and touch targets usable", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.setViewportSize({ width: 320, height: 568 });
 
-    for (const path of ["/dashboard/", "/piso-malaga/", "/ajustes/"]) {
+    for (const path of ["/dashboard/", "/viajes/", "/piso-malaga/", "/ajustes/"]) {
       await page.goto(path);
       const width = await page.evaluate(() => ({
         document: document.documentElement.scrollWidth,

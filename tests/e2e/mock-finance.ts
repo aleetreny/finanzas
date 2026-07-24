@@ -6,6 +6,7 @@ type TableName =
   | "categories"
   | "subcategories"
   | "transactions"
+  | "trip_projects"
   | "recurring_rules"
   | "rental_bookings"
   | "properties"
@@ -114,7 +115,7 @@ export function createMockFinanceDatabase(): MockFinanceDatabase {
         subcategory_id: "sub-food",
         context: null,
         platform: null,
-        trip_project_id: null,
+        trip_project_id: "trip-eclipse",
         recurring_rule_id: null,
         fiscal_property_status: null,
         notes: "Fruta y verdura",
@@ -161,6 +162,18 @@ export function createMockFinanceDatabase(): MockFinanceDatabase {
         source: "manual",
         source_external_id: null,
         created_at: now,
+      },
+    ],
+    trip_projects: [
+      {
+        id: "trip-eclipse",
+        user_id: userId,
+        name: "Eclipse",
+        start_date: "2026-07-20",
+        end_date: "2026-07-23",
+        is_active: true,
+        created_at: now,
+        updated_at: now,
       },
     ],
     recurring_rules: [

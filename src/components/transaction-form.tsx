@@ -1,11 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronDown, LoaderCircle, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, MapPinned, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { todayIso } from "@/lib/format";
 import { appRouteHref } from "@/lib/navigation";
@@ -18,7 +19,7 @@ const formSchema = z.object({
   direction: z.enum(["income", "expense"]),
   category_id: z.string().min(1, "Elige una categoría."),
   subcategory_id: z.string().optional(),
-  context: z.string().optional(),
+  trip_project_id: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -32,7 +33,7 @@ function defaults(initial?: Transaction, fixedDirection?: "income" | "expense"):
     direction: fixedDirection ?? (initial?.direction === "income" ? "income" : "expense"),
     category_id: initial?.category_id ?? "",
     subcategory_id: initial?.subcategory_id ?? "",
-    context: initial?.context ?? "",
+    trip_project_id: initial?.trip_project_id ?? "",
     notes: initial?.notes ?? "",
   };
 }
@@ -61,9 +62,9 @@ export function TransactionForm({
   scope?: "general" | "property";
   fixedDirection?: "income" | "expense";
 }) {
-  const { categories, subcategories, addTransaction, updateTransaction } = useFinance();
+  const { categories, subcategories, tripProjects, addTransaction, updateTransaction } = useFinance();
   const router = useRouter();
-  const [advanced, setAdvanced] = useState(Boolean(initial?.context || initial?.notes));
+  const [advanced, setAdvanced] = useState(Boolean(initial?.notes));
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
 
@@ -102,6 +103,10 @@ export function TransactionForm({
     [categoryId, direction, scope, subcategories],
   );
   const usesSubcategorySelector = scope === "property" || direction === "income";
+  const availableTrips = useMemo(
+    () => tripProjects.filter((project) => project.is_active || project.id === initial?.trip_project_id),
+    [initial?.trip_project_id, tripProjects],
+  );
 
   const today = todayIso();
   const yesterday = shiftDay(-1);
@@ -114,6 +119,12 @@ export function TransactionForm({
     setValue("category_id", availableCategories.length === 1 ? availableCategories[0].id : "", { shouldValidate: true });
     setValue("subcategory_id", "");
   }, [availableCategories, categoryId, setValue]);
+
+  useEffect(() => {
+    if (scope === "property" || direction === "income") {
+      setValue("trip_project_id", "");
+    }
+  }, [direction, scope, setValue]);
 
   function pickCategory(id: string) {
     setValue("category_id", id, { shouldValidate: true });
@@ -136,8 +147,15 @@ export function TransactionForm({
       direction: values.direction,
       category_id: values.category_id,
       subcategory_id: values.subcategory_id || null,
-      context: scope === "property" ? "Piso Málaga" : values.context || null,
+      context: scope === "property"
+        ? "Piso Málaga"
+        : values.trip_project_id
+          ? null
+          : initial?.context ?? null,
       platform: null,
+      trip_project_id: scope === "general" && values.direction === "expense"
+        ? values.trip_project_id || null
+        : null,
       fiscal_property_status: null,
       notes: values.notes || null,
     };
@@ -290,17 +308,41 @@ export function TransactionForm({
       </div>
       {errors.transaction_date ? <p className="field-error" style={{ marginTop: 6 }}>{errors.transaction_date.message}</p> : null}
 
+      {scope === "general" && direction === "expense" ? (
+        <section className="trip-picker" aria-labelledby="trip-picker-label">
+          <div className="trip-picker-heading">
+            <div>
+              <div className="q-label" id="trip-picker-label">
+                Viaje <span className="opt">opcional</span>
+              </div>
+              <p>Agrupa el gasto sin escribir el nombre a mano.</p>
+            </div>
+            <MapPinned size={22} aria-hidden="true" />
+          </div>
+          <div className="trip-picker-controls">
+            <div className="field">
+              <label htmlFor="tx-trip">Asignar a</label>
+              <select id="tx-trip" {...register("trip_project_id")}>
+                <option value="">Ningún viaje</option>
+                {availableTrips.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}{project.is_active ? "" : " (cerrado)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <AppLink href="/viajes" className="button small">
+              {availableTrips.length ? "Gestionar viajes" : "Crear un viaje"}
+            </AppLink>
+          </div>
+        </section>
+      ) : null}
+
       <button type="button" className="more-toggle" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)} style={{ marginTop: 18 }}>
         Más detalles <ChevronDown size={15} style={{ transform: advanced ? "rotate(180deg)" : undefined, transition: "transform .15s ease" }} />
       </button>
       {advanced ? (
         <div style={{ display: "grid", gap: 16, marginTop: 14 }}>
-          {scope === "general" ? (
-            <div className="field">
-              <label htmlFor="tx-context">Contexto</label>
-              <input id="tx-context" placeholder="Personal, viaje…" {...register("context")} />
-            </div>
-          ) : null}
           <div className="field">
             <label htmlFor="tx-notes">Notas</label>
             <textarea id="tx-notes" placeholder="Lo que quieras recordar" {...register("notes")} />
