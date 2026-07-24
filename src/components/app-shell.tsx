@@ -23,6 +23,14 @@ const mobileNavigation = [
   { href: "/ajustes", label: "Ajustes", Icon: Settings },
 ];
 
+const ownerMobileNavigation = [
+  mobileNavigation[0],
+  mobileNavigation[1],
+  mobileNavigation[2],
+  { href: "/piso-malaga", label: "Piso", Icon: Building2 },
+  mobileNavigation[4],
+];
+
 function isRouteActive(path: string, href: string) {
   if (href === "/dashboard") return path === "/dashboard" || path === "/";
   return path === href;
@@ -55,6 +63,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
         <span className="nb-spacer" />
+        {session && hasMalagaAccess ? (
+          <AppLink
+            href="/recurrentes"
+            className={`mobile-owner-tool${isRouteActive(path, "/recurrentes") ? " active" : ""}`}
+            aria-label="Recurrentes"
+            aria-current={isRouteActive(path, "/recurrentes") ? "page" : undefined}
+          >
+            <CalendarClock size={18} aria-hidden="true" />
+            <span>Fijos</span>
+          </AppLink>
+        ) : null}
         {session ? (
           <span className="nb-account">
             <span className="who">{session.user.email}</span>
@@ -76,9 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       ) : null}
 
       {session ? <nav className="mobile-nav" aria-label="Navegación móvil">
-          {[...mobileNavigation.slice(0, 4),
-            ...(hasMalagaAccess ? [{ href: "/piso-malaga", label: "Piso", Icon: Building2 }] : []),
-            ...mobileNavigation.slice(4)].map(({ href, label, Icon, quick }) => {
+          {(hasMalagaAccess ? ownerMobileNavigation : mobileNavigation).map(({ href, label, Icon, quick }) => {
             const active = isRouteActive(path, href);
             return (
               <AppLink

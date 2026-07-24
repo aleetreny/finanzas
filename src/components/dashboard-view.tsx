@@ -361,10 +361,52 @@ export function DashboardView() {
 
   // Resumen del mes (sobre TODAS las categorías, no solo las diez dibujadas)
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const monthTotal = budgetAll.reduce((s, r) => s + r.now, 0);
+  const monthTotal = personalTransactions
+    .filter((transaction) => transaction.amount < 0 && transaction.transaction_date.startsWith(currentKey))
+    .reduce((total, transaction) => total + Math.abs(transaction.amount), 0);
   const usualFullMonth = budgetAll.reduce((s, r) => s + r.usual, 0);
   const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
   const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
+  const incomeSnapshot = useMemo(() => {
+    const monthIncomeTransactions = personalTransactions.filter(
+      (transaction) => transaction.amount > 0 && transaction.transaction_date.startsWith(currentKey),
+    );
+    const income = monthIncomeTransactions.reduce((total, transaction) => total + transaction.amount, 0);
+    const comparisonMonths = Array.from({ length: 6 }, (_, index) => addMonths(currentKey, index - 6));
+    const comparisonTotals = comparisonMonths.map((month) =>
+      personalTransactions
+        .filter((transaction) => transaction.amount > 0 && transaction.transaction_date.startsWith(month))
+        .reduce((total, transaction) => total + transaction.amount, 0),
+    );
+    const average = comparisonTotals.reduce((total, value) => total + value, 0) / comparisonTotals.length;
+    const sourceTotals = new Map<string, number>();
+    monthIncomeTransactions.forEach((transaction) => {
+      const source = transaction.subcategory_id
+        ? subcategoryName.get(transaction.subcategory_id)
+        : transaction.category_id
+          ? categoryName.get(transaction.category_id)
+          : null;
+      const label = source ?? transaction.name;
+      sourceTotals.set(label, (sourceTotals.get(label) ?? 0) + transaction.amount);
+    });
+    const mainSource = [...sourceTotals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    return {
+      income,
+      average,
+      trend: average > 0 ? (income - average) / average : null,
+      mainSource,
+    };
+  }, [categoryName, currentKey, personalTransactions, subcategoryName]);
+  const monthBalance = incomeSnapshot.income - monthTotal;
+  const retainedPercent = incomeSnapshot.income > 0
+    ? Math.round((monthBalance / incomeSnapshot.income) * 100)
+    : null;
+  const spentPercent = incomeSnapshot.income > 0
+    ? Math.min(100, Math.max(0, (monthTotal / incomeSnapshot.income) * 100))
+    : monthTotal > 0
+      ? 100
+      : 0;
 
   function addToChart(id: string) {
     if (!selected.includes(id)) toggle(id);
@@ -382,8 +424,8 @@ export function DashboardView() {
   if (!personalTransactions.length) {
     return (
       <div className="evo">
-        <div className="evo-head"><h1>Mis gastos</h1><p>Aún no hay nada anotado.</p></div>
-        <div className="empty-state"><p>Anota tu primer gasto y aquí verás cómo evoluciona mes a mes.</p><AppLink className="button primary" href="/movimientos/nuevo">Anotar un gasto</AppLink></div>
+        <div className="evo-head"><h1>Tu historia empieza aquí</h1><p>Aún no hay nada anotado.</p></div>
+        <div className="empty-state"><p>Añade tu primer apunte y aquí verás cómo se mueve tu dinero mes a mes.</p><AppLink className="button primary" href="/movimientos/nuevo">Anotar un movimiento</AppLink></div>
       </div>
     );
   }
@@ -391,13 +433,13 @@ export function DashboardView() {
   return (
     <div className="evo">
       <div className="evo-head">
-        <h1>Mis gastos, mes a mes</h1>
+        <h1>Tu dinero, en movimiento</h1>
       </div>
 
       {/* Lo primero: cuánto llevo este mes */}
       <div className="hero-month">
         <p className="hero-line">
-          En {MES_LARGO[now.getMonth()]} llevo <strong>{formatCurrency(monthTotal)}</strong>
+          En {MES_LARGO[now.getMonth()]} has gastado <strong>{formatCurrency(monthTotal)}</strong>
         </p>
         {heroPct !== null ? (
           <p className="hero-note">
@@ -408,6 +450,60 @@ export function DashboardView() {
           </p>
         ) : null}
       </div>
+
+      <section className={`money-flow-card${monthBalance < 0 ? " negative" : ""}`} aria-labelledby="money-flow-title">
+        <div className="money-flow-heading">
+          <div>
+            <p className="money-flow-kicker">La historia de este mes</p>
+            <h2 id="money-flow-title">Lo que entra, lo que sale y lo que queda</h2>
+          </div>
+          {incomeSnapshot.mainSource ? <span className="money-flow-source">Entrada principal · {incomeSnapshot.mainSource}</span> : null}
+        </div>
+
+        <div className="money-flow-values">
+          <div className="income">
+            <span>Ha entrado</span>
+            <strong>+{formatCurrency(incomeSnapshot.income)}</strong>
+          </div>
+          <div className="expense">
+            <span>Ha salido</span>
+            <strong>−{formatCurrency(monthTotal)}</strong>
+          </div>
+          <div className={`balance ${monthBalance < 0 ? "negative" : ""}`}>
+            <span>Balance</span>
+            <strong>{monthBalance > 0 ? "+" : ""}{formatCurrency(monthBalance)}</strong>
+          </div>
+        </div>
+
+        <div
+          className="money-flow-track"
+          role="img"
+          aria-label={incomeSnapshot.income > 0
+            ? `${Math.round(spentPercent)} por ciento de los ingresos del mes ya se ha destinado a gastos`
+            : "Todavía no hay ingresos anotados este mes"}
+        >
+          <span className="money-flow-retained" />
+          <span className="money-flow-spent" style={{ width: `${spentPercent}%` }} />
+          {monthBalance < 0 ? <span className="money-flow-overflow">te has pasado de lo que entró</span> : null}
+        </div>
+
+        <div className="money-flow-insights">
+          <p>
+            {incomeSnapshot.income <= 0
+              ? "Aún no has anotado ingresos este mes; cuando lo hagas verás aquí cuánto consigues conservar."
+              : monthBalance >= 0
+                ? `De cada 100 € que han entrado, te quedan ${Math.max(0, retainedPercent ?? 0)} € sin gastar.`
+                : `Este mes han salido ${formatCurrency(Math.abs(monthBalance))} más de los que han entrado.`}
+          </p>
+          {incomeSnapshot.income > 0 ? (
+            <span className={`money-flow-trend${incomeSnapshot.trend !== null && incomeSnapshot.trend < 0 ? " down" : ""}`}>
+              {incomeSnapshot.trend === null
+                ? "Primer mes con ingresos comparables"
+                : `${incomeSnapshot.trend >= 0 ? "+" : ""}${Math.round(incomeSnapshot.trend * 100)}% frente a tu media de 6 meses`}
+            </span>
+          ) : null}
+        </div>
+      </section>
 
       <p className="evo-ask">¿Qué quiero mirar?</p>
       <div className="pick-list">

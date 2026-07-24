@@ -24,7 +24,7 @@ test.describe("mobile quality flows", () => {
   test("all application tabs load, navigate and stay inside the viewport", async ({ page }) => {
     test.setTimeout(90_000);
     const routes = [
-      { path: "/dashboard/", heading: "Mis gastos, mes a mes" },
+      { path: "/dashboard/", heading: "Tu dinero, en movimiento" },
       { path: "/movimientos/", heading: "Apuntes" },
       { path: "/movimientos/nuevo/", heading: "Anotar un gasto" },
       { path: "/recurrentes/", heading: "Gastos e ingresos recurrentes" },
@@ -45,17 +45,28 @@ test.describe("mobile quality flows", () => {
     }
 
     const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
+    await expect(mobileNav.getByRole("link")).toHaveCount(5);
+    await expect(mobileNav.getByRole("link", { name: "Fijos" })).toHaveCount(0);
     for (const item of [
       { name: "Resumen", url: /\/dashboard\/?$/ },
       { name: "Apuntes", url: /\/movimientos\/?$/ },
       { name: "Anotar", url: /\/movimientos\/nuevo\/?$/ },
-      { name: "Fijos", url: /\/recurrentes\/?$/ },
       { name: "Piso", url: /\/piso-malaga\/?$/ },
       { name: "Ajustes", url: /\/ajustes\/?$/ },
     ]) {
       await mobileNav.getByRole("link", { name: item.name }).click();
       await expect(page).toHaveURL(item.url);
     }
+    const ownerRecurring = page.locator(".mobile-owner-tool");
+    await expect(ownerRecurring).toHaveAccessibleName("Recurrentes");
+    await ownerRecurring.click();
+    await expect(page).toHaveURL(/\/recurrentes\/?$/);
+
+    await page.goto("/dashboard/");
+    const flow = page.getByRole("region", { name: "Lo que entra, lo que sale y lo que queda" });
+    await expect(flow.getByText("Ha entrado")).toBeVisible();
+    await expect(flow.getByText("+2400,00 €")).toBeVisible();
+    await expect(flow.getByText("Entrada principal · Nómina")).toBeVisible();
   });
 
   test("a long new-expense form uses document scroll and remains saveable with a short viewport", async ({ page }) => {

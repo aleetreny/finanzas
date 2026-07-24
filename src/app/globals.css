@@ -124,6 +124,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   border-bottom: 2px solid var(--ink);
 }
 .nb-brand { flex: 0 0 auto; font-family: var(--font-display), cursive; font-size: 27px; font-weight: 700; margin-right: 6px; }
+.mobile-owner-tool { display: none; }
 .nb-nav { display: flex; align-items: baseline; gap: 4px 18px; flex-wrap: wrap; }
 .nb-nav a { position: relative; font-family: var(--font-hand), cursive; font-size: 17px; font-weight: 400; color: var(--pencil); padding: 2px 2px 4px; }
 .nb-nav a:hover { color: var(--ink); }
@@ -359,6 +360,101 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .hero-note { margin: 6px 0 0; font-family: var(--font-hand), cursive; font-size: 16px; color: var(--pencil); }
 .hero-note .up { color: var(--red-pen); font-weight: 700; }
 .hero-note .down { color: var(--green-pen); font-weight: 700; }
+
+/* El recorrido mensual une ingresos, gastos y balance en una sola lectura. */
+.money-flow-card {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  overflow: hidden;
+  margin: 24px 0 8px;
+  padding: 20px 22px 18px;
+  border: 2px solid var(--ink);
+  border-radius: 14px 220px 18px 200px / 190px 16px 180px 18px;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--green-pen) 7%, transparent), transparent 46%),
+    var(--paper-solid);
+}
+.money-flow-card::after {
+  position: absolute;
+  right: -18px;
+  bottom: -24px;
+  width: 105px;
+  height: 72px;
+  border: 2px solid color-mix(in srgb, var(--green-pen) 24%, transparent);
+  border-radius: 50%;
+  content: "";
+  transform: rotate(-11deg);
+  pointer-events: none;
+}
+.money-flow-card.negative::after { border-color: color-mix(in srgb, var(--red-pen) 30%, transparent); }
+.money-flow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.money-flow-heading h2 { margin: 0; font-family: var(--font-display), cursive; font-size: clamp(23px, 4vw, 31px); line-height: 1.05; }
+.money-flow-kicker { margin: 0 0 3px; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 14px; letter-spacing: .04em; }
+.money-flow-source {
+  flex: 0 1 auto;
+  border-bottom: 1.5px solid var(--green-pen);
+  color: var(--green-pen);
+  font-family: var(--font-hand), cursive;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+.money-flow-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.money-flow-values > div { min-width: 0; }
+.money-flow-values span { display: block; margin-bottom: 2px; color: var(--pencil); font-size: 13px; }
+.money-flow-values strong {
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-display), cursive;
+  font-size: clamp(20px, 4.4vw, 31px);
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.money-flow-values .income strong { color: var(--green-pen); }
+.money-flow-values .expense strong { color: var(--red-pen); }
+.money-flow-values .balance { text-align: right; }
+.money-flow-values .balance strong { color: var(--green-pen); }
+.money-flow-values .balance.negative strong { color: var(--red-pen); }
+.money-flow-track {
+  position: relative;
+  height: 14px;
+  overflow: visible;
+  border: 2px solid var(--ink);
+  border-radius: 70% 38% 64% 42% / 56% 65% 45% 52%;
+  background: var(--paper-2);
+}
+.money-flow-retained, .money-flow-spent { position: absolute; inset-block: 0; left: 0; }
+.money-flow-retained { right: 0; background: color-mix(in srgb, var(--green-pen) 62%, var(--paper)); }
+.money-flow-spent {
+  max-width: 100%;
+  border-right: 2px solid var(--ink);
+  background: color-mix(in srgb, var(--red-pen) 70%, var(--paper));
+  transition: width .35s ease;
+}
+.money-flow-overflow {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 5px);
+  color: var(--red-pen);
+  font-family: var(--font-hand), cursive;
+  font-size: 12px;
+  font-weight: 700;
+}
+.money-flow-insights { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.money-flow-insights p { max-width: 620px; margin: 0; font-family: var(--font-hand), cursive; font-size: 15px; }
+.money-flow-trend {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border: 1.5px solid var(--green-pen);
+  border-radius: 12px 100px 10px 90px / 90px 12px 80px 10px;
+  color: var(--green-pen);
+  font-family: var(--font-hand), cursive;
+  font-size: 12px;
+  font-weight: 700;
+}
+.money-flow-trend.down { border-color: var(--red-pen); color: var(--red-pen); }
 
 /* Lista de categorías para marcar (casillas hechas a mano) */
 .pick-list {
@@ -1054,6 +1150,22 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .nb-nav, .nb-spacer { display: none; }
   .nb-account { position: static; }
   .nb-account .who { display: none; }
+  .mobile-owner-tool {
+    display: inline-flex;
+    min-height: 38px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    margin-right: 4px;
+    padding: 2px 9px;
+    border: 1.5px solid var(--pencil-faint);
+    border-radius: 11px 70px 10px 68px / 66px 10px 64px 11px;
+    color: var(--pencil);
+    font-family: var(--font-hand), cursive;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .mobile-owner-tool.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
   .floating-action { display: none; }
 
   .mobile-nav {
@@ -1099,7 +1211,14 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
     color: var(--paper);
     box-shadow: 2px 3px 0 var(--pencil-faint);
   }
-  .malaga-owner .mobile-nav-link { flex-basis: 16.666%; font-size: 10.5px; }
+  .money-flow-card { gap: 14px; margin-top: 20px; padding: 16px 15px 15px; }
+  .money-flow-heading { display: grid; gap: 8px; }
+  .money-flow-source { justify-self: start; text-align: left; }
+  .money-flow-values { gap: 7px; }
+  .money-flow-values span { font-size: 11.5px; }
+  .money-flow-values strong { font-size: clamp(17px, 5.3vw, 23px); }
+  .money-flow-insights { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .money-flow-trend { flex: 0 1 auto; }
   .evo, .chart-card, .budget-list, .budget-row-container, .budget-row, .budget-top, .budget-title-group { min-width: 0; max-width: 100%; }
   .budget-top { align-items: flex-start; flex-wrap: wrap; }
   .budget-title-group { flex: 1 1 190px; flex-wrap: wrap; }

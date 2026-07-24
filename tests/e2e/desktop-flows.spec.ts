@@ -29,7 +29,7 @@ test.describe("desktop quality flows", () => {
   test("every tab is addressable, selected correctly and contained at desktop widths", async ({ page }) => {
     test.setTimeout(90_000);
     const routes = [
-      { path: "/dashboard/", heading: "Mis gastos, mes a mes", nav: "Resumen" },
+      { path: "/dashboard/", heading: "Tu dinero, en movimiento", nav: "Resumen" },
       { path: "/movimientos/", heading: "Apuntes", nav: "Apuntes" },
       { path: "/movimientos/nuevo/", heading: "Anotar un gasto", nav: "Anotar" },
       { path: "/recurrentes/", heading: "Gastos e ingresos recurrentes", nav: "Recurrentes" },
@@ -217,7 +217,12 @@ test.describe("desktop quality flows", () => {
 test.describe("public account and isolation", () => {
   test.describe.configure({ timeout: 60_000 });
   test("any visitor can register a fresh isolated account and read the public install guide", async ({ page }) => {
-    await installMockFinanceBackend(page);
+    const db = createMockFinanceDatabase();
+    db.transactions = [];
+    db.recurring_rules = [];
+    db.rental_bookings = [];
+    db.properties = [];
+    await installMockFinanceBackend(page, db, { hasMalagaAccess: false });
     await page.goto("/?invite=playwright-invite");
     await page.getByRole("button", { name: "Crear una cuenta nueva" }).click();
     await page.getByLabel("Nombre").fill("Nueva persona");
@@ -229,10 +234,10 @@ test.describe("public account and isolation", () => {
 
     await page.getByLabel("Repite la clave").fill("ClaveNueva2026");
     await page.getByRole("button", { name: "Crear mi cuenta" }).click();
-    await expect(page.getByRole("heading", { name: "Mis gastos, mes a mes" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tu historia empieza aquí" })).toBeVisible();
   });
 
-  test("a non-owner cannot see, navigate to or configure Malaga", async ({ page }) => {
+  test("a non-owner cannot see, navigate to or configure Malaga", async ({ page, isMobile }) => {
     const db = createMockFinanceDatabase();
     db.transactions = [];
     db.recurring_rules = [];
@@ -243,6 +248,12 @@ test.describe("public account and isolation", () => {
 
     const primaryNav = page.getByRole("navigation", { name: "Navegación principal" });
     await expect(primaryNav.getByRole("link", { name: "Piso Málaga" })).toHaveCount(0);
+    if (isMobile) {
+      const mobileNav = page.getByRole("navigation", { name: "Navegación móvil" });
+      await expect(mobileNav.getByRole("link")).toHaveCount(5);
+      await expect(mobileNav.getByRole("link", { name: "Fijos" })).toBeVisible();
+      await expect(page.locator(".mobile-owner-tool")).toHaveCount(0);
+    }
     await page.goto("/piso-malaga/");
     await expect(page.getByRole("heading", { name: "Sección privada" })).toBeVisible();
 
