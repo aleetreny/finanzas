@@ -43,9 +43,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   // En la exportación estática las URL llevan barra final: se normaliza para
   // que el subrayado de "activo" funcione igual en local y en GitHub Pages.
   const path = (pathname ?? "/").replace(/\/+$/, "") || "/";
+  const isTransactionEntry = path === "/movimientos/nuevo";
 
   return (
-    <div className={`app-frame${session ? " authenticated" : ""}${hasMalagaAccess ? " malaga-owner" : ""}`}>
+    <div className={`app-frame${session ? " authenticated" : ""}${hasMalagaAccess ? " malaga-owner" : ""}${isTransactionEntry ? " transaction-entry" : ""}`}>
       <a href="#main-content" className="skip-link">Saltar al contenido</a>
       <header className="nb-top">
         <AppLink href="/dashboard" className="nb-brand" aria-label="Ir al resumen">Mis&nbsp;gastos</AppLink>
@@ -66,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
         <span className="nb-spacer" />
-        {session && malagaAccessReady ? (
+        {session && malagaAccessReady && !isTransactionEntry ? (
           <span className="mobile-header-tools">
             <AppLink
               href="/recurrentes"
@@ -103,14 +104,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
 
       {/* En la propia página de anotar sobra (y taparía el botón de guardar) */}
-      {session && malagaAccessReady && path !== "/movimientos/nuevo" && path !== "/viajes" ? (
+      {session && malagaAccessReady && !isTransactionEntry && path !== "/viajes" ? (
         <AppLink href="/movimientos/nuevo" className="floating-action" aria-label="Anotar un gasto">
           <Plus size={20} />
           <span>Anotar</span>
         </AppLink>
       ) : null}
 
-      {session && malagaAccessReady ? <nav className="mobile-nav" aria-label="Navegación móvil">
+      {session && malagaAccessReady && !isTransactionEntry ? <nav className="mobile-nav" aria-label="Navegación móvil">
           {(hasMalagaAccess ? ownerMobileNavigation : mobileNavigation).map(({ href, label, Icon, quick }) => {
             const active = isRouteActive(path, href);
             return (

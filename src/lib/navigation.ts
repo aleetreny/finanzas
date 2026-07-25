@@ -8,3 +8,10 @@ export function appRouteHref(path: string) {
   const route = pathname === "/" ? "/" : `${pathname.replace(/\/+$/, "")}/`;
   return `${basePath}${route}${suffix}`;
 }
+
+export function navigateToAppRoute(path: string) {
+  // Igual que AppLink: la exportación de GitHub Pages necesita cargar el HTML
+  // estático de destino, y no una transición RSC del router de Next.
+  // replace evita volver con "atrás" al formulario ya guardado y duplicarlo.
+  window.location.replace(appRouteHref(path));
+}

@@ -50,13 +50,7 @@ function mockUser() {
 }
 
 function corsHeaders(extra: Record<string, string> = {}) {
-  return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-headers": "apikey, authorization, content-type, prefer, range, x-client-info",
-    "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
-    "access-control-expose-headers": "Content-Range",
-    ...extra,
-  };
+  return extra;
 }
 
 function idFilter(url: URL) {
@@ -375,13 +369,15 @@ export async function installMockFinanceBackend(
   return db;
 }
 
-export async function signInToMockFinance(page: Page) {
-  await page.goto("/");
+export async function signInToMockFinance(page: Page, startUrl = "/") {
+  await page.goto(startUrl);
   await page.getByLabel("Correo electrónico").fill("movil@example.com");
   await page.getByLabel("Clave").fill("clave-segura-movil");
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.locator(".loading-state")).toHaveCount(0);
   await expect(page.locator(".app-frame.authenticated")).toBeVisible();
+  await expect(page.locator(".loading-state")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible();
+  await expect(page.locator(".c7-card").filter({ hasText: "Ingresos" })).toBeVisible();
   await page.waitForFunction(() =>
     Object.entries(localStorage).some(([key, value]) => key.startsWith("sb-") && value.includes("mock-refresh-token")),
   );

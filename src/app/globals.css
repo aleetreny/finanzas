@@ -290,7 +290,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 /* ---------------------------------------------------------------------------
    Registro rápido (anotar un gasto)
    ------------------------------------------------------------------------- */
-.quick-form { max-width: 520px; margin: 0 auto; }
+.quick-form { max-width: 520px; margin: 0 auto; touch-action: pan-y pinch-zoom; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .seg button { min-height: 50px; border: 2px solid var(--ink); border-radius: 14px 200px 16px 200px / 200px 14px 180px 16px; background: transparent; color: var(--pencil); font-family: var(--font-hand), cursive; font-size: 19px; font-weight: 700; }
 .seg button.active.expense { background: var(--ink); color: var(--paper); }
@@ -2966,6 +2966,7 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   }
   .main-content { max-width: 100%; overflow-x: clip; contain: inline-size; padding: 18px 16px calc(34px + env(safe-area-inset-bottom)); }
   .app-frame.authenticated .main-content { padding-bottom: calc(var(--mobile-nav-height) + 34px + env(safe-area-inset-bottom)); }
+  .app-frame.transaction-entry.authenticated .main-content { padding-bottom: calc(34px + env(safe-area-inset-bottom)); }
   .two-column { grid-template-columns: 1fr; }
   .data-table { display: none; }
   .mobile-list { display: grid; }
@@ -3078,6 +3079,37 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   }
   .mobile-owner-tool.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
   .floating-action { display: none; }
+
+  /* Anotar es un flujo enfocado: sin barras fijas que salten o se superpongan
+     cuando Safari redimensiona el viewport al abrir/cerrar el teclado. */
+  html:has(.app-frame.transaction-entry) {
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .app-frame.transaction-entry .nb-top {
+    position: relative;
+    top: auto;
+  }
+  .app-frame.transaction-entry .page-header {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .app-frame.transaction-entry .page-title { min-width: 0; }
+  .app-frame.transaction-entry .page-title h1 { font-size: clamp(31px, 9vw, 40px); }
+  .app-frame.transaction-entry .page-title p { font-size: 14px; line-height: 1.4; }
+  .app-frame.transaction-entry .page-header > .button {
+    min-height: 42px;
+    flex: 0 0 auto;
+    padding-inline: 12px;
+  }
+  .app-frame.transaction-entry .amount-hero {
+    margin-top: 6px;
+    padding-top: 8px;
+  }
+  .app-frame.transaction-entry .quick-form :is(input, select, textarea) {
+    scroll-margin-block: 18px 24px;
+  }
 
   .mobile-nav {
     position: fixed;

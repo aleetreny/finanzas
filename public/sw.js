@@ -1,11 +1,26 @@
-const CACHE = "finanzas-shell-v5";
-const APP_HOME = new URL("dashboard/", self.registration.scope).toString();
+const CACHE = "finanzas-shell-v6";
+const CORE_ROUTES = [
+  "",
+  "dashboard/",
+  "movimientos/",
+  "movimientos/nuevo/",
+  "recurrentes/",
+  "viajes/",
+  "piso-malaga/",
+  "importar-exportar/",
+  "ajustes/",
+  "instalar/",
+].map((path) => new URL(path, self.registration.scope).toString());
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.add(APP_HOME))
-      .catch(() => undefined)
+      .then((cache) => Promise.allSettled(
+        CORE_ROUTES.map(async (url) => {
+          const response = await fetch(new Request(url, { cache: "reload" }));
+          if (response.ok) await cache.put(url, response);
+        }),
+      ))
       .then(() => self.skipWaiting()),
   );
 });
@@ -34,7 +49,11 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(async () => (await caches.match(request)) ?? caches.match(APP_HOME)),
+        // Nunca devolvemos el HTML del resumen para otra URL: hidratar una
+        // página distinta bajo /movimientos/ acaba en un 404 dentro de la app.
+        .catch(async () =>
+          (await caches.match(request, { ignoreSearch: true })) ?? Response.error()
+        ),
     );
     return;
   }

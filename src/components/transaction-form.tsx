@@ -2,14 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronDown, LoaderCircle, MapPinned, Trash2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { todayIso } from "@/lib/format";
-import { appRouteHref } from "@/lib/navigation";
+import { navigateToAppRoute } from "@/lib/navigation";
 import type { Transaction, TransactionInput } from "@/lib/types";
 
 const formSchema = z.object({
@@ -63,7 +62,6 @@ export function TransactionForm({
   fixedDirection?: "income" | "expense";
 }) {
   const { categories, subcategories, tripProjects, addTransaction, updateTransaction } = useFinance();
-  const router = useRouter();
   const [advanced, setAdvanced] = useState(Boolean(initial?.notes));
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -72,6 +70,7 @@ export function TransactionForm({
     register,
     handleSubmit,
     setValue,
+    setFocus,
     control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: defaults(initial, fixedDirection) });
@@ -132,13 +131,32 @@ export function TransactionForm({
     setSelectionError(null);
   }
 
+  function dismissVirtualKeyboard() {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }
+
+  function dismissKeyboardAfterTap(event: React.MouseEvent<HTMLFormElement>) {
+    const target = event.target;
+    const activeElement = document.activeElement;
+    if (!(target instanceof Element) || !(activeElement instanceof HTMLElement)) return;
+    if (!activeElement.matches("input, textarea, select")) return;
+    if (target.closest("input, textarea, select")) return;
+    // WebKit puede cancelar el cambio del botón pulsado si el input pierde el
+    // foco dentro del mismo evento. Se difiere al siguiente frame.
+    window.requestAnimationFrame(dismissVirtualKeyboard);
+  }
+
   async function submit(values: FormValues) {
     setSubmitError(null);
     if (usesSubcategorySelector && availableSubcategories.length && !values.subcategory_id) {
       setSelectionError(direction === "income" && scope === "general" ? "Elige el tipo de ingreso." : "Elige el tipo de apunte.");
+      setFocus("subcategory_id");
       return;
     }
     setSelectionError(null);
+    dismissVirtualKeyboard();
 
     const input: TransactionInput = {
       transaction_date: values.transaction_date,
@@ -164,7 +182,7 @@ export function TransactionForm({
       if (initial) await updateTransaction(initial.id, input);
       else await addTransaction(input);
       if (onSaved) onSaved();
-      else router.push(appRouteHref(scope === "property" ? "/piso-malaga" : "/movimientos"));
+      else navigateToAppRoute(scope === "property" ? "/piso-malaga" : "/movimientos");
     } catch (caught) {
       setSubmitError(caught instanceof Error ? caught.message : "No se pudo guardar el movimiento.");
     }
@@ -202,7 +220,13 @@ export function TransactionForm({
   }
 
   return (
-    <form className="quick-form" onSubmit={handleSubmit(submit)}>
+    <form
+      className="quick-form"
+      aria-busy={isSubmitting}
+      onClick={dismissKeyboardAfterTap}
+      onTouchMove={dismissVirtualKeyboard}
+      onSubmit={handleSubmit(submit)}
+    >
       {!fixedDirection ? (
         <div className="seg" role="group" aria-label="Tipo de movimiento">
           <button type="button" className={`expense ${direction === "expense" ? "active" : ""}`} onClick={() => setValue("direction", "expense")}>Gasto</button>
@@ -217,6 +241,9 @@ export function TransactionForm({
           inputMode="decimal"
           placeholder="0"
           aria-label="Importe en euros"
+          aria-invalid={Boolean(errors.amount)}
+          autoComplete="off"
+          enterKeyHint="done"
           value={rawAmount}
           onChange={handleAmountChange}
         />
@@ -256,7 +283,7 @@ export function TransactionForm({
               <option value="">{availableSubcategories.length ? "Selecciona una opción…" : "Sin subcategorías configuradas"}</option>
               {availableSubcategories.map((subcategory) => <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>)}
             </select>
-            {selectionError ? <p className="field-error">{selectionError}</p> : null}
+            {selectionError ? <p className="field-error" role="alert">{selectionError}</p> : null}
           </div>
         </>
       ) : (
@@ -294,6 +321,8 @@ export function TransactionForm({
           type="text"
           aria-label="Concepto"
           aria-invalid={Boolean(errors.name)}
+          autoComplete="off"
+          enterKeyHint="done"
           placeholder={direction === "expense" ? "p. ej. compra del super" : "p. ej. nómina"}
           {...register("name")}
         />
@@ -350,7 +379,7 @@ export function TransactionForm({
         </div>
       ) : null}
 
-      {submitError ? <p className="notice error" style={{ marginTop: 16 }}>{submitError}</p> : null}
+      {submitError ? <p className="notice error" role="alert" style={{ marginTop: 16 }}>{submitError}</p> : null}
 
       <div className="q-save">
         {onCancel || (initial && onDelete) ? (
