@@ -49,7 +49,7 @@ export const RENTAL_COMMISSION_PROFILES: Record<
 > = {
   airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18 },
   airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18 },
-  booking_standard: { platform: "booking", platformRate: 0.15 + 0.013, managerRate: 0.18 },
+  booking_standard: { platform: "booking", platformRate: 0.15 * 1.21, managerRate: 0.18 },
   direct: { platform: "direct", platformRate: 0, managerRate: 0.18 },
   other: { platform: "other", platformRate: 0, managerRate: 0.18 },
 };
