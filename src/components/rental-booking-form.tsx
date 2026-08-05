@@ -211,14 +211,14 @@ export function RentalBookingForm({
           label="Alojamiento final"
           help="Después de descuentos y sin incluir la limpieza."
           error={errors.accommodation_final?.message}
-          register={register("accommodation_final", { valueAsNumber: true })}
+          register={register("accommodation_final", { setValueAs: decimalNumber })}
         />
         <MoneyField
           id="booking-cleaning"
           label="Limpieza"
           help="Se cobra al huésped y forma parte del pago a la gestora."
           error={errors.cleaning_fee?.message}
-          register={register("cleaning_fee", { valueAsNumber: true })}
+          register={register("cleaning_fee", { setValueAs: decimalNumber })}
         />
       </div>
 
@@ -260,13 +260,13 @@ export function RentalBookingForm({
             id="booking-platform-rate"
             label="Porcentaje de plataforma"
             error={errors.platform_rate_percent?.message}
-            register={register("platform_rate_percent", { valueAsNumber: true })}
+            register={register("platform_rate_percent", { setValueAs: decimalNumber })}
           />
           <PercentField
             id="booking-manager-rate"
             label="Porcentaje de gestora"
             error={errors.manager_rate_percent?.message}
-            register={register("manager_rate_percent", { valueAsNumber: true })}
+            register={register("manager_rate_percent", { setValueAs: decimalNumber })}
           />
         </div>
         <p className="form-help">Los porcentajes y el modelo quedan guardados dentro de esta reserva y no cambian si modificas perfiles futuros.</p>
@@ -285,16 +285,21 @@ export function RentalBookingForm({
   );
 }
 
+function decimalNumber(value: unknown) {
+  if (typeof value === "number") return value;
+  if (value === "" || value === null || value === undefined) return undefined;
+  const normalized = String(value).trim().replace(/\s/g, "").replace(",", ".");
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : undefined;
+}
+
 function optionalNumber(value: unknown) {
-  if (value === "" || value === null || value === undefined) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+  const number = decimalNumber(value);
+  return number === undefined ? null : number;
 }
 
 function optionalUndefinedNumber(value: unknown) {
-  if (value === "" || value === null || value === undefined) return undefined;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : undefined;
+  return decimalNumber(value);
 }
 
 function PreviewRow({ label, value, total = false }: { label: string; value: number; total?: boolean }) {
@@ -319,7 +324,7 @@ function MoneyField({
   return (
     <div className="field">
       <label htmlFor={id}>{label}{optional ? <span className="opt"> · opcional</span> : null}</label>
-      <div className="money-input"><input id={id} type="number" min="0" step="0.01" inputMode="decimal" placeholder={optional ? "Automático" : undefined} {...register} /><span>€</span></div>
+      <div className="money-input"><input id={id} type="text" inputMode="decimal" autoComplete="off" placeholder={optional ? "Automático" : undefined} {...register} /><span>€</span></div>
       {help ? <small>{help}</small> : null}
       {error ? <p className="field-error">{error}</p> : null}
     </div>
@@ -330,7 +335,7 @@ function PercentField({ id, label, error, register }: { id: string; label: strin
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <div className="money-input percentage-input"><input id={id} type="number" min="0" max="100" step="0.001" inputMode="decimal" {...register} /><span>%</span></div>
+      <div className="money-input percentage-input"><input id={id} type="text" inputMode="decimal" autoComplete="off" {...register} /><span>%</span></div>
       {error ? <p className="field-error">{error}</p> : null}
     </div>
   );
