@@ -98,7 +98,7 @@ describe("rental commission models", () => {
   it.each([
     ["airbnb_shared_legacy", 39.93, 787.26],
     ["airbnb_host_only", 206.31, 650.83],
-    ["booking_standard", 179.3, 672.97],
+    ["booking_standard", 199.65, 656.29],
     ["direct", 0, 820],
   ] as const)("calculates the %s profile", (model, expectedPlatform, expectedNet) => {
     const calculation = calculateRentalBooking({
@@ -109,6 +109,10 @@ describe("rental commission models", () => {
     expect(calculation.totalGross).toBe(1100);
     expect(calculation.platformCommissionCalculated).toBe(expectedPlatform);
     expect(calculation.ownerNet).toBe(expectedNet);
+  });
+
+  it("applies 21% VAT to Booking's 15% commission", () => {
+    expect(RENTAL_COMMISSION_PROFILES.booking_standard.platformRate).toBeCloseTo(0.1815, 10);
   });
 
   it("uses real platform and cohost payments as exact overrides", () => {
@@ -137,7 +141,7 @@ describe("property recurring expenses", () => {
       effective_from: "2026-08-01",
       effective_until: null,
       category_id: "property-category",
-      subcategory_id: "community",
+      subcategory_id: "sub-community",
       context: "Piso Málaga",
       auto_generate: true,
       is_active: true,
