@@ -252,9 +252,9 @@ test.describe("desktop quality flows", () => {
   });
 });
 
-test.describe("public account and isolation", () => {
+test.describe("personal account and isolation", () => {
   test.describe.configure({ timeout: 60_000 });
-  test("any visitor can request a fresh access link and read the public install guide", async ({ page }) => {
+  test("the public deployment only offers the owner's password sign-in and install guide", async ({ page }) => {
     const db = createMockFinanceDatabase();
     db.transactions = [];
     db.trip_projects = [];
@@ -263,11 +263,13 @@ test.describe("public account and isolation", () => {
     db.properties = [];
     await installMockFinanceBackend(page, db, { hasMalagaAccess: false });
     await page.goto("/");
-    await page.getByRole("button", { name: "Crear una cuenta nueva" }).click();
-    await page.getByLabel("Correo electrónico").fill("nueva@example.com");
-    await page.getByRole("button", { name: "Enviarme el enlace" }).click();
-    await expect(page.getByRole("button", { name: "Enlace enviado" })).toBeVisible();
-    await expect(page.locator(".auth-feedback")).toContainText("configurar tu clave");
+    await expect(page.getByRole("heading", { name: "Entrar en Mis gastos" })).toBeVisible();
+    await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+    await expect(page.getByLabel("Clave")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Crear una cuenta nueva" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "He olvidado mi clave" })).toHaveCount(0);
+    await page.getByRole("link", { name: "Cómo instalar la app en el móvil" }).click();
+    await expect(page.getByRole("heading", { name: "Pon Mis gastos en tu móvil" })).toBeVisible();
   });
 
   test("a non-owner cannot see, navigate to or configure Malaga", async ({ page, isMobile }) => {

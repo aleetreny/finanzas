@@ -260,19 +260,7 @@ export async function installMockFinanceBackend(
       await route.fulfill({ status: 204, headers: corsHeaders() });
       return;
     }
-    if (url.pathname.endsWith("/signup")) {
-      await fulfillJson(route, { user: mockUser(), session: null });
-      return;
-    }
     await fulfillJson(route, { user: mockUser() });
-  });
-
-  await page.route("**/functions/v1/public-signup", async (route) => {
-    if (route.request().method() === "OPTIONS") {
-      await route.fulfill({ status: 204, headers: corsHeaders() });
-      return;
-    }
-    await fulfillJson(route, { created: true }, 201);
   });
 
   await page.route("**/rest/v1/**", async (route) => {

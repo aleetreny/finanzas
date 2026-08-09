@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260715132856_initial_schema.sql"), "utf8");
 const onboarding = readFileSync(resolve(process.cwd(), "supabase/migrations/20260719234120_multi_user_onboarding.sql"), "utf8");
 const publicSignup = readFileSync(resolve(process.cwd(), "supabase/migrations/20260724101315_public_signup_features_and_recurring.sql"), "utf8");
-const publicSignupFunction = readFileSync(resolve(process.cwd(), "supabase/functions/public-signup/index.ts"), "utf8");
+const retiredPublicSignup = readFileSync(resolve(process.cwd(), "supabase/migrations/20260809114042_retire_public_signup.sql"), "utf8");
+const ownerGuard = readFileSync(resolve(process.cwd(), "supabase/migrations/20260809114317_harden_owner_account_guard.sql"), "utf8");
+const config = readFileSync(resolve(process.cwd(), "supabase/config.toml"), "utf8");
 
 describe("Supabase security migration", () => {
   it("enables RLS for every public application table", () => {
@@ -22,7 +24,7 @@ describe("Supabase security migration", () => {
   });
 });
 
-describe("alta multiusuario", () => {
+describe("acceso autenticado", () => {
   it("restringe la función de alta al rol authenticated", () => {
     expect(onboarding).toContain("revoke all on function public.bootstrap_user_workspace() from public, anon");
     expect(onboarding).toContain("grant execute on function public.bootstrap_user_workspace() to authenticated");
@@ -36,7 +38,7 @@ describe("alta multiusuario", () => {
   });
 });
 
-describe("alta pública aislada y recurrentes", () => {
+describe("espacio personal y recurrentes", () => {
   it("reserva Málaga para quien reclamó el histórico", () => {
     expect(publicSignup).toContain("has_malaga_access := owner_user_id = current_user_id");
     expect(publicSignup).toContain("and category_scope = 'property'");
@@ -51,11 +53,14 @@ describe("alta pública aislada y recurrentes", () => {
     expect(publicSignup).toContain("grant execute on function public.generate_due_recurring_transactions() to authenticated");
   });
 
-  it("limita el alta por invitación y no entrega la clave administrativa al cliente", () => {
-    expect(publicSignup).toContain("create table if not exists public.signup_rate_limits");
-    expect(publicSignup).toContain("grant execute on function public.consume_signup_attempt(text) to service_role");
-    expect(publicSignupFunction).toContain("email_confirm: true");
-    expect(publicSignupFunction).toContain("consume_signup_attempt");
-    expect(publicSignupFunction).not.toMatch(/service_role(_key)?\s*[:=]\s*["'][^"']+/i);
+  it("retira las invitaciones públicas sin borrar sus registros históricos", () => {
+    expect(retiredPublicSignup).toContain("drop function if exists public.consume_signup_attempt(text)");
+    expect(retiredPublicSignup).toContain("revoke all on table public.signup_rate_limits from service_role");
+    expect(retiredPublicSignup).toContain("create trigger restrict_auth_user_creation");
+    expect(retiredPublicSignup).toContain("This project only permits its existing owner account.");
+    expect(retiredPublicSignup).not.toMatch(/drop table/i);
+    expect(ownerGuard).toContain("pg_advisory_xact_lock(hashtext('finanzas:owner-account')::bigint)");
+    expect(config).toMatch(/\[auth\][\s\S]*?enable_signup = false/);
+    expect(config).toMatch(/\[auth\.email\][\s\S]*?enable_signup = false/);
   });
 });

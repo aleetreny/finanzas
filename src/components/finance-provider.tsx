@@ -47,7 +47,6 @@ type FinanceContextValue = {
   bookings: RentalBooking[];
   properties: Property[];
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
-  sendAccessLink: (email: string, shouldCreateUser?: boolean) => Promise<boolean>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -91,20 +90,9 @@ function cacheMalagaAccess(userId: string, access: boolean) {
 
 export function messageFrom(error: unknown) {
   const message = error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
-  const code = error && typeof error === "object" && "code" in error
-    ? String(error.code)
-    : "";
   const normalized = message.toLowerCase();
   if (normalized.includes("invalid login credentials")) return "El correo o la clave no son correctos.";
   if (normalized.includes("password should be")) return "La clave no cumple la longitud mínima requerida.";
-  if (code === "email_address_not_authorized"
-    || normalized.includes("email address not authorized")
-    || normalized.includes("email not authorized")) {
-    return "Supabase no puede enviar correos a esa dirección con el proveedor actual. Configura un SMTP propio en Authentication → Emails → SMTP settings.";
-  }
-  if (code === "over_email_send_rate_limit") {
-    return "Se ha alcanzado el límite de correos de acceso. Prueba de nuevo más tarde.";
-  }
   if (normalized.includes("rate limit")) return "Espera un minuto antes de volver a intentarlo.";
   return message;
 }
@@ -337,33 +325,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      return true;
-    } catch (caught) {
-      setError(messageFrom(caught));
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
-
-  const sendAccessLink = useCallback(async (email: string, shouldCreateUser = false) => {
-    if (!supabase) return false;
-    setError(null);
-    setNotice(null);
-    setLoading(true);
-    try {
-      const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-      const redirectUrl = new URL(`${basePath}/ajustes/`, window.location.origin);
-      redirectUrl.searchParams.set("configurar-acceso", "1");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser,
-          emailRedirectTo: redirectUrl.toString(),
-        },
-      });
-      if (signInError) throw signInError;
-      setNotice("Enlace enviado. Ábrelo desde el correo para entrar y configurar tu clave.");
       return true;
     } catch (caught) {
       setError(messageFrom(caught));
@@ -649,7 +610,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     bookings,
     properties,
     signInWithPassword,
-    sendAccessLink,
     updatePassword,
     signOut,
     refresh,
@@ -669,7 +629,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
     deleteRecurring, deleteTransaction, deleteTripProject, error, hasMalagaAccess, loading, malagaAccessReady, notice, properties,
     recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, saveTripProject, session,
-    sendAccessLink, signInWithPassword, signOut, subcategories, supabase,
+    signInWithPassword, signOut, subcategories, supabase,
     toggleRecurring, transactions, tripProjects, updatePassword, updateTransaction,
   ]);
 

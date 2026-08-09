@@ -11,7 +11,7 @@ export function getSupabase() {
     ? createClient(url, publishableKey, {
         auth: {
           persistSession: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
           autoRefreshToken: true,
         },
       })

@@ -2,12 +2,8 @@ import { describe, expect, it } from "vitest";
 import { messageFrom } from "@/components/finance-provider";
 
 describe("mensajes de errores de acceso", () => {
-  it("distingue el límite horario del intervalo corto entre envíos", () => {
-    const hourlyLimit = Object.assign(new Error("email rate limit exceeded"), {
-      code: "over_email_send_rate_limit",
-    });
-
-    expect(messageFrom(hourlyLimit)).toContain("límite de correos");
+  it("muestra errores claros para la clave y los límites de acceso", () => {
+    expect(messageFrom(new Error("Invalid login credentials"))).toContain("correo o la clave");
     expect(messageFrom(new Error("rate limit exceeded"))).toContain("un minuto");
   });
 });

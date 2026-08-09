@@ -1,6 +1,6 @@
 # Finanzas personales
 
-Aplicación responsive y PWA para gestionar el histórico financiero personal y, en una pestaña independiente, el Piso Málaga. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS. Es multiusuario: cualquier persona puede crear su cuenta y obtiene su propia libreta, completamente aislada del resto.
+Aplicación responsive y PWA para gestionar el histórico financiero personal y, en una pestaña independiente, el Piso Málaga. Usa Next.js con exportación estática para GitHub Pages y Supabase para autenticación, base de datos y RLS. Esta instalación es personal: solo admite el acceso del propietario mediante correo y clave.
 
 ## Entornos
 
@@ -29,22 +29,31 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 - Calculadora de amortización lineal prorrateada por días.
 - Importación CSV con vista previa, hash e informe por fila; exportación completa.
 - CRUD completo de categorías y subcategorías, con ámbitos separados para gastos, ingresos y Piso Málaga.
-- Autenticación por enlace mágico o correo y clave, PWA instalable y diseño móvil.
-- Registro abierto: cada usuario nuevo recibe automáticamente su espacio de trabajo.
+- Autenticación por correo y clave, PWA instalable y diseño móvil.
+- Sin registro público, invitaciones ni correos de acceso.
 
 ## Cuentas de usuario
 
-Cualquier persona puede usar la aplicación, no solo el propietario del histórico:
+La web pública es solo la interfaz de tu libreta; no permite crear cuentas ni recuperar claves por correo. Puedes entrar desde cualquier dispositivo con el mismo correo y clave.
 
-1. En la pantalla de acceso, pulsa **Crear una cuenta nueva** y escribe tu correo.
-2. Abre el enlace recibido; se creará tu cuenta y llegarás a **Ajustes → Tu clave de acceso**.
-3. A partir de ahí se entra con correo y clave desde cualquier dispositivo.
+1. En un dispositivo donde ya tengas la sesión abierta, ve a **Ajustes → Tu clave de acceso** y establece o cambia una clave de al menos 10 caracteres.
+2. En el móvil u ordenador nuevo, abre la web e inicia sesión con ese mismo correo y clave.
+3. La PWA guarda la sesión en cada dispositivo de forma independiente.
 
-Si ya tenías cuenta pero no recuerdas la clave, pulsa **He olvidado mi clave**. Ese enlace no crea una cuenta nueva: solo permite recuperar una cuenta existente.
+Guarda la clave en un gestor de contraseñas: al no haber recuperación por correo, no hay un acceso alternativo público.
 
-En el primer inicio de sesión, la función `bootstrap_user_workspace()` aprovisiona el espacio de trabajo del usuario: una cuenta bancaria por defecto, la taxonomía inicial de categorías y subcategorías, una propiedad para la pestaña de alquiler y sus ajustes. El histórico original solo pertenece al primer usuario que lo reclamó; las políticas RLS garantizan que nadie ve datos de otra persona.
+La función `bootstrap_user_workspace()` se conserva para completar de forma idempotente el espacio del propietario cuando inicia sesión, sin crear otros usuarios ni modificar el histórico.
 
-El proveedor de correo integrado de Supabase solo entrega mensajes a direcciones autorizadas de la organización y tiene límites estrictos. Para que los enlaces lleguen a otras personas, configura un SMTP propio en el panel de Supabase (**Authentication → Emails → SMTP settings**).
+## Crear una instalación propia
+
+Quien quiera usar la aplicación debe clonar el repositorio y conectarlo a su propio proyecto de Supabase; nunca debe reutilizar este proyecto ni sus credenciales.
+
+1. Crea un proyecto de Supabase y aplica las migraciones del repositorio con la CLI.
+2. En **Authentication → Users**, crea manualmente un único usuario propietario con correo y clave y confírmalo.
+3. Mantén desactivado el registro en **Authentication → Sign In / Providers**. El `supabase/config.toml` del repositorio ya lo deja desactivado para entornos nuevos y la migración añade una segunda barrera: solo permite el primer propietario creado manualmente.
+4. Configura en su clon las variables públicas de Supabase y los secretos de GitHub Pages indicados más abajo.
+
+No hace falta configurar SMTP: esta versión no envía correos de acceso.
 
 ## Instalar en el móvil
 
@@ -55,12 +64,11 @@ La web publicada funciona como una aplicación independiente y necesita servirse
 
 Al abrirla desde el icono se muestra sin la barra del navegador. La navegación inferior mantiene **Anotar** siempre a mano; en Android, una pulsación larga sobre el icono también ofrece el acceso rápido **Anotar un gasto**.
 
-En iPhone, Safari y una PWA instalada no siempre comparten la sesión creada por un enlace mágico. La primera vez:
+En iPhone, Safari y una PWA instalada no siempre comparten sesión. La primera vez:
 
-1. En la aplicación instalada, pulsa **Crear una cuenta nueva** y solicita el correo.
-2. Abre el enlace recibido en el mismo navegador; te llevará directamente a **Ajustes → Tu clave de acceso**.
-3. Crea una clave de al menos 10 caracteres y vuelve a abrir **Mis gastos** desde su icono.
-4. Entra con el mismo correo y esa clave. La sesión queda guardada en la PWA y no es necesario repetir el proceso en cada apertura.
+1. Antes de instalarla, asegúrate de tener una clave guardada en **Ajustes → Tu clave de acceso**.
+2. Abre **Mis gastos** desde su icono.
+3. Entra con el mismo correo y clave. La sesión queda guardada en la PWA y no es necesario repetir el proceso en cada apertura.
 
 ## Desarrollo local
 
@@ -68,7 +76,7 @@ Requisitos: Node.js 24 y npm.
 
 ```bash
 npm ci
-Copy-Item .env.example .env.local
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -91,9 +99,11 @@ Las migraciones versionadas están en `supabase/migrations`:
 4. `reorganize_finance_categories`: separación por ámbitos, migración de cuidado personal y retirada del dominio eliminado.
 5. `property_rental_dashboard`: reservas canónicas, unificación del ingreso del piso, alquiler enero-junio de 7.200 €, cobros de julio editables y comunidad periódica desde agosto.
 6. `rental_commission_models`: fecha de salida exclusiva, alojamiento final, perfiles de comisión inmutables por reserva y overrides de importes reales.
-7. `multi_user_onboarding`: función `bootstrap_user_workspace()` que aprovisiona cuenta, taxonomía y propiedad a cada usuario nuevo de forma idempotente.
+7. `multi_user_onboarding`: función `bootstrap_user_workspace()` idempotente para completar el espacio del propietario.
+8. `retire_public_signup`: retirada de la función pública de invitaciones, conservando sus registros técnicos históricos sin acceso.
+9. `harden_owner_account_guard`: cerrojo transaccional que impide crear una segunda cuenta de propietario.
 
-El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated`, valida `auth.uid()` y no permite que otro usuario reclame el histórico. El resto de usuarios pasa por `bootstrap_user_workspace()`, que respeta esa reclamación única y siembra un espacio de trabajo vacío listo para anotar.
+El dataset inicial se inserta sin propietario y no es visible mediante la Data API. Tras el primer inicio de sesión del usuario propietario creado manualmente, `claim_initial_dataset()` lo asigna atómicamente a ese usuario. La función solo puede ejecutarla el rol `authenticated` y valida `auth.uid()`.
 
 Para regenerar la migración de datos desde los CSV:
 
@@ -127,6 +137,8 @@ El workflow `.github/workflows/deploy-pages.yml` valida y genera el export está
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 Después activa **Settings → Pages → Source: GitHub Actions**. Cada `push` a `main` ejecuta pruebas, compila y publica.
+
+En el proyecto de Supabase asociado a ese clon, deja desactivado el registro de nuevos usuarios y crea el propietario manualmente desde el panel de Authentication antes de abrir la web.
 
 ## Decisiones de integridad
 
