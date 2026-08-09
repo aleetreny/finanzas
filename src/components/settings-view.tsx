@@ -189,7 +189,7 @@ export function SettingsView() {
       <PageHeader
         eyebrow=""
         title="Ajustes"
-        description="Gestiona tu acceso, la instalación y las categorías de tu libreta."
+        description="Gestiona tu clave, la instalación y las categorías de tu libreta."
       />
 
       <section className="access-setup card">
@@ -198,7 +198,7 @@ export function SettingsView() {
           <div>
             <h2>Tu clave de acceso</h2>
             <p>
-              Crea una clave privada una sola vez. Después entrarás con tu correo y esta clave, también desde el icono de la pantalla de inicio, sin volver a abrir el correo.
+              Cámbiala cuando lo necesites. Con tu correo y esta clave podrás entrar en tu libreta desde cualquier móvil u ordenador.
             </p>
           </div>
         </div>
