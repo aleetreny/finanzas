@@ -254,7 +254,7 @@ test.describe("desktop quality flows", () => {
 
 test.describe("public account and isolation", () => {
   test.describe.configure({ timeout: 60_000 });
-  test("any visitor can register a fresh isolated account and read the public install guide", async ({ page }) => {
+  test("any visitor can request a fresh access link and read the public install guide", async ({ page }) => {
     const db = createMockFinanceDatabase();
     db.transactions = [];
     db.trip_projects = [];
@@ -262,18 +262,12 @@ test.describe("public account and isolation", () => {
     db.rental_bookings = [];
     db.properties = [];
     await installMockFinanceBackend(page, db, { hasMalagaAccess: false });
-    await page.goto("/?invite=playwright-invite");
+    await page.goto("/");
     await page.getByRole("button", { name: "Crear una cuenta nueva" }).click();
-    await page.getByLabel("Nombre").fill("Nueva persona");
     await page.getByLabel("Correo electrónico").fill("nueva@example.com");
-    await page.getByLabel("Clave", { exact: true }).fill("ClaveNueva2026");
-    await page.getByLabel("Repite la clave").fill("distinta-2026");
-    await page.getByRole("button", { name: "Crear mi cuenta" }).click();
-    await expect(page.locator(".auth-feedback").getByRole("alert")).toContainText("no coinciden");
-
-    await page.getByLabel("Repite la clave").fill("ClaveNueva2026");
-    await page.getByRole("button", { name: "Crear mi cuenta" }).click();
-    await expect(page.getByRole("heading", { name: "Tu historia empieza aquí" })).toBeVisible();
+    await page.getByRole("button", { name: "Enviarme el enlace" }).click();
+    await expect(page.getByRole("button", { name: "Enlace enviado" })).toBeVisible();
+    await expect(page.locator(".auth-feedback")).toContainText("configurar tu clave");
   });
 
   test("a non-owner cannot see, navigate to or configure Malaga", async ({ page, isMobile }) => {

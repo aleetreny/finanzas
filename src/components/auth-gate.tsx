@@ -9,7 +9,6 @@ import {
   Mail,
   ShieldCheck,
   Smartphone,
-  UserRound,
 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { AppLink } from "@/components/app-link";
@@ -27,15 +26,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     notice,
     sendAccessLink,
     signInWithPassword,
-    signUp,
   } = useFinance();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordRepeat, setPasswordRepeat] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [linkRequested, setLinkRequested] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const normalizedPath = (pathname ?? "/").replace(/\/+$/, "") || "/";
 
   // Las instrucciones de instalación deben poder consultarse antes de crear
@@ -71,41 +66,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!session) {
     async function submitPassword(event: FormEvent) {
       event.preventDefault();
-      setValidationError(null);
       await signInWithPassword(email.trim(), password);
     }
 
-    async function submitSignup(event: FormEvent) {
+    async function submitLink(event: FormEvent) {
       event.preventDefault();
-      setValidationError(null);
-      if (password.length < 10) {
-        setValidationError("La clave debe tener al menos 10 caracteres.");
-        return;
-      }
-      if (password !== passwordRepeat) {
-        setValidationError("Las dos claves no coinciden.");
-        return;
-      }
-      try {
-        await signUp(email.trim(), password, displayName);
-      } catch {
-        // FinanceProvider muestra el mensaje normalizado.
-      }
-    }
-
-    async function submitRecovery(event: FormEvent) {
-      event.preventDefault();
-      setValidationError(null);
-      const sent = await sendAccessLink(email.trim());
+      const sent = await sendAccessLink(email.trim(), mode === "signup");
       if (sent) setLinkRequested(true);
     }
 
     function changeMode(nextMode: AuthMode) {
       setMode(nextMode);
-      setValidationError(null);
       setLinkRequested(false);
       setPassword("");
-      setPasswordRepeat("");
     }
 
     return (
@@ -162,89 +135,20 @@ export function AuthGate({ children }: { children: ReactNode }) {
           </>
         ) : null}
 
-        {mode === "signup" ? (
+        {mode === "signup" || mode === "recovery" ? (
           <>
-              <h1>Crear una cuenta</h1>
-              <p>Empezarás desde cero. Tus apuntes serán privados, estarán separados de las demás cuentas y entrarás al terminar.</p>
-              <form onSubmit={submitSignup} className="auth-form">
-                <label htmlFor="auth-signup-name">Nombre</label>
-                <div className="input-with-icon">
-                  <UserRound size={18} aria-hidden="true" />
-                  <input
-                    id="auth-signup-name"
-                    type="text"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    placeholder="Cómo quieres que te llamemos"
-                    required
-                    autoComplete="name"
-                    autoFocus
-                  />
-                </div>
-                <label htmlFor="auth-signup-email">Correo electrónico</label>
-                <div className="input-with-icon">
-                  <Mail size={18} aria-hidden="true" />
-                  <input
-                    id="auth-signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="tu@correo.com"
-                    required
-                    autoComplete="email"
-                  />
-                </div>
-                <label htmlFor="auth-signup-password">Clave</label>
-                <div className="input-with-icon">
-                  <KeyRound size={18} aria-hidden="true" />
-                  <input
-                    id="auth-signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="10 caracteres como mínimo"
-                    required
-                    minLength={10}
-                    autoComplete="new-password"
-                    aria-describedby="signup-password-help"
-                  />
-                </div>
-                <span id="signup-password-help" className="field-hint">Usa una clave única de al menos 10 caracteres.</span>
-                <label htmlFor="auth-signup-password-repeat">Repite la clave</label>
-                <div className="input-with-icon">
-                  <KeyRound size={18} aria-hidden="true" />
-                  <input
-                    id="auth-signup-password-repeat"
-                    type="password"
-                    value={passwordRepeat}
-                    onChange={(event) => setPasswordRepeat(event.target.value)}
-                    placeholder="La misma clave"
-                    required
-                    minLength={10}
-                    autoComplete="new-password"
-                  />
-                </div>
-                <button className="button primary" type="submit" disabled={loading}>
-                  {loading ? <LoaderCircle className="spin" size={18} /> : null}
-                  Crear mi cuenta
-                </button>
-              </form>
-              <button className="auth-switch" type="button" onClick={() => changeMode("login")}>
-                <ArrowLeft size={16} /> Ya tengo una cuenta
-              </button>
-          </>
-        ) : null}
-
-        {mode === "recovery" ? (
-          <>
-            <h1>Recuperar el acceso</h1>
-            <p>Te enviaremos un enlace seguro para entrar y establecer una clave nueva desde Ajustes.</p>
-            <form onSubmit={submitRecovery} className="auth-form">
-              <label htmlFor="auth-recovery-email">Correo electrónico</label>
+            <h1>{mode === "signup" ? "Crear tu acceso" : "Recuperar el acceso"}</h1>
+            <p>
+              {mode === "signup"
+                ? "Te enviaremos un enlace seguro. Al abrirlo se creará tu libreta y podrás establecer tu clave desde Ajustes."
+                : "Te enviaremos un enlace seguro para entrar y establecer una clave nueva desde Ajustes."}
+            </p>
+            <form onSubmit={submitLink} className="auth-form">
+              <label htmlFor="auth-link-email">Correo electrónico</label>
               <div className="input-with-icon">
                 <Mail size={18} aria-hidden="true" />
                 <input
-                  id="auth-recovery-email"
+                  id="auth-link-email"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -270,7 +174,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
         </AppLink>
         <div className="auth-feedback" aria-live="polite">
           {notice ? <p className="notice success">{notice}</p> : null}
-          {validationError ? <p className="notice error" role="alert">{validationError}</p> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
         </div>
       </div>

@@ -47,8 +47,7 @@ type FinanceContextValue = {
   bookings: RentalBooking[];
   properties: Property[];
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
-  sendAccessLink: (email: string) => Promise<boolean>;
+  sendAccessLink: (email: string, shouldCreateUser?: boolean) => Promise<boolean>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -98,7 +97,11 @@ export function messageFrom(error: unknown) {
   const normalized = message.toLowerCase();
   if (normalized.includes("invalid login credentials")) return "El correo o la clave no son correctos.";
   if (normalized.includes("password should be")) return "La clave no cumple la longitud mínima requerida.";
-  if (normalized.includes("user already registered")) return "Ya existe una cuenta con ese correo. Entra con tu clave o solicita un enlace de acceso.";
+  if (code === "email_address_not_authorized"
+    || normalized.includes("email address not authorized")
+    || normalized.includes("email not authorized")) {
+    return "Supabase no puede enviar correos a esa dirección con el proveedor actual. Configura un SMTP propio en Authentication → Emails → SMTP settings.";
+  }
   if (code === "over_email_send_rate_limit") {
     return "Se ha alcanzado el límite de correos de acceso. Prueba de nuevo más tarde.";
   }
@@ -343,49 +346,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase]);
 
-  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
-    if (!supabase) throw new Error("Supabase no está configurado.");
-    setError(null);
-    setNotice(null);
-    setLoading(true);
-    try {
-      const invite = new URLSearchParams(window.location.search).get("invite") ?? "";
-      if (!invite) {
-        throw new Error("Abre el enlace de invitación completo para crear una cuenta.");
-      }
-      const { error: signUpError } = await supabase.functions.invoke("public-signup", {
-        body: {
-          email,
-          password,
-          display_name: displayName.trim(),
-          invite,
-          website: "",
-        },
-      });
-      if (signUpError) {
-        let detail = signUpError.message;
-        if ("context" in signUpError && signUpError.context instanceof Response) {
-          try {
-            const body = await signUpError.context.json() as { error?: string };
-            if (body.error) detail = body.error;
-          } catch {
-            // Conserva el mensaje original si la respuesta no contiene JSON.
-          }
-      }
-        throw new Error(detail);
-      }
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) throw signInError;
-      setNotice("Cuenta creada. Tu libreta personal ya está lista.");
-    } catch (caught) {
-      setError(messageFrom(caught));
-      throw caught;
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
-
-  const sendAccessLink = useCallback(async (email: string) => {
+  const sendAccessLink = useCallback(async (email: string, shouldCreateUser = false) => {
     if (!supabase) return false;
     setError(null);
     setNotice(null);
@@ -397,12 +358,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser,
           emailRedirectTo: redirectUrl.toString(),
         },
       });
       if (signInError) throw signInError;
-      setNotice("Enlace enviado. Ábrelo desde el correo para entrar en tu cuenta.");
+      setNotice("Enlace enviado. Ábrelo desde el correo para entrar y configurar tu clave.");
       return true;
     } catch (caught) {
       setError(messageFrom(caught));
@@ -688,7 +649,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     bookings,
     properties,
     signInWithPassword,
-    signUp,
     sendAccessLink,
     updatePassword,
     signOut,
@@ -709,7 +669,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     accounts, addTransaction, bookings, categories, deleteBooking, deletePropertyRecurring,
     deleteRecurring, deleteTransaction, deleteTripProject, error, hasMalagaAccess, loading, malagaAccessReady, notice, properties,
     recurringRules, refresh, saveBooking, savePropertyRecurring, saveRecurring, saveTripProject, session,
-    sendAccessLink, signInWithPassword, signOut, signUp, subcategories, supabase,
+    sendAccessLink, signInWithPassword, signOut, subcategories, supabase,
     toggleRecurring, transactions, tripProjects, updatePassword, updateTransaction,
   ]);
 

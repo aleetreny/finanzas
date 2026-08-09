@@ -36,13 +36,15 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 
 Cualquier persona puede usar la aplicación, no solo el propietario del histórico:
 
-1. En la pantalla de acceso, pulsa **Es mi primera vez o todavía no tengo clave** y escribe tu correo.
-2. Abre el enlace recibido y crea tu clave en la pantalla que aparece.
+1. En la pantalla de acceso, pulsa **Crear una cuenta nueva** y escribe tu correo.
+2. Abre el enlace recibido; se creará tu cuenta y llegarás a **Ajustes → Tu clave de acceso**.
 3. A partir de ahí se entra con correo y clave desde cualquier dispositivo.
+
+Si ya tenías cuenta pero no recuerdas la clave, pulsa **He olvidado mi clave**. Ese enlace no crea una cuenta nueva: solo permite recuperar una cuenta existente.
 
 En el primer inicio de sesión, la función `bootstrap_user_workspace()` aprovisiona el espacio de trabajo del usuario: una cuenta bancaria por defecto, la taxonomía inicial de categorías y subcategorías, una propiedad para la pestaña de alquiler y sus ajustes. El histórico original solo pertenece al primer usuario que lo reclamó; las políticas RLS garantizan que nadie ve datos de otra persona.
 
-El proveedor de correo integrado de Supabase permite pocos envíos por hora (suficiente para uso personal). Si se va a invitar a varias personas seguidas, configura un SMTP propio en el panel de Supabase (**Authentication → Emails → SMTP settings**).
+El proveedor de correo integrado de Supabase solo entrega mensajes a direcciones autorizadas de la organización y tiene límites estrictos. Para que los enlaces lleguen a otras personas, configura un SMTP propio en el panel de Supabase (**Authentication → Emails → SMTP settings**).
 
 ## Instalar en el móvil
 
@@ -55,12 +57,10 @@ Al abrirla desde el icono se muestra sin la barra del navegador. La navegación 
 
 En iPhone, Safari y una PWA instalada no siempre comparten la sesión creada por un enlace mágico. La primera vez:
 
-1. En la aplicación instalada, pulsa **Es mi primera vez o todavía no tengo clave** y solicita el correo.
-2. Abre el enlace recibido; Safari te llevará directamente a **Ajustes → Tu clave de acceso**.
+1. En la aplicación instalada, pulsa **Crear una cuenta nueva** y solicita el correo.
+2. Abre el enlace recibido en el mismo navegador; te llevará directamente a **Ajustes → Tu clave de acceso**.
 3. Crea una clave de al menos 10 caracteres y vuelve a abrir **Mis gastos** desde su icono.
 4. Entra con el mismo correo y esa clave. La sesión queda guardada en la PWA y no es necesario repetir el proceso en cada apertura.
-
-Si ya se abrió el enlace en Safari, no hay que solicitar otro correo: usa **Continuar en Safari** para recuperar esa sesión y terminar de crear la clave. El botón de envío queda desactivado después de una solicitud correcta para no consumir por accidente el límite del proveedor integrado de Supabase.
 
 ## Desarrollo local
 
