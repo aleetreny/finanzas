@@ -16,11 +16,12 @@ test.describe("booking decimal input", () => {
     await signInToMockFinance(page, appPath("/"));
   });
 
-  test("accepts decimal commas and applies Booking VAT", async ({ page }) => {
+  test("accepts decimal commas, defaults cleaning to 60 and applies Booking VAT", async ({ page }) => {
     await page.goto(appPath("/piso-malaga"));
     await page.getByRole("button", { name: "Nueva reserva" }).click();
 
     const dialog = page.getByRole("dialog", { name: "Nueva reserva" });
+    await expect(dialog.getByLabel("Limpieza")).toHaveValue("60");
     await dialog.getByLabel("Concepto").fill("Booking con coma");
     await dialog.getByLabel("Plataforma").selectOption("booking");
     await expect(dialog.getByLabel("Porcentaje de plataforma")).toHaveValue("18.15");
