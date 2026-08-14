@@ -16,6 +16,7 @@ import {
   recurringOccurrencesForYear,
   rentalBookingNet,
 } from "@/lib/property-rental";
+import { allocateTransactionByMonth } from "@/lib/transaction-allocation";
 import type { RecurringRule, RentalBooking } from "@/lib/types";
 
 const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -108,7 +109,9 @@ export function MalagaView() {
   );
   const years = useMemo(() => {
     const values = new Set<number>([currentYear]);
-    standaloneTransactions.forEach((transaction) => values.add(Number(transaction.transaction_date.slice(0, 4))));
+    standaloneTransactions.forEach((transaction) => {
+      allocateTransactionByMonth(transaction).forEach((allocation) => values.add(Number(allocation.month.slice(0, 4))));
+    });
     bookings.forEach((booking) => allocateRentalBooking(booking).forEach((row) => values.add(Number(row.month.slice(0, 4)))));
     propertyRecurring.forEach((rule) => values.add(Number(rule.effective_from.slice(0, 4))));
     return [...values].filter(Number.isFinite).sort((a, b) => b - a);
@@ -134,19 +137,22 @@ export function MalagaView() {
     });
 
     const selectedTransactions = standaloneTransactions
-      .filter((transaction) => transaction.transaction_date.startsWith(String(selectedYear)))
+      .filter((transaction) => allocateTransactionByMonth(transaction).some((allocation) => allocation.month.startsWith(String(selectedYear))))
       .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date));
-    selectedTransactions.forEach((transaction) => {
-      const month = byMonth.get(transaction.transaction_date.slice(0, 7));
-      if (!month) return;
-      if (transaction.amount >= 0) {
-        month.otherIncome += Number(transaction.amount);
-        return;
-      }
-      const expense = Math.abs(Number(transaction.amount));
-      month.otherExpenses += expense;
-      const label = subcategoryNames.get(transaction.subcategory_id ?? "") ?? transaction.name;
-      expenseGroups.set(label, roundMoney((expenseGroups.get(label) ?? 0) + expense));
+
+    standaloneTransactions.forEach((transaction) => {
+      allocateTransactionByMonth(transaction).forEach((allocation) => {
+        const month = byMonth.get(allocation.month);
+        if (!month) return;
+        if (allocation.amount >= 0) {
+          month.otherIncome += allocation.amount;
+          return;
+        }
+        const expense = Math.abs(allocation.amount);
+        month.otherExpenses += expense;
+        const label = subcategoryNames.get(transaction.subcategory_id ?? "") ?? transaction.name;
+        expenseGroups.set(label, roundMoney((expenseGroups.get(label) ?? 0) + expense));
+      });
     });
 
     const occurrences = propertyRecurring.flatMap((rule) => recurringOccurrencesForYear(rule, selectedYear, today));
