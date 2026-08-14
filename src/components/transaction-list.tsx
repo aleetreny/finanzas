@@ -8,6 +8,14 @@ import { TransactionForm } from "@/components/transaction-form";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Transaction } from "@/lib/types";
 
+function allocationPeriodLabel(transaction: Transaction) {
+  const start = transaction.allocation_start_date;
+  const end = transaction.allocation_end_date;
+  if (!start || !end) return null;
+  if (start === end) return `Imputado a ${formatDate(start)}`;
+  return `Periodo ${formatDate(start)} – ${formatDate(end)}`;
+}
+
 export function TransactionList({
   transactions,
   formScope = "general",
@@ -53,44 +61,52 @@ export function TransactionList({
         <table className="data-table">
           <thead><tr><th>Fecha</th><th>Apunte</th><th>Categoría</th><th style={{ textAlign: "right" }}>Importe</th><th aria-label="Acciones" /></tr></thead>
           <tbody>
-            {visible.map((row) => (
-              <tr key={row.id}>
-                <td>{formatDate(row.transaction_date)}</td>
-                <td><span className="transaction-name">{row.name}</span>{row.notes || row.context ? <span className="transaction-note">{row.notes ?? row.context}</span> : null}</td>
-                <td><span className="badge">{categoryById.get(row.category_id ?? "") ?? "Sin categoría"}</span>{row.subcategory_id ? <span className="transaction-note">{subcategoryById.get(row.subcategory_id)}</span> : null}</td>
-                <td className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</td>
-                <td>
-                  <div className="row-actions" role="group" aria-label={`Acciones para ${row.name}`}>
-                    <button className="icon-button" type="button" title="Editar" aria-label={`Editar ${row.name}`} disabled={deletingId !== null} onClick={() => edit(row)}><Pencil size={15} /></button>
-                    <button className="icon-button danger-icon" type="button" title="Eliminar" aria-label={`Eliminar ${row.name}`} disabled={deletingId !== null} onClick={() => void remove(row)}>
-                      {deletingId === row.id ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {visible.map((row) => {
+              const period = allocationPeriodLabel(row);
+              const detail = [row.notes ?? row.context, period].filter(Boolean).join(" · ");
+              return (
+                <tr key={row.id}>
+                  <td>{formatDate(row.transaction_date)}</td>
+                  <td><span className="transaction-name">{row.name}</span>{detail ? <span className="transaction-note">{detail}</span> : null}</td>
+                  <td><span className="badge">{categoryById.get(row.category_id ?? "") ?? "Sin categoría"}</span>{row.subcategory_id ? <span className="transaction-note">{subcategoryById.get(row.subcategory_id)}</span> : null}</td>
+                  <td className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</td>
+                  <td>
+                    <div className="row-actions" role="group" aria-label={`Acciones para ${row.name}`}>
+                      <button className="icon-button" type="button" title="Editar" aria-label={`Editar ${row.name}`} disabled={deletingId !== null} onClick={() => edit(row)}><Pencil size={15} /></button>
+                      <button className="icon-button danger-icon" type="button" title="Eliminar" aria-label={`Eliminar ${row.name}`} disabled={deletingId !== null} onClick={() => void remove(row)}>
+                        {deletingId === row.id ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="mobile-list">
-          {visible.map((row) => (
-            <article className="mobile-transaction" key={row.id}>
-              <div className="mobile-transaction-details">
-                <strong>{row.name}</strong>
-                <span className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</span>
-                <span className="meta">
-                  {formatDate(row.transaction_date)} · {categoryById.get(row.category_id ?? "") ?? "Sin categoría"}
-                  {row.subcategory_id ? ` · ${subcategoryById.get(row.subcategory_id) ?? "Sin subcategoría"}` : ""}
-                </span>
-              </div>
-              <div className="mobile-transaction-actions" role="group" aria-label={`Acciones para ${row.name}`}>
-                <button type="button" className="mobile-transaction-action" disabled={deletingId !== null} onClick={() => edit(row)}><Pencil size={16} /><span>Editar</span></button>
-                <button type="button" className="mobile-transaction-action danger" disabled={deletingId !== null} onClick={() => void remove(row)}>
-                  {deletingId === row.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
-                  <span>{deletingId === row.id ? "Eliminando…" : "Eliminar"}</span>
-                </button>
-              </div>
-            </article>
-          ))}
+          {visible.map((row) => {
+            const period = allocationPeriodLabel(row);
+            return (
+              <article className="mobile-transaction" key={row.id}>
+                <div className="mobile-transaction-details">
+                  <strong>{row.name}</strong>
+                  <span className={`amount ${row.amount >= 0 ? "positive" : ""}`}>{formatCurrency(row.amount)}</span>
+                  <span className="meta">
+                    {formatDate(row.transaction_date)} · {categoryById.get(row.category_id ?? "") ?? "Sin categoría"}
+                    {row.subcategory_id ? ` · ${subcategoryById.get(row.subcategory_id) ?? "Sin subcategoría"}` : ""}
+                    {period ? ` · ${period}` : ""}
+                  </span>
+                </div>
+                <div className="mobile-transaction-actions" role="group" aria-label={`Acciones para ${row.name}`}>
+                  <button type="button" className="mobile-transaction-action" disabled={deletingId !== null} onClick={() => edit(row)}><Pencil size={16} /><span>Editar</span></button>
+                  <button type="button" className="mobile-transaction-action danger" disabled={deletingId !== null} onClick={() => void remove(row)}>
+                    {deletingId === row.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
+                    <span>{deletingId === row.id ? "Eliminando…" : "Eliminar"}</span>
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
         {transactions.length > visible.length ? <p className="table-note">Se muestran los 250 apuntes más recientes; con los filtros encuentras el resto.</p> : null}
       </div>

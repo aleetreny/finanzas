@@ -30,6 +30,8 @@ export type Transaction = {
   user_id: string | null;
   account_id: string;
   transaction_date: string;
+  allocation_start_date?: string | null;
+  allocation_end_date?: string | null;
   name: string;
   amount: number;
   direction: Direction;
@@ -49,6 +51,8 @@ export type Transaction = {
 export type TransactionInput = Pick<
   Transaction,
   | "transaction_date"
+  | "allocation_start_date"
+  | "allocation_end_date"
   | "name"
   | "amount"
   | "direction"

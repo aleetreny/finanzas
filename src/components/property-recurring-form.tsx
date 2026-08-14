@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useFinance } from "@/components/finance-provider";
+import { parseLocalizedDecimal } from "@/lib/decimal-input";
 import { todayIso } from "@/lib/format";
 import type { PropertyRecurringInput, RecurringRule } from "@/lib/types";
 
@@ -94,7 +95,16 @@ export function PropertyRecurringForm({
         </div>
         <div className="field">
           <label htmlFor="recurring-amount">Importe</label>
-          <div className="money-input"><input id="recurring-amount" type="number" min="0.01" step="0.01" inputMode="decimal" {...register("amount", { valueAsNumber: true })} /><span>€</span></div>
+          <div className="money-input">
+            <input
+              id="recurring-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              {...register("amount", { setValueAs: parseLocalizedDecimal })}
+            />
+            <span>€</span>
+          </div>
           {errors.amount ? <p className="field-error">{errors.amount.message}</p> : null}
         </div>
       </div>
