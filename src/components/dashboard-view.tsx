@@ -6,6 +6,7 @@ import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { allocateTransactionByMonth } from "@/lib/transaction-allocation";
 
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MES_LARGO = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -141,9 +142,11 @@ export function DashboardView() {
     [categories, catTotals],
   );
 
-  // Línea temporal continua desde el primer movimiento hasta el mes actual
+  // Línea temporal continua desde el primer mes imputado hasta el mes actual.
   const allMonths = useMemo(() => {
-    const withData = personalTransactions.filter((t) => t.amount !== 0).map((t) => t.transaction_date.slice(0, 7));
+    const withData = personalTransactions
+      .filter((transaction) => transaction.amount !== 0)
+      .flatMap((transaction) => allocateTransactionByMonth(transaction).map((allocation) => allocation.month));
     if (!withData.length) return [] as string[];
     const first = withData.reduce((a, b) => (a < b ? a : b));
     const now = new Date();
@@ -161,24 +164,26 @@ export function DashboardView() {
   // gasto[categoría][mes] y gasto[subcategoría][mes]
   const byCatMonth = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    personalTransactions.forEach((t) => {
-      if (t.amount >= 0 || !t.category_id) return;
-      const key = t.transaction_date.slice(0, 7);
-      let inner = map.get(t.category_id);
-      if (!inner) { inner = new Map(); map.set(t.category_id, inner); }
-      inner.set(key, (inner.get(key) ?? 0) + Math.abs(t.amount));
+    personalTransactions.forEach((transaction) => {
+      if (transaction.amount >= 0 || !transaction.category_id) return;
+      let inner = map.get(transaction.category_id);
+      if (!inner) { inner = new Map(); map.set(transaction.category_id, inner); }
+      allocateTransactionByMonth(transaction).forEach((allocation) => {
+        inner!.set(allocation.month, (inner!.get(allocation.month) ?? 0) + Math.abs(allocation.amount));
+      });
     });
     return map;
   }, [personalTransactions]);
 
   const bySubMonth = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    personalTransactions.forEach((t) => {
-      if (t.amount >= 0 || !t.subcategory_id) return;
-      const key = t.transaction_date.slice(0, 7);
-      let inner = map.get(t.subcategory_id);
-      if (!inner) { inner = new Map(); map.set(t.subcategory_id, inner); }
-      inner.set(key, (inner.get(key) ?? 0) + Math.abs(t.amount));
+    personalTransactions.forEach((transaction) => {
+      if (transaction.amount >= 0 || !transaction.subcategory_id) return;
+      let inner = map.get(transaction.subcategory_id);
+      if (!inner) { inner = new Map(); map.set(transaction.subcategory_id, inner); }
+      allocateTransactionByMonth(transaction).forEach((allocation) => {
+        inner!.set(allocation.month, (inner!.get(allocation.month) ?? 0) + Math.abs(allocation.amount));
+      });
     });
     return map;
   }, [personalTransactions]);
@@ -187,8 +192,9 @@ export function DashboardView() {
     const map = new Map<string, number>();
     personalTransactions.forEach((transaction) => {
       if (transaction.amount <= 0) return;
-      const key = transaction.transaction_date.slice(0, 7);
-      map.set(key, (map.get(key) ?? 0) + transaction.amount);
+      allocateTransactionByMonth(transaction).forEach((allocation) => {
+        map.set(allocation.month, (map.get(allocation.month) ?? 0) + allocation.amount);
+      });
     });
     return map;
   }, [personalTransactions]);
@@ -217,7 +223,6 @@ export function DashboardView() {
     () => (range === "all" ? allMonths : allMonths.slice(Math.max(0, allMonths.length - range))),
     [allMonths, range],
   );
-
   function toggle(id: string) {
     setSubSelected([]);
     setHover(null);
@@ -447,8 +452,10 @@ export function DashboardView() {
   // Resumen del mes (sobre TODAS las categorías, no solo las diez dibujadas)
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const monthTotal = personalTransactions
-    .filter((transaction) => transaction.amount < 0 && transaction.transaction_date.startsWith(currentKey))
-    .reduce((total, transaction) => total + Math.abs(transaction.amount), 0);
+    .filter((transaction) => transaction.amount < 0)
+    .flatMap((transaction) => allocateTransactionByMonth(transaction))
+    .filter((allocation) => allocation.month === currentKey)
+    .reduce((total, allocation) => total + Math.abs(allocation.amount), 0);
   const usualFullMonth = budgetAll.reduce((s, r) => s + r.usual, 0);
   const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
   const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
