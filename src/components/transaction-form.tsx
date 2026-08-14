@@ -13,6 +13,8 @@ import type { Transaction, TransactionInput } from "@/lib/types";
 
 const formSchema = z.object({
   transaction_date: z.string().min(10, "Indica una fecha."),
+  allocation_start_date: z.string().optional(),
+  allocation_end_date: z.string().optional(),
   name: z.string().trim().min(2, "Ponle un nombre."),
   amount: z.number().positive("El importe debe ser mayor que cero."),
   direction: z.enum(["income", "expense"]),
@@ -20,6 +22,20 @@ const formSchema = z.object({
   subcategory_id: z.string().optional(),
   trip_project_id: z.string().optional(),
   notes: z.string().optional(),
+}).superRefine((values, context) => {
+  const hasStart = Boolean(values.allocation_start_date);
+  const hasEnd = Boolean(values.allocation_end_date);
+  if (hasStart !== hasEnd) {
+    if (!hasStart) {
+      context.addIssue({ code: "custom", path: ["allocation_start_date"], message: "Indica también el inicio del periodo." });
+    }
+    if (!hasEnd) {
+      context.addIssue({ code: "custom", path: ["allocation_end_date"], message: "Indica también el final del periodo." });
+    }
+  }
+  if (hasStart && hasEnd && values.allocation_end_date! < values.allocation_start_date!) {
+    context.addIssue({ code: "custom", path: ["allocation_end_date"], message: "El final no puede ser anterior al inicio." });
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -27,6 +43,8 @@ type FormValues = z.infer<typeof formSchema>;
 function defaults(initial?: Transaction, fixedDirection?: "income" | "expense"): FormValues {
   return {
     transaction_date: initial?.transaction_date ?? todayIso(),
+    allocation_start_date: initial?.allocation_start_date ?? "",
+    allocation_end_date: initial?.allocation_end_date ?? "",
     name: initial?.name ?? "",
     amount: initial ? Math.abs(initial.amount) : (undefined as unknown as number),
     direction: fixedDirection ?? (initial?.direction === "income" ? "income" : "expense"),
@@ -62,7 +80,7 @@ export function TransactionForm({
   fixedDirection?: "income" | "expense";
 }) {
   const { categories, subcategories, tripProjects, addTransaction, updateTransaction } = useFinance();
-  const [advanced, setAdvanced] = useState(Boolean(initial?.notes));
+  const [advanced, setAdvanced] = useState(Boolean(initial?.notes || initial?.allocation_start_date || initial?.allocation_end_date));
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
 
@@ -160,6 +178,8 @@ export function TransactionForm({
 
     const input: TransactionInput = {
       transaction_date: values.transaction_date,
+      allocation_start_date: values.allocation_start_date || null,
+      allocation_end_date: values.allocation_end_date || null,
       name: values.name.trim(),
       amount: values.direction === "expense" ? -Math.abs(values.amount) : Math.abs(values.amount),
       direction: values.direction,
@@ -372,6 +392,26 @@ export function TransactionForm({
       </button>
       {advanced ? (
         <div style={{ display: "grid", gap: 16, marginTop: 14 }}>
+          <div>
+            <div className="q-label" style={{ marginTop: 0 }}>
+              Periodo al que corresponde <span className="opt">opcional</span>
+            </div>
+            <div className="rental-form-grid two">
+              <div className="field">
+                <label htmlFor="tx-allocation-start">Imputar desde</label>
+                <input id="tx-allocation-start" type="date" {...register("allocation_start_date")} />
+                {errors.allocation_start_date ? <p className="field-error">{errors.allocation_start_date.message}</p> : null}
+              </div>
+              <div className="field">
+                <label htmlFor="tx-allocation-end">Imputar hasta</label>
+                <input id="tx-allocation-end" type="date" {...register("allocation_end_date")} />
+                {errors.allocation_end_date ? <p className="field-error">{errors.allocation_end_date.message}</p> : null}
+              </div>
+            </div>
+            <p className="form-help" style={{ marginTop: 8 }}>
+              Si lo rellenas, los análisis mensuales reparten el importe por días entre esas fechas. La fecha del cargo bancario no cambia.
+            </p>
+          </div>
           <div className="field">
             <label htmlFor="tx-notes">Notas</label>
             <textarea id="tx-notes" placeholder="Lo que quieras recordar" {...register("notes")} />
