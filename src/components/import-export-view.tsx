@@ -5,6 +5,7 @@ import Papa from "papaparse";
 import { useMemo, useState } from "react";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
+import { parseLocalizedDecimal } from "@/lib/decimal-input";
 import { getSupabase } from "@/lib/supabase";
 
 type CsvRow = Record<string, string>;
@@ -45,6 +46,8 @@ export function ImportExportView() {
     const data = transactions.map((row) => ({
       id_origen: row.source_external_id ?? row.id,
       fecha: row.transaction_date,
+      periodo_desde: row.allocation_start_date ?? "",
+      periodo_hasta: row.allocation_end_date ?? "",
       nombre: row.name,
       importe_eur: Number(row.amount).toFixed(2),
       tipo: row.direction === "income" ? "Ingreso" : row.direction === "expense" ? "Gasto" : "Neutro",
@@ -82,12 +85,20 @@ export function ImportExportView() {
       const valid: Record<string, unknown>[] = [];
       const rejected: string[] = [];
       rows.forEach((row, index) => {
-        const amount = Number(row.importe_eur ?? row.amount);
+        const amount = parseLocalizedDecimal(row.importe_eur ?? row.amount);
         const date = row.fecha ?? row.transaction_date;
         const name = row.nombre ?? row.name;
         const categoryId = categoriesByName.get(row.categoria_principal ?? "");
-        if (!date?.match(/^\d{4}-\d{2}-\d{2}$/) || !name || !Number.isFinite(amount) || !categoryId) {
-          rejected.push(`Fila ${index + 2}: fecha, nombre, importe o categoría no válidos.`);
+        const allocationStart = row.periodo_desde || row.allocation_start_date || "";
+        const allocationEnd = row.periodo_hasta || row.allocation_end_date || "";
+        const validAllocationDates = (!allocationStart && !allocationEnd)
+          || (
+            /^\d{4}-\d{2}-\d{2}$/.test(allocationStart)
+            && /^\d{4}-\d{2}-\d{2}$/.test(allocationEnd)
+            && allocationEnd >= allocationStart
+          );
+        if (!date?.match(/^\d{4}-\d{2}-\d{2}$/) || !name || amount === undefined || !categoryId || !validAllocationDates) {
+          rejected.push(`Fila ${index + 2}: fecha, nombre, importe, categoría o periodo de imputación no válidos.`);
           return;
         }
         const externalId = row.id_origen || row.source_external_id || `${hash}:${index + 1}`;
@@ -95,6 +106,8 @@ export function ImportExportView() {
           user_id: session.user.id,
           account_id: account.id,
           transaction_date: date,
+          allocation_start_date: allocationStart || null,
+          allocation_end_date: allocationEnd || null,
           name,
           amount,
           direction: amount > 0 ? "income" : amount < 0 ? "expense" : "neutral",
@@ -159,7 +172,7 @@ export function ImportExportView() {
           <div className="card-header"><div><h2><Download size={16} style={{ display: "inline", marginRight: 7 }} />Exportación completa</h2><p>Una copia portátil de todos tus movimientos</p></div></div>
           <div className="card-body">
             <div className="stat-strip"><span>Movimientos<strong>{transactions.length.toLocaleString("es-ES")}</strong></span><span>Formato<strong>CSV</strong></span><span>Codificación<strong>UTF-8 BOM</strong></span></div>
-            <p style={{ color: "var(--pencil)", fontSize: 14, lineHeight: 1.6 }}>Incluye fechas, importes, categorías y notas. El mismo archivo vale para volver a importarlo aquí.</p>
+            <p style={{ color: "var(--pencil)", fontSize: 14, lineHeight: 1.6 }}>Incluye fechas, periodos de imputación, importes, categorías y notas. El mismo archivo vale para volver a importarlo aquí.</p>
             <button className="button primary" onClick={exportCsv}><Download size={16} />Descargar todos los datos</button>
           </div>
         </article>
