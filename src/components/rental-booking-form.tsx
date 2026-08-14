@@ -67,7 +67,7 @@ function defaultValues(initial?: RentalBooking): BookingValues {
       : (undefined as unknown as number),
     cleaning_fee: initial
       ? Number(initial.cleaning_fee)
-      : (undefined as unknown as number),
+      : 60,
     discount_amount: initial
       ? Number(initial.discount_amount)
       : undefined,
