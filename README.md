@@ -21,6 +21,7 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 
 - Dashboard personal sin mezclar los movimientos del Piso Málaga.
 - Alta rápida, edición, eliminación, búsqueda y filtros de movimientos.
+- Aviso de posible duplicado: si un gasto nuevo coincide en importe y categoría con alguno de los diez últimos anotados, se muestra cuál es y se pide confirmación antes de guardarlo.
 - Vista independiente del Piso Málaga con un formulario compacto de reservas, noches automáticas y perfiles de comisión para Airbnb antigua/nueva, Booking, Directa y Otra.
 - Cada reserva conserva su modelo y porcentajes; las comisiones reales de plataforma y gestora pueden sobrescribir el cálculo automático sin perder diferencias de redondeo.
 - Prorrateo diario o mensual de cada reserva, resumen mensual, neto acumulado y cuadro fiscal anual.
@@ -127,7 +128,7 @@ npm run build
 npx playwright test
 ```
 
-Los tests cubren las 1.024 filas y su suma, idempotencia, separación del Piso Málaga, prorrateo de reservas, perfiles y overrides de comisión, gastos periódicos, taxonomía, amortización y presencia de RLS.
+Los tests cubren las 1.024 filas y su suma, idempotencia, separación del Piso Málaga, prorrateo de reservas, perfiles y overrides de comisión, gastos periódicos, taxonomía, amortización, detección de gastos duplicados y presencia de RLS.
 
 ## Despliegue en GitHub Pages
 

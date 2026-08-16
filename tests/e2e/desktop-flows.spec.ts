@@ -104,6 +104,93 @@ test.describe("desktop quality flows", () => {
     await expect(page.getByText("Factura de agua corregida", { exact: true })).toHaveCount(0);
   });
 
+  test("a repeated expense asks for confirmation and points at the matching entry", async ({ page }) => {
+    await page.goto("/movimientos/nuevo/");
+    await page.getByLabel("Importe en euros").fill("42,50");
+    await page.getByRole("button", { name: "Comida", exact: true }).click();
+    await page.getByRole("button", { name: "Supermercado", exact: true }).click();
+    await page.getByLabel("Concepto").fill("Compra semanal otra vez");
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+
+    const warning = page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" });
+    await expect(warning).toBeVisible();
+    await expect(warning.locator(".duplicate-lead")).toContainText("«Compra semanal»");
+    await expect(warning.locator(".duplicate-lead")).toContainText("últimos 10 gastos");
+    const existing = warning.locator(".duplicate-entry.existing");
+    await expect(existing).toContainText("Compra semanal");
+    await expect(existing).toContainText("-42,50 €");
+    await expect(existing).toContainText("20 jul 2026");
+    await expect(existing).toContainText("Comida · Supermercado");
+    const pending = warning.locator(".duplicate-entry.pending");
+    await expect(pending).toContainText("Compra semanal otra vez");
+    await expect(pending).toContainText("-42,50 €");
+    await expect(pending).toContainText("Comida · Supermercado");
+    const layout = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: document.documentElement.clientWidth,
+    }));
+    expect(layout.document).toBe(layout.viewport);
+
+    // Al revisarlo no se guarda nada y el formulario conserva lo escrito.
+    await warning.getByRole("button", { name: "No, lo reviso" }).click();
+    await expect(warning).toHaveCount(0);
+    await expect(page).toHaveURL(/\/movimientos\/nuevo\/?$/);
+    await expect(page.getByLabel("Concepto")).toHaveValue("Compra semanal otra vez");
+
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+    await page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" })
+      .getByRole("button", { name: "Sí, anotarlo igualmente" }).click();
+    await expect(page).toHaveURL(/\/movimientos\/?$/);
+    await expect(page.locator(".data-table .transaction-name").filter({ hasText: "Compra semanal otra vez" })).toBeVisible();
+
+    // Un importe distinto en la misma categoría se guarda sin preguntar.
+    await page.goto("/movimientos/nuevo/");
+    await page.getByLabel("Importe en euros").fill("18");
+    await page.getByRole("button", { name: "Comida", exact: true }).click();
+    await page.getByRole("button", { name: "Supermercado", exact: true }).click();
+    await page.getByLabel("Concepto").fill("Pan y fruta");
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+    await expect(page).toHaveURL(/\/movimientos\/?$/);
+    await expect(page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" })).toHaveCount(0);
+    await expect(page.locator(".data-table .transaction-name").filter({ hasText: "Pan y fruta" })).toBeVisible();
+  });
+
+  test("the duplicate warning also protects the Malaga expense window without closing it", async ({ page }) => {
+    await page.goto("/piso-malaga/");
+    await page.getByRole("button", { name: "Nuevo gasto", exact: true }).first().click();
+    let expenseDialog = page.getByRole("dialog", { name: "Nuevo gasto" });
+    await expenseDialog.getByLabel("Importe en euros").fill("112");
+    await expenseDialog.getByLabel("Tipo de apunte del piso").selectOption("sub-clean");
+    await expenseDialog.getByLabel("Concepto").fill("Limpieza de salida");
+    await expenseDialog.getByRole("button", { name: "Anotar", exact: true }).click();
+    await expect(expenseDialog).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Nuevo gasto", exact: true }).first().click();
+    expenseDialog = page.getByRole("dialog", { name: "Nuevo gasto" });
+    await expenseDialog.getByLabel("Importe en euros").fill("112");
+    await expenseDialog.getByLabel("Tipo de apunte del piso").selectOption("sub-clean");
+    await expenseDialog.getByLabel("Concepto").fill("Limpieza de salida");
+    await expenseDialog.getByRole("button", { name: "Anotar", exact: true }).click();
+
+    const warning = page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" });
+    await expect(warning).toBeVisible();
+    await expect(warning.locator(".duplicate-entry.existing")).toContainText("Limpieza de salida");
+    await expect(warning.locator(".duplicate-entry.existing")).toContainText("Piso Málaga · Limpieza");
+
+    // Escape cierra solo el aviso: el formulario de debajo sigue abierto.
+    await page.keyboard.press("Escape");
+    await expect(warning).toHaveCount(0);
+    await expect(expenseDialog).toBeVisible();
+    await expect(expenseDialog.getByLabel("Concepto")).toHaveValue("Limpieza de salida");
+
+    await expenseDialog.getByRole("button", { name: "Anotar", exact: true }).click();
+    await page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" })
+      .getByRole("button", { name: "Sí, anotarlo igualmente" }).click();
+    await expect(page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" })).toHaveCount(0);
+    await expect(expenseDialog).toHaveCount(0);
+    await expect(page.locator(".property-section").last().getByText("Limpieza de salida").first()).toBeVisible();
+  });
+
   test("dashboard breakdown opens Apuntes with category, subcategory, year and month filters", async ({ page }) => {
     await page.goto("/dashboard/");
     const monthlyBreakdown = page.locator(".budget-list");

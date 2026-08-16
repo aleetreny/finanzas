@@ -234,6 +234,65 @@ test.describe("mobile quality flows", () => {
     await expect(page.locator(".mobile-list").getByText("Compra móvil")).toBeVisible();
   });
 
+  test("a repeated expense warns before saving and the warning fits the phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 640 });
+    await page.goto(appPath("/movimientos/nuevo"));
+    await page.getByLabel("Importe en euros").fill("42,50");
+    await page.getByRole("button", { name: "Comida", exact: true }).click();
+    await page.getByRole("button", { name: "Supermercado", exact: true }).click();
+    await page.getByLabel("Concepto").fill("Compra semanal otra vez");
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+
+    const warning = page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" });
+    await expect(warning).toBeVisible();
+    await expect(warning.locator(".duplicate-lead")).toContainText("«Compra semanal»");
+    await expect(warning.locator(".duplicate-entry.existing")).toContainText("-42,50 €");
+    await expect(warning.locator(".duplicate-entry.existing")).toContainText("Comida · Supermercado");
+    await expect(warning.locator(".duplicate-entry.pending")).toContainText("Compra semanal otra vez");
+
+    // El aviso se lee entero en pantalla: sin desbordes ni botones diminutos.
+    for (const size of [{ width: 320, height: 568 }, { width: 390, height: 640 }, { width: 430, height: 720 }]) {
+      await page.setViewportSize(size);
+      const layout = await page.evaluate(() => {
+        const card = document.querySelector(".duplicate-modal")!;
+        const cardRect = card.getBoundingClientRect();
+        return {
+          document: document.documentElement.scrollWidth,
+          viewport: document.documentElement.clientWidth,
+          cardLeft: cardRect.left,
+          cardRight: cardRect.right,
+          cardTop: cardRect.top,
+          cardBottom: cardRect.bottom,
+          viewportHeight: window.innerHeight,
+          overflowing: [...card.querySelectorAll("*")]
+            .filter((element) => element.getBoundingClientRect().right > cardRect.right + 0.5)
+            .map((element) => `${element.tagName}.${typeof element.className === "string" ? element.className : ""}`),
+        };
+      });
+      expect(layout.document, `${size.width}px desborda`).toBe(layout.viewport);
+      expect(layout.cardLeft).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.cardRight).toBeLessThanOrEqual(layout.viewport + 0.5);
+      expect(layout.cardTop).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.cardBottom).toBeLessThanOrEqual(layout.viewportHeight + 0.5);
+      expect(layout.overflowing).toEqual([]);
+      for (const name of ["No, lo reviso", "Sí, anotarlo igualmente"]) {
+        const box = await warning.getByRole("button", { name }).boundingBox();
+        expect(box?.height ?? 0, `${name} a ${size.width}px`).toBeGreaterThanOrEqual(44);
+      }
+    }
+
+    await warning.getByRole("button", { name: "No, lo reviso" }).click();
+    await expect(warning).toHaveCount(0);
+    await expect(page).toHaveURL(/\/movimientos\/nuevo\/?$/);
+    await expect(page.getByLabel("Concepto")).toHaveValue("Compra semanal otra vez");
+
+    await page.getByRole("button", { name: "Anotar", exact: true }).click();
+    await page.getByRole("dialog", { name: "¿Seguro que quieres anotarlo?" })
+      .getByRole("button", { name: "Sí, anotarlo igualmente" }).click();
+    await expect(page).toHaveURL(/\/movimientos\/?$/);
+    await expect(page.locator(".mobile-list").getByText("Compra semanal otra vez")).toBeVisible();
+  });
+
   test("trip groups can be created, selected on an expense and reviewed without overflow", async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto(appPath("/viajes"));

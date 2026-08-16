@@ -6,7 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { AppLink } from "@/components/app-link";
+import { DuplicateExpenseWarning } from "@/components/duplicate-expense-warning";
 import { useFinance } from "@/components/finance-provider";
+import { findDuplicateExpense } from "@/lib/duplicate-transactions";
 import { todayIso } from "@/lib/format";
 import { navigateToAppRoute } from "@/lib/navigation";
 import type { Transaction, TransactionInput } from "@/lib/types";
@@ -79,10 +81,12 @@ export function TransactionForm({
   scope?: "general" | "property";
   fixedDirection?: "income" | "expense";
 }) {
-  const { categories, subcategories, tripProjects, addTransaction, updateTransaction } = useFinance();
+  const { categories, subcategories, transactions, tripProjects, addTransaction, updateTransaction } = useFinance();
   const [advanced, setAdvanced] = useState(Boolean(initial?.notes || initial?.allocation_start_date || initial?.allocation_end_date));
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<{ existing: Transaction; values: FormValues } | null>(null);
+  const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
 
   const {
     register,
@@ -176,6 +180,24 @@ export function TransactionForm({
     setSelectionError(null);
     dismissVirtualKeyboard();
 
+    // Solo al dar de alta: al editar un apunte ya existente no hay duplicado
+    // que evitar, y avisar en cada retoque sería ruido.
+    if (!initial && values.direction === "expense") {
+      const existing = findDuplicateExpense({
+        amount: values.amount,
+        category_id: values.category_id,
+        subcategory_id: values.subcategory_id || null,
+      }, transactions);
+      if (existing) {
+        setDuplicate({ existing, values });
+        return;
+      }
+    }
+
+    await persist(values);
+  }
+
+  async function persist(values: FormValues) {
     const input: TransactionInput = {
       transaction_date: values.transaction_date,
       allocation_start_date: values.allocation_start_date || null,
@@ -205,6 +227,19 @@ export function TransactionForm({
       else navigateToAppRoute(scope === "property" ? "/piso-malaga" : "/movimientos");
     } catch (caught) {
       setSubmitError(caught instanceof Error ? caught.message : "No se pudo guardar el movimiento.");
+    }
+  }
+
+  // El aviso se cierra siempre: si el guardado falla, el error se lee en el
+  // formulario y desde ahí se puede reintentar.
+  async function confirmDuplicate() {
+    if (!duplicate || confirmingDuplicate) return;
+    setConfirmingDuplicate(true);
+    try {
+      await persist(duplicate.values);
+    } finally {
+      setConfirmingDuplicate(false);
+      setDuplicate(null);
     }
   }
 
@@ -240,6 +275,7 @@ export function TransactionForm({
   }
 
   return (
+    <>
     <form
       className="quick-form"
       aria-busy={isSubmitting}
@@ -441,5 +477,22 @@ export function TransactionForm({
         </button>
       </div>
     </form>
+
+    {duplicate ? (
+      <DuplicateExpenseWarning
+        existing={duplicate.existing}
+        pending={{
+          name: duplicate.values.name.trim(),
+          amount: duplicate.values.amount,
+          transaction_date: duplicate.values.transaction_date,
+          category_id: duplicate.values.category_id,
+          subcategory_id: duplicate.values.subcategory_id || null,
+        }}
+        saving={confirmingDuplicate}
+        onConfirm={() => void confirmDuplicate()}
+        onCancel={() => { if (!confirmingDuplicate) setDuplicate(null); }}
+      />
+    ) : null}
+    </>
   );
 }

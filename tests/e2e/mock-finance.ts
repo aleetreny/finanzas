@@ -364,7 +364,9 @@ export async function signInToMockFinance(page: Page, startUrl = "/") {
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator(".app-frame.authenticated")).toBeVisible();
   await expect(page.locator(".loading-state")).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible();
+  // Espera a que el permiso del piso esté resuelto (la navegación móvil solo se
+  // monta entonces) sin exigir que se vea: en escritorio está oculta por CSS.
+  await expect(page.locator("nav[aria-label='Navegación móvil']")).toHaveCount(1);
   await expect(page.locator(".c7-card").filter({ hasText: "Ingresos" })).toBeVisible();
   await page.waitForFunction(() =>
     Object.entries(localStorage).some(([key, value]) => key.startsWith("sb-") && value.includes("mock-refresh-token")),

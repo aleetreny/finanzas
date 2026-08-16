@@ -42,13 +42,18 @@ export function AppModal({
     };
   }, []);
 
+  // Se detiene la propagación porque un modal puede abrirse dentro de otro
+  // (el aviso de duplicado sobre un formulario en ventana): sin esto, Escape
+  // cerraría también el de debajo y los dos cepos de foco competirían.
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       onClose();
       return;
     }
     if (event.key !== "Tab") return;
+    event.stopPropagation();
     const focusable = [...(panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
       .filter((element) => element.offsetParent !== null);
     if (!focusable.length) {
