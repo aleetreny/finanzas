@@ -3317,7 +3317,9 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .trip-category-line > span { display: block; height: 100%; border-radius: inherit; background: var(--blue-pen); }
 .trip-category-toggle > .amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .trip-category-expenses { display: grid; margin: 0 4px 8px 35px; border-left: 2px dashed var(--pencil-faint); padding-left: 14px; }
-.trip-transaction { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border-bottom: 1px solid var(--rule-ink); padding: 11px 2px; }
+.trip-transaction { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border: 0; border-bottom: 1px solid var(--rule-ink); background: transparent; color: inherit; padding: 11px 2px; text-align: left; font: inherit; cursor: pointer; }
+.trip-transaction:hover { background: color-mix(in srgb, var(--paper-2) 55%, transparent); }
+.trip-transaction:focus-visible { outline: 2px solid var(--blue-pen); outline-offset: -2px; }
 .trip-transaction:last-child { border-bottom: 0; }
 .trip-transaction > div { display: grid; min-width: 0; gap: 1px; }
 .trip-transaction > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

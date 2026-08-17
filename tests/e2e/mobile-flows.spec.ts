@@ -337,6 +337,26 @@ test.describe("mobile quality flows", () => {
     await expect(page.locator(".mobile-list").getByText("Metro de Berlín", { exact: true })).toBeVisible();
   });
 
+  test("trip expenses can be opened, renamed and deleted from the category breakdown", async ({ page }) => {
+    await page.goto(appPath("/viajes"));
+    await page.getByRole("button", { name: /Comida.*1 gasto/ }).click();
+
+    await page.getByRole("button", { name: "Editar gasto Compra semanal" }).click();
+    const dialog = page.getByRole("dialog", { name: "Editar gasto" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Concepto").fill("Compra semanal editada");
+    await dialog.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Editar gasto Compra semanal editada" })).toBeVisible();
+
+    page.once("dialog", (confirmation) => confirmation.accept());
+    await page.getByRole("button", { name: "Editar gasto Compra semanal editada" }).click();
+    await page.getByRole("dialog", { name: "Editar gasto" }).getByRole("button", { name: "Eliminar" }).click();
+    await expect(page.getByRole("dialog", { name: "Editar gasto" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Editar gasto Compra semanal editada" })).toHaveCount(0);
+    await expect(page.getByText("Todavía no hay gastos en este viaje.", { exact: true })).toBeVisible();
+  });
+
   test("compact 320px screens keep dense tabs and touch targets usable", async ({ page }) => {
     test.setTimeout(60_000);
     await page.setViewportSize({ width: 320, height: 568 });

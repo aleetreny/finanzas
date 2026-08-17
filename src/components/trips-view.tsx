@@ -17,6 +17,7 @@ import { AppLink } from "@/components/app-link";
 import { AppModal } from "@/components/app-modal";
 import { useFinance } from "@/components/finance-provider";
 import { PageHeader } from "@/components/page-header";
+import { TransactionForm } from "@/components/transaction-form";
 import { formatCurrency, formatDate, todayIso } from "@/lib/format";
 import type { Transaction, TripProject } from "@/lib/types";
 
@@ -109,12 +110,22 @@ function TripForm({
 }
 
 export function TripsView() {
-  const { categories, subcategories, transactions, tripProjects, deleteTripProject } = useFinance();
+  const {
+    categories,
+    subcategories,
+    transactions,
+    tripProjects,
+    deleteTransaction,
+    deleteTripProject,
+  } = useFinance();
   const [selectedId, setSelectedId] = useState("");
   const [editing, setEditing] = useState<EditingTrip>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
@@ -214,6 +225,25 @@ export function TripsView() {
     }
   }
 
+  function editTransaction(transaction: Transaction) {
+    setTransactionError(null);
+    setEditingTransaction(transaction);
+  }
+
+  async function removeTransaction(transaction: Transaction) {
+    if (!window.confirm(`¿Eliminar “${transaction.name}” de forma permanente?`)) return;
+    setTransactionError(null);
+    setDeletingTransactionId(transaction.id);
+    try {
+      await deleteTransaction(transaction.id);
+      setEditingTransaction((current) => current?.id === transaction.id ? null : current);
+    } catch (caught) {
+      setTransactionError(caught instanceof Error ? caught.message : "No se pudo eliminar el gasto.");
+    } finally {
+      setDeletingTransactionId((current) => current === transaction.id ? null : current);
+    }
+  }
+
   return (
     <div className="page trips-page">
       <PageHeader
@@ -299,7 +329,7 @@ export function TripsView() {
                   </div>
                   <Route size={22} aria-hidden="true" />
                 </div>
-                <p className="trip-breakdown-hint">Abre una categoría para ver cada concepto incluido.</p>
+                <p className="trip-breakdown-hint">Abre una categoría para ver cada concepto incluido. Pulsa un gasto para editarlo o borrarlo.</p>
                 {categoryBreakdown.length ? (
                   <div className="trip-category-list">
                     {categoryBreakdown.map((row) => {
@@ -333,7 +363,13 @@ export function TripsView() {
                           {isExpanded ? (
                             <div className="trip-category-expenses">
                               {row.transactions.map((transaction) => (
-                                <article className="trip-transaction" key={transaction.id}>
+                                <button
+                                  className="trip-transaction"
+                                  key={transaction.id}
+                                  type="button"
+                                  aria-label={`Editar gasto ${transaction.name}`}
+                                  onClick={() => editTransaction(transaction)}
+                                >
                                   <div>
                                     <strong>{transaction.name}</strong>
                                     <span>
@@ -344,7 +380,7 @@ export function TripsView() {
                                     </span>
                                   </div>
                                   <strong className="amount">{formatCurrency(Math.abs(Number(transaction.amount)))}</strong>
-                                </article>
+                                </button>
                               ))}
                             </div>
                           ) : null}
@@ -388,6 +424,20 @@ export function TripsView() {
             initial={editing === "new" ? undefined : editing}
             onSaved={() => setEditing(null)}
             onCancel={() => setEditing(null)}
+          />
+        </AppModal>
+      ) : null}
+
+      {editingTransaction ? (
+        <AppModal title="Editar gasto" eyebrow="Gasto del viaje" onClose={() => setEditingTransaction(null)}>
+          {transactionError ? <p className="notice error" role="alert" style={{ marginBottom: 16 }}>{transactionError}</p> : null}
+          <TransactionForm
+            initial={editingTransaction}
+            scope="general"
+            onSaved={() => setEditingTransaction(null)}
+            onCancel={() => setEditingTransaction(null)}
+            onDelete={() => removeTransaction(editingTransaction)}
+            isDeleting={deletingTransactionId === editingTransaction.id}
           />
         </AppModal>
       ) : null}
