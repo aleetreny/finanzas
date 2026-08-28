@@ -212,6 +212,7 @@ export function createMockFinanceDatabase(): MockFinanceDatabase {
         manager_cleaning_amount: 60,
         manager_payment_override_amount: null,
         amount_payable_to_manager: 150,
+        payout_adjustment_amount: 0,
         payout_received: 558.36,
         owner_net_after_manager: 408.36,
         calculation_status: "reconciled",

@@ -16,6 +16,7 @@ export type RentalMonthAllocation = {
   managerCommission: number;
   cleaning: number;
   managerPayment: number;
+  payoutAdjustment: number;
   net: number;
 };
 
@@ -28,6 +29,7 @@ export type RentalCalculationInput = {
   managerRate: number;
   platformCommissionOverride?: number | null;
   managerPaymentOverride?: number | null;
+  payoutAdjustment?: number | null;
 };
 
 export type RentalCalculation = {
@@ -40,6 +42,8 @@ export type RentalCalculation = {
   managerCommissionCalculated: number;
   managerPaymentCalculated: number;
   managerPaymentUsed: number;
+  payoutAdjustment: number;
+  payoutReceived: number;
   ownerNet: number;
 };
 
@@ -123,6 +127,8 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
       ? Number(input.managerPaymentOverride)
       : managerPaymentCalculated,
   );
+  const payoutAdjustment = roundMoney(Number(input.payoutAdjustment ?? 0));
+  const payoutReceived = roundMoney(netAfterPlatform - payoutAdjustment);
 
   return {
     nights: rentalNights(input.checkInDate, input.checkOutDate),
@@ -134,7 +140,9 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
     managerCommissionCalculated,
     managerPaymentCalculated,
     managerPaymentUsed,
-    ownerNet: roundMoney(totalGross - platformCommissionUsed - managerPaymentUsed),
+    payoutAdjustment,
+    payoutReceived,
+    ownerNet: roundMoney(payoutReceived - managerPaymentUsed),
   };
 }
 
@@ -191,6 +199,7 @@ export function allocateRentalBooking(booking: RentalBooking): RentalMonthAlloca
   const manager = splitMoney(managerCommissionTotal, weights);
   const cleaning = splitMoney(cleaningTotal, weights);
   const managerPayment = splitMoney(managerPaymentTotal, weights);
+  const payoutAdjustment = splitMoney(Number(booking.payout_adjustment_amount ?? 0), weights);
 
   return months.map((month, index) => ({
     month: monthKeyFromDate(month),
@@ -200,7 +209,8 @@ export function allocateRentalBooking(booking: RentalBooking): RentalMonthAlloca
     managerCommission: manager[index],
     cleaning: cleaning[index],
     managerPayment: managerPayment[index],
-    net: roundMoney(gross[index] - platform[index] - managerPayment[index]),
+    payoutAdjustment: payoutAdjustment[index],
+    net: roundMoney(gross[index] - platform[index] - managerPayment[index] - payoutAdjustment[index]),
   }));
 }
 
@@ -263,6 +273,7 @@ export function rentalBookingNet(booking: RentalBooking) {
   return roundMoney(
     Number(booking.gross_before_discount)
       - Number(booking.platform_commission_amount)
-      - Number(booking.amount_payable_to_manager),
+      - Number(booking.amount_payable_to_manager)
+      - Number(booking.payout_adjustment_amount ?? 0),
   );
 }

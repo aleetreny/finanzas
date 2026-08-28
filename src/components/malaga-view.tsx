@@ -31,6 +31,7 @@ type MonthlyRow = {
   managerCommission: number;
   cleaning: number;
   managerPayment: number;
+  payoutAdjustments: number;
   recurring: number;
   otherExpenses: number;
   net: number;
@@ -49,6 +50,7 @@ function blankMonths(year: number): MonthlyRow[] {
     managerCommission: 0,
     cleaning: 0,
     managerPayment: 0,
+    payoutAdjustments: 0,
     recurring: 0,
     otherExpenses: 0,
     net: 0,
@@ -133,6 +135,7 @@ export function MalagaView() {
         month.managerCommission += allocation.managerCommission;
         month.cleaning += allocation.cleaning;
         month.managerPayment += allocation.managerPayment;
+        month.payoutAdjustments += allocation.payoutAdjustment;
       });
     });
 
@@ -172,10 +175,11 @@ export function MalagaView() {
       month.managerCommission = roundMoney(month.managerCommission);
       month.cleaning = roundMoney(month.cleaning);
       month.managerPayment = roundMoney(month.managerPayment);
+      month.payoutAdjustments = roundMoney(month.payoutAdjustments);
       month.recurring = roundMoney(month.recurring);
       month.otherExpenses = roundMoney(month.otherExpenses);
       month.net = roundMoney(
-        month.gross + month.otherIncome - month.platform - month.managerPayment
+        month.gross + month.otherIncome - month.platform - month.managerPayment - month.payoutAdjustments
           - month.recurring - month.otherExpenses,
       );
     });
@@ -188,6 +192,7 @@ export function MalagaView() {
     const manager = total("managerCommission");
     const cleaning = total("cleaning");
     const managerPayment = total("managerPayment");
+    const payoutAdjustments = total("payoutAdjustments");
     const recurring = total("recurring");
     const otherExpenses = total("otherExpenses");
     const fixedTaxRows: TaxRow[] = [
@@ -197,6 +202,7 @@ export function MalagaView() {
       { group: "Gasto", label: "Comisión de plataforma", amount: platform },
       { group: "Gasto", label: "Comisión del gestor", amount: manager },
       { group: "Gasto", label: "Limpieza de reservas", amount: cleaning },
+      { group: "Gasto", label: "Gastos o ajustes sobre cobros", amount: payoutAdjustments },
     ];
     const taxRows: TaxRow[] = [
       ...fixedTaxRows,
@@ -210,7 +216,7 @@ export function MalagaView() {
       selectedTransactions,
       taxRows,
       income: roundMoney(gross + otherIncome),
-      expenses: roundMoney(platform + managerPayment + recurring + otherExpenses),
+      expenses: roundMoney(platform + managerPayment + payoutAdjustments + recurring + otherExpenses),
       net: total("net"),
     };
   }, [bookings, propertyRecurring, selectedYear, standaloneTransactions, subcategoryNames, today]);
@@ -295,7 +301,7 @@ export function MalagaView() {
         <div className="section-heading"><div><p className="eyebrow">Evolución</p><h2>Desglose mensual</h2></div><span className="badge">{selectedYear}</span></div>
         <div className="property-table-scroll">
           <table className="data-table property-dashboard-table">
-            <thead><tr><th>Mes</th><th>Ingresos brutos</th><th>Descuento / ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Periódicos</th><th>Otros gastos</th><th>Neto</th></tr></thead>
+            <thead><tr><th>Mes</th><th>Ingresos brutos</th><th>Descuento / ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Ajuste cobro</th><th>Periódicos</th><th>Otros gastos</th><th>Neto</th></tr></thead>
             <tbody>
               {analysis.months.map((month) => (
                 <tr key={month.key}>
@@ -304,6 +310,7 @@ export function MalagaView() {
                   <MoneyCell value={month.discounts} negative />
                   <MoneyCell value={month.platform} negative />
                   <MoneyCell value={month.managerPayment} negative />
+                  <MoneyCell value={month.payoutAdjustments} negative />
                   <MoneyCell value={month.recurring} negative />
                   <MoneyCell value={month.otherExpenses} negative />
                   <MoneyCell value={month.net} signed />
@@ -337,7 +344,7 @@ export function MalagaView() {
           <>
             <div className="property-table-scroll booking-table-scroll">
               <table className="data-table property-dashboard-table booking-table">
-                <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
+                <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Ajuste cobro</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
                 <tbody>
                   {selectedBookings.map((booking) => (
                     <tr key={booking.id}>
@@ -347,6 +354,7 @@ export function MalagaView() {
                       <td className="amount negative">{Number(booking.discount_amount) ? formatCurrency(-Number(booking.discount_amount)) : "—"}</td>
                       <td className="amount negative">{Number(booking.platform_commission_amount) ? formatCurrency(-Number(booking.platform_commission_amount)) : "—"}</td>
                       <td className="amount negative">{Number(booking.amount_payable_to_manager) ? formatCurrency(-Number(booking.amount_payable_to_manager)) : "—"}</td>
+                      <td className="amount negative">{Number(booking.payout_adjustment_amount) ? formatCurrency(-Number(booking.payout_adjustment_amount)) : "—"}</td>
                       <td className={`amount ${rentalBookingNet(booking) >= 0 ? "positive" : ""}`}>{formatCurrency(rentalBookingNet(booking))}</td>
                       <td><div className="row-actions"><button className="icon-button" title="Editar desglose" onClick={() => { setEditingBooking(booking); setBookingOpen(true); }}><Pencil size={15} /></button><button className="icon-button" title="Eliminar reserva" onClick={() => void removeBooking(booking)}><Trash2 size={15} /></button></div></td>
                     </tr>
@@ -368,6 +376,7 @@ export function MalagaView() {
                     <span>Bruto <strong>{formatCurrency(Number(booking.gross_before_discount))}</strong></span>
                     <span>Plataforma <strong>{formatCurrency(-Number(booking.platform_commission_amount))}</strong></span>
                     <span>Gestora <strong>{formatCurrency(-Number(booking.amount_payable_to_manager))}</strong></span>
+                    {Number(booking.payout_adjustment_amount) > 0 ? <span>Ajuste cobro <strong>{formatCurrency(-Number(booking.payout_adjustment_amount))}</strong></span> : null}
                   </div>
                   {booking.calculation_status === "needs_review" ? <span className="badge gold">Completar datos</span> : null}
                   <div className="mobile-booking-actions" role="group" aria-label={`Acciones para ${booking.name}`}>

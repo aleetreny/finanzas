@@ -30,6 +30,7 @@ function booking(overrides: Partial<RentalBooking> = {}): RentalBooking {
     manager_cleaning_amount: 10,
     manager_payment_override_amount: null,
     amount_payable_to_manager: 40,
+    payout_adjustment_amount: 0,
     owner_net_after_manager: 340,
     calculation_status: "reconciled",
     allocation_method: "daily",
@@ -80,6 +81,13 @@ describe("property rental allocation", () => {
     const rows = allocateRentalBooking(booking({ gross_before_discount: 100.01 }));
     expect(rows.reduce((sum, row) => sum + Math.round(row.grossIncome * 100), 0)).toBe(10_001);
   });
+
+  it("allocates an adjustment to the owner payout without changing the booking amounts", () => {
+    const rows = allocateRentalBooking(booking({ payout_adjustment_amount: 200 }));
+
+    expect(rows.map((row) => row.payoutAdjustment)).toEqual([133.33, 66.67]);
+    expect(rows.reduce((sum, row) => sum + row.net, 0)).toBe(140);
+  });
 });
 
 describe("rental commission models", () => {
@@ -127,6 +135,19 @@ describe("rental commission models", () => {
     expect(calculation.platformCommissionUsed).toBe(206.32);
     expect(calculation.managerPaymentUsed).toBe(242.85);
     expect(calculation.ownerNet).toBe(650.83);
+  });
+
+  it("deducts payout adjustments after the commission calculations", () => {
+    const calculation = calculateRentalBooking({
+      ...base,
+      platformRate: RENTAL_COMMISSION_PROFILES.airbnb_host_only.platformRate,
+      payoutAdjustment: 200,
+    });
+
+    expect(calculation.platformCommissionUsed).toBe(206.31);
+    expect(calculation.managerPaymentUsed).toBe(242.86);
+    expect(calculation.payoutReceived).toBe(693.69);
+    expect(calculation.ownerNet).toBe(450.83);
   });
 });
 

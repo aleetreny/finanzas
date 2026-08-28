@@ -448,6 +448,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       managerRate: Number(booking.manager_rate),
       platformCommissionOverride: booking.platform_commission_override_amount,
       managerPaymentOverride: booking.manager_payment_override_amount,
+      payoutAdjustment: booking.payout_adjustment_amount,
     });
     const payload = {
       ...booking,
@@ -459,7 +460,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       bank_fee_amount: 0,
       manager_commission_amount: calculation.managerCommissionCalculated,
       manager_cleaning_amount: Number(booking.cleaning_fee),
-      payout_received: calculation.netAfterPlatform,
+      payout_received: calculation.payoutReceived,
       amount_payable_to_manager: calculation.managerPaymentUsed,
       owner_net_after_manager: calculation.ownerNet,
       calculation_status: "reconciled" as const,

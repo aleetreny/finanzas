@@ -30,6 +30,7 @@ const bookingSchema = z.object({
   discount_amount: z.number().min(0, "El ajuste no puede ser negativo.").optional(),
   platform_commission_override_amount: z.number().min(0, "La comisión real no puede ser negativa.").nullable(),
   manager_payment_override_amount: z.number().min(0, "El pago real no puede ser negativo.").nullable(),
+  payout_adjustment_amount: z.number().min(0, "El gasto o ajuste no puede ser negativo.").optional(),
   platform_rate_percent: z.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede superar el 100 %."),
   manager_rate_percent: z.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede superar el 100 %."),
 }).superRefine((values, context) => {
@@ -77,6 +78,7 @@ function defaultValues(initial?: RentalBooking): BookingValues {
     manager_payment_override_amount: initial?.manager_payment_override_amount == null
       ? null
       : Number(initial.manager_payment_override_amount),
+    payout_adjustment_amount: Number(initial?.payout_adjustment_amount ?? 0) || undefined,
     platform_rate_percent: Number(initial?.platform_commission_rate ?? profile.platformRate) * 100,
     manager_rate_percent: Number(initial?.manager_rate ?? profile.managerRate) * 100,
   };
@@ -112,6 +114,7 @@ export function RentalBookingForm({
     managerRate: Number(values.manager_rate_percent ?? 0) / 100,
     platformCommissionOverride: values.platform_commission_override_amount,
     managerPaymentOverride: values.manager_payment_override_amount,
+    payoutAdjustment: values.payout_adjustment_amount,
   });
 
   function applyProfile(model: RentalCommissionModel) {
@@ -143,6 +146,7 @@ export function RentalBookingForm({
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
       manager_payment_override_amount: formValues.manager_payment_override_amount,
+      payout_adjustment_amount: formValues.payout_adjustment_amount ?? 0,
       allocation_method: initial?.allocation_method ?? "daily",
       notes: initial?.notes ?? null,
     };
@@ -227,6 +231,7 @@ export function RentalBookingForm({
         {Number(values.discount_amount ?? 0) > 0 ? <PreviewRow label="Descuento o ajuste (informativo)" value={-Number(values.discount_amount)} /> : null}
         <PreviewRow label="Comisión plataforma" value={-calculation.platformCommissionUsed} />
         <PreviewRow label="Pago total gestora" value={-calculation.managerPaymentUsed} />
+        {calculation.payoutAdjustment > 0 ? <PreviewRow label="Gastos o ajustes adicionales" value={-calculation.payoutAdjustment} /> : null}
         <PreviewRow label="Neto propietario" value={calculation.ownerNet} total />
       </div>
 
@@ -255,6 +260,14 @@ export function RentalBookingForm({
             optional
             error={errors.manager_payment_override_amount?.message}
             register={register("manager_payment_override_amount", { setValueAs: optionalNumber })}
+          />
+          <MoneyField
+            id="booking-payout-adjustment"
+            label="Gastos o ajustes adicionales"
+            help="Se restan de tu cobro final después de calcular las comisiones (por ejemplo, un ajuste de Airbnb)."
+            optional
+            error={errors.payout_adjustment_amount?.message}
+            register={register("payout_adjustment_amount", { setValueAs: optionalUndefinedNumber })}
           />
           <PercentField
             id="booking-platform-rate"

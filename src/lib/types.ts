@@ -131,6 +131,7 @@ export type RentalBooking = {
   manager_cleaning_amount: number;
   manager_payment_override_amount: number | null;
   amount_payable_to_manager: number;
+  payout_adjustment_amount: number;
   owner_net_after_manager: number;
   calculation_status: "draft" | "reconciled" | "needs_review";
   allocation_method: RentalAllocationMethod;
@@ -154,6 +155,7 @@ export type RentalBookingInput = Pick<
   | "platform_commission_override_amount"
   | "manager_rate"
   | "manager_payment_override_amount"
+  | "payout_adjustment_amount"
   | "allocation_method"
   | "notes"
 >;
