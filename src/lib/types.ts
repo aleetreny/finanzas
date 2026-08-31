@@ -150,7 +150,6 @@ export type RentalBookingInput = Pick<
   | "commission_model"
   | "accommodation_final"
   | "cleaning_fee"
-  | "discount_amount"
   | "platform_commission_rate"
   | "platform_commission_override_amount"
   | "manager_rate"

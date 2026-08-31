@@ -344,14 +344,13 @@ export function MalagaView() {
           <>
             <div className="property-table-scroll booking-table-scroll">
               <table className="data-table property-dashboard-table booking-table">
-                <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Ajuste</th><th>Com. plataforma</th><th>Pago gestora</th><th>Ajuste cobro</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
+                <thead><tr><th>Periodo</th><th>Reserva</th><th>Total bruto</th><th>Com. plataforma</th><th>Pago gestora</th><th>Ajuste cobro</th><th>Neto</th><th aria-label="Acciones" /></tr></thead>
                 <tbody>
                   {selectedBookings.map((booking) => (
                     <tr key={booking.id}>
                       <td>{formatDate(booking.check_in_date)}<span className="transaction-note">hasta {formatDate(booking.check_out_date)}</span></td>
                       <td><strong>{booking.name}</strong>{booking.calculation_status === "needs_review" ? <span className="badge gold booking-status">Completar</span> : null}</td>
                       <td className="amount positive">{formatCurrency(Number(booking.gross_before_discount))}</td>
-                      <td className="amount negative">{Number(booking.discount_amount) ? formatCurrency(-Number(booking.discount_amount)) : "—"}</td>
                       <td className="amount negative">{Number(booking.platform_commission_amount) ? formatCurrency(-Number(booking.platform_commission_amount)) : "—"}</td>
                       <td className="amount negative">{Number(booking.amount_payable_to_manager) ? formatCurrency(-Number(booking.amount_payable_to_manager)) : "—"}</td>
                       <td className="amount negative">{Number(booking.payout_adjustment_amount) ? formatCurrency(-Number(booking.payout_adjustment_amount)) : "—"}</td>

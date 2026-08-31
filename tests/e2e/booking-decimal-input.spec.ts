@@ -29,7 +29,7 @@ test.describe("booking decimal input", () => {
     await dialog.getByLabel("Alojamiento final").fill("720,50");
     await dialog.getByLabel("Limpieza").fill("60,25");
     await dialog.getByText("Ajustes avanzados").click();
-    await dialog.getByLabel("Descuento o ajuste").fill("20,10");
+    await expect(dialog.getByLabel("Descuento o ajuste")).toHaveCount(0);
     await dialog.getByLabel("Gastos o ajustes adicionales").fill("200");
 
     await dialog.getByRole("button", { name: "Añadir reserva" }).scrollIntoViewIfNeeded();

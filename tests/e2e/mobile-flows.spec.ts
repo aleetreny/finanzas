@@ -409,13 +409,13 @@ test.describe("mobile quality flows", () => {
     const dialog = page.getByRole("dialog", { name: "Nueva reserva" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel("Alojamiento final")).toHaveValue("");
-    await expect(dialog.getByLabel("Limpieza")).toHaveValue("");
+    await expect(dialog.getByLabel("Limpieza")).toHaveValue("60");
     await dialog.getByLabel("Concepto").fill("Reserva móvil");
     await dialog.getByLabel("Alojamiento final").fill("720");
     await dialog.getByLabel("Limpieza").fill("60");
     await dialog.getByText("Ajustes avanzados").click();
-    await expect(dialog.getByLabel("Descuento o ajuste")).toHaveValue("");
-    await dialog.getByLabel("Descuento o ajuste").fill("20");
+    await expect(dialog.getByLabel("Descuento o ajuste")).toHaveCount(0);
+    await dialog.getByLabel("Notas").fill("Reserva móvil sin descuento editable.");
 
     const save = dialog.getByRole("button", { name: "Añadir reserva" });
     await save.scrollIntoViewIfNeeded();

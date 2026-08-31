@@ -28,7 +28,6 @@ const bookingSchema = z.object({
   notes: z.string().trim().max(2_000, "Las notas no pueden superar los 2.000 caracteres.").optional(),
   accommodation_final: z.number().min(0, "El alojamiento no puede ser negativo."),
   cleaning_fee: z.number().min(0, "La limpieza no puede ser negativa."),
-  discount_amount: z.number().min(0, "El ajuste no puede ser negativo.").optional(),
   platform_commission_override_amount: z.number().min(0, "La comisión real no puede ser negativa.").nullable(),
   manager_payment_override_amount: z.number().min(0, "El pago real no puede ser negativo.").nullable(),
   payout_adjustment_amount: z.number().min(0, "El gasto o ajuste no puede ser negativo.").optional(),
@@ -71,9 +70,6 @@ function defaultValues(initial?: RentalBooking): BookingValues {
     cleaning_fee: initial
       ? Number(initial.cleaning_fee)
       : 60,
-    discount_amount: initial
-      ? Number(initial.discount_amount)
-      : undefined,
     platform_commission_override_amount: initial?.platform_commission_override_amount == null
       ? null
       : Number(initial.platform_commission_override_amount),
@@ -143,7 +139,6 @@ export function RentalBookingForm({
       commission_model: formValues.commission_model,
       accommodation_final: formValues.accommodation_final,
       cleaning_fee: formValues.cleaning_fee,
-      discount_amount: formValues.discount_amount ?? 0,
       platform_commission_rate: formValues.platform_rate_percent / 100,
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
@@ -172,16 +167,6 @@ export function RentalBookingForm({
         <label htmlFor="booking-name">Concepto</label>
         <input id="booking-name" placeholder="Reserva" {...register("name")} />
         {errors.name ? <p className="field-error">{errors.name.message}</p> : null}
-      </div>
-
-      <div className="field full">
-        <label htmlFor="booking-notes">Notas <span className="opt">· opcional</span></label>
-        <textarea
-          id="booking-notes"
-          placeholder="Por ejemplo, descuento de Airbnb o ajuste pendiente"
-          {...register("notes")}
-        />
-        {errors.notes ? <p className="field-error">{errors.notes.message}</p> : null}
       </div>
 
       <div className="rental-form-grid two">
@@ -224,8 +209,8 @@ export function RentalBookingForm({
       <div className="rental-form-grid two">
         <MoneyField
           id="booking-accommodation"
-          label="Alojamiento final"
-          help="Después de descuentos y sin incluir la limpieza."
+          label="Alojamiento final (después de descuentos)"
+          help="Sin incluir la limpieza."
           error={errors.accommodation_final?.message}
           register={register("accommodation_final", { setValueAs: decimalNumber })}
         />
@@ -240,7 +225,6 @@ export function RentalBookingForm({
 
       <div className="rental-calculation-preview">
         <PreviewRow label="Total bruto" value={calculation.totalGross} />
-        {Number(values.discount_amount ?? 0) > 0 ? <PreviewRow label="Descuento o ajuste (informativo)" value={-Number(values.discount_amount)} /> : null}
         <PreviewRow label="Comisión plataforma" value={-calculation.platformCommissionUsed} />
         <PreviewRow label="Pago total gestora" value={-calculation.managerPaymentUsed} />
         {calculation.payoutAdjustment > 0 ? <PreviewRow label="Gastos o ajustes adicionales" value={-calculation.payoutAdjustment} /> : null}
@@ -250,13 +234,6 @@ export function RentalBookingForm({
       <details className="rental-advanced">
         <summary><ChevronDown size={16} />Ajustes avanzados</summary>
         <div className="rental-advanced-fields">
-          <MoneyField
-            id="booking-discount"
-            label="Descuento o ajuste"
-            help="Solo informativo: no se vuelve a restar del alojamiento final."
-            error={errors.discount_amount?.message}
-            register={register("discount_amount", { setValueAs: optionalUndefinedNumber })}
-          />
           <MoneyField
             id="booking-platform-real"
             label="Comisión real de plataforma"
@@ -293,6 +270,15 @@ export function RentalBookingForm({
             error={errors.manager_rate_percent?.message}
             register={register("manager_rate_percent", { setValueAs: decimalNumber })}
           />
+          <div className="field full">
+            <label htmlFor="booking-notes">Notas <span className="opt">· opcional</span></label>
+            <textarea
+              id="booking-notes"
+              placeholder="Por ejemplo, ajuste pendiente o información de la reserva"
+              {...register("notes")}
+            />
+            {errors.notes ? <p className="field-error">{errors.notes.message}</p> : null}
+          </div>
         </div>
         <p className="form-help">Los porcentajes y el modelo quedan guardados dentro de esta reserva y no cambian si modificas perfiles futuros.</p>
       </details>
