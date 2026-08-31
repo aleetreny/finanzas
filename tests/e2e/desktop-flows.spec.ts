@@ -262,10 +262,17 @@ test.describe("desktop quality flows", () => {
     await page.getByRole("button", { name: "Nueva reserva" }).click();
     let dialog = page.getByRole("dialog", { name: "Nueva reserva" });
     await dialog.getByLabel("Concepto").fill("Reserva escritorio");
+    await dialog.getByLabel("Notas").fill("Descuento de Airbnb aplicado al huésped.");
     await dialog.getByLabel("Alojamiento final").fill("820");
     await dialog.getByLabel("Limpieza").fill("65");
     await dialog.getByRole("button", { name: "Añadir reserva" }).click();
     await expect(page.locator(".booking-table-scroll").getByText("Reserva escritorio", { exact: true })).toBeVisible();
+
+    await page.locator(".booking-table-scroll tbody tr").filter({ hasText: "Reserva escritorio" })
+      .getByTitle("Editar desglose").click();
+    dialog = page.getByRole("dialog", { name: "Editar reserva" });
+    await expect(dialog.getByLabel("Notas")).toHaveValue("Descuento de Airbnb aplicado al huésped.");
+    await dialog.getByRole("button", { name: "Cerrar Editar reserva" }).click();
 
     await page.getByRole("button", { name: "Nuevo gasto", exact: true }).first().click();
     dialog = page.getByRole("dialog", { name: "Nuevo gasto" });

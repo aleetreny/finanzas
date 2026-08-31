@@ -25,6 +25,7 @@ const bookingSchema = z.object({
   check_out_date: z.string().min(10, "Indica la salida."),
   platform: z.enum(["airbnb", "booking", "direct", "other"]),
   commission_model: z.enum(["airbnb_shared_legacy", "airbnb_host_only", "booking_standard", "direct", "other"]),
+  notes: z.string().trim().max(2_000, "Las notas no pueden superar los 2.000 caracteres.").optional(),
   accommodation_final: z.number().min(0, "El alojamiento no puede ser negativo."),
   cleaning_fee: z.number().min(0, "La limpieza no puede ser negativa."),
   discount_amount: z.number().min(0, "El ajuste no puede ser negativo.").optional(),
@@ -63,6 +64,7 @@ function defaultValues(initial?: RentalBooking): BookingValues {
     check_out_date: initial?.check_out_date ?? addIsoDays(checkIn, 1),
     platform,
     commission_model: commissionModel,
+    notes: initial?.notes ?? "",
     accommodation_final: initial
       ? Number(initial.accommodation_final)
       : (undefined as unknown as number),
@@ -148,7 +150,7 @@ export function RentalBookingForm({
       manager_payment_override_amount: formValues.manager_payment_override_amount,
       payout_adjustment_amount: formValues.payout_adjustment_amount ?? 0,
       allocation_method: initial?.allocation_method ?? "daily",
-      notes: initial?.notes ?? null,
+      notes: formValues.notes?.trim() || null,
     };
     try {
       await saveBooking(input, initial?.id);
@@ -170,6 +172,16 @@ export function RentalBookingForm({
         <label htmlFor="booking-name">Concepto</label>
         <input id="booking-name" placeholder="Reserva" {...register("name")} />
         {errors.name ? <p className="field-error">{errors.name.message}</p> : null}
+      </div>
+
+      <div className="field full">
+        <label htmlFor="booking-notes">Notas <span className="opt">· opcional</span></label>
+        <textarea
+          id="booking-notes"
+          placeholder="Por ejemplo, descuento de Airbnb o ajuste pendiente"
+          {...register("notes")}
+        />
+        {errors.notes ? <p className="field-error">{errors.notes.message}</p> : null}
       </div>
 
       <div className="rental-form-grid two">
