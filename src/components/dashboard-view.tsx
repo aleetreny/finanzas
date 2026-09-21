@@ -6,6 +6,7 @@ import { AppLink } from "@/components/app-link";
 import { useFinance } from "@/components/finance-provider";
 import { categoryById, isMalagaTransaction } from "@/lib/finance-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { median } from "@/lib/statistics";
 import { allocateTransactionByMonth } from "@/lib/transaction-allocation";
 
 const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -199,6 +200,17 @@ export function DashboardView() {
     return map;
   }, [personalTransactions]);
 
+  const byExpenseMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    personalTransactions.forEach((transaction) => {
+      if (transaction.amount >= 0) return;
+      allocateTransactionByMonth(transaction).forEach((allocation) => {
+        map.set(allocation.month, (map.get(allocation.month) ?? 0) + Math.abs(allocation.amount));
+      });
+    });
+    return map;
+  }, [personalTransactions]);
+
   const rangeOptions = useMemo(() => {
     const opts: { label: string; value: number | "all" }[] = [];
     [6, 12, 24].forEach((v) => { if (allMonths.length > v) opts.push({ label: String(v), value: v }); });
@@ -384,29 +396,31 @@ export function DashboardView() {
 
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
 
-  // Este mes vs. lo habitual (media de los últimos 6 meses completos)
+  // Este mes vs. lo habitual (mediana de los últimos 6 meses completos)
   const now = new Date();
   const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const completeMonths = useMemo(
+    () => allMonths.filter((month) => month < currentKey).slice(-6),
+    [allMonths, currentKey],
+  );
   const budgetAll = useMemo(() => {
-    const completeMonths = allMonths.filter((m) => m < currentKey).slice(-6);
     return expenseCategories
       .map((c) => {
         const inner = byCatMonth.get(c.id);
         const nowVal = inner?.get(currentKey) ?? 0;
         const samples = completeMonths.map((m) => inner?.get(m) ?? 0);
-        const usual = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
+        const usual = median(samples);
         const pct = usual > 0 ? (nowVal - usual) / usual : null;
         return { id: c.id, name: c.name, now: nowVal, usual, pct };
       })
       .filter((r) => r.now > 0 || r.usual > 0)
       .sort((a, b) => b.now - a.now);
-  }, [expenseCategories, byCatMonth, allMonths, currentKey]);
+  }, [expenseCategories, byCatMonth, completeMonths, currentKey]);
   const budget = budgetAll.slice(0, 10);
 
   // Desglose de subcategorías para cada categoría principal
   const categorySubcategories = useMemo(() => {
     const map = new Map<string, Array<{ id: string; name: string; now: number; usual: number; pct: number | null }>>();
-    const completeMonths = allMonths.filter((m) => m < currentKey).slice(-6);
 
     expenseCategories.forEach((cat) => {
       const subs = subcategories.filter((s) => s.category_id === cat.id);
@@ -415,7 +429,7 @@ export function DashboardView() {
           const inner = bySubMonth.get(s.id);
           const nowVal = inner?.get(currentKey) ?? 0;
           const samples = completeMonths.map((m) => inner?.get(m) ?? 0);
-          const usual = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
+          const usual = median(samples);
           const pct = usual > 0 ? (nowVal - usual) / usual : null;
           return { id: s.id, name: s.name, now: nowVal, usual, pct };
         })
@@ -428,7 +442,7 @@ export function DashboardView() {
 
       if (diffNow > 0.5) {
         const catSamples = completeMonths.map((m) => byCatMonth.get(cat.id)?.get(m) ?? 0);
-        const catUsual = catSamples.length ? catSamples.reduce((a, b) => a + b, 0) / catSamples.length : 0;
+        const catUsual = median(catSamples);
         const subUsualSum = subList.reduce((acc, sub) => acc + sub.usual, 0);
         const diffUsual = Math.max(0, catUsual - subUsualSum);
         const pct = diffUsual > 0 ? (diffNow - diffUsual) / diffUsual : null;
@@ -444,7 +458,7 @@ export function DashboardView() {
       map.set(cat.id, subList);
     });
     return map;
-  }, [expenseCategories, subcategories, bySubMonth, byCatMonth, allMonths, currentKey]);
+  }, [expenseCategories, subcategories, bySubMonth, byCatMonth, completeMonths, currentKey]);
 
   // La misma escala para todas las barras: si Comida es el triple, se ve el triple
   const budgetMax = Math.max(1, ...budget.map((r) => Math.max(r.now, r.usual))) * 1.08;
@@ -456,7 +470,7 @@ export function DashboardView() {
     .flatMap((transaction) => allocateTransactionByMonth(transaction))
     .filter((allocation) => allocation.month === currentKey)
     .reduce((total, allocation) => total + Math.abs(allocation.amount), 0);
-  const usualFullMonth = budgetAll.reduce((s, r) => s + r.usual, 0);
+  const usualFullMonth = median(completeMonths.map((month) => byExpenseMonth.get(month) ?? 0));
   const usualToDate = usualFullMonth * (now.getDate() / daysInMonth);
   const heroPct = usualToDate > 0 ? (monthTotal - usualToDate) / usualToDate : null;
   const monthIncome = byIncomeMonth.get(currentKey) ?? 0;
