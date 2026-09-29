@@ -24,12 +24,14 @@ test.describe("booking decimal input", () => {
     await expect(dialog.getByLabel("Limpieza")).toHaveValue("60");
     await dialog.getByLabel("Concepto").fill("Booking con coma");
     await dialog.getByLabel("Plataforma", { exact: true }).selectOption("booking");
+    await expect(dialog.getByLabel("Limpieza cobrada al huésped")).toHaveValue("70");
     await expect(dialog.getByLabel("Porcentaje de plataforma")).toHaveValue("15");
 
     await dialog.getByLabel("Alojamiento final").fill("720,50");
-    await dialog.getByLabel("Limpieza").fill("60,25");
+    await dialog.getByLabel("Limpieza cobrada al huésped").fill("70,25");
     await dialog.getByText("Ajustes avanzados").click();
     await expect(dialog.getByLabel("Descuento o ajuste")).toHaveCount(0);
+    await expect(dialog.getByLabel("Limpieza pagada a gestora")).toHaveValue("60");
     await expect(dialog.getByText(/Vacío: se usará el 1,3 %/)).toBeVisible();
     await dialog.getByLabel("Cargo bancario / ajuste de Booking").fill("200");
 
