@@ -69,7 +69,7 @@ function defaultValues(initial?: RentalBooking): BookingValues {
       : (undefined as unknown as number),
     cleaning_fee: initial
       ? Number(initial.cleaning_fee)
-      : 60,
+      : profile.guestCleaningDefault,
     platform_commission_override_amount: initial?.platform_commission_override_amount == null
       ? null
       : Number(initial.platform_commission_override_amount),
@@ -110,6 +110,7 @@ export function RentalBookingForm({
     checkOutDate: values.check_out_date ?? "",
     accommodationFinal: Number(values.accommodation_final ?? 0),
     cleaning: Number(values.cleaning_fee ?? 0),
+    managerCleaning: activeProfile.managerCleaningFixed,
     platformRate: Number(values.platform_rate_percent ?? 0) / 100,
     managerRate: Number(values.manager_rate_percent ?? 0) / 100,
     platformCommissionOverride: values.platform_commission_override_amount,
@@ -124,6 +125,7 @@ export function RentalBookingForm({
     setValue("commission_model", model, { shouldDirty: true, shouldValidate: true });
     setValue("platform_rate_percent", profile.platformRate * 100, { shouldDirty: true });
     setValue("manager_rate_percent", profile.managerRate * 100, { shouldDirty: true });
+    setValue("cleaning_fee", profile.guestCleaningDefault, { shouldDirty: true });
   }
 
   const platformField = register("platform", {
@@ -141,6 +143,7 @@ export function RentalBookingForm({
       checkOutDate: formValues.check_out_date,
       accommodationFinal: Number(formValues.accommodation_final),
       cleaning: Number(formValues.cleaning_fee),
+      managerCleaning: submitProfile.managerCleaningFixed,
       platformRate: Number(formValues.platform_rate_percent) / 100,
       managerRate: Number(formValues.manager_rate_percent) / 100,
       platformCommissionOverride: formValues.platform_commission_override_amount,
@@ -161,6 +164,9 @@ export function RentalBookingForm({
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
       manager_payment_override_amount: formValues.manager_payment_override_amount,
+      manager_cleaning_amount: initial
+        ? Number(initial.manager_cleaning_amount)
+        : submitCalculation.managerCleaningUsed,
       payout_adjustment_amount: formValues.payout_adjustment_amount ?? submitCalculation.payoutAdjustment,
       allocation_method: initial?.allocation_method ?? "daily",
       notes: formValues.notes?.trim() || null,
@@ -227,15 +233,19 @@ export function RentalBookingForm({
       <div className="rental-form-grid two">
         <MoneyField
           id="booking-accommodation"
-          label="Alojamiento final (después de descuentos)"
-          help="Sin incluir la limpieza."
+          label={commissionModel === "booking_split_fees" ? "Alojamiento (subtotal antes de limpieza)" : "Alojamiento final (después de descuentos)"}
+          help={commissionModel === "booking_split_fees"
+            ? "Usa el subtotal de las noches de Booking, antes de añadir los 70 € de limpieza; no el total de la reserva."
+            : "Sin incluir la limpieza."}
           error={errors.accommodation_final?.message}
           register={register("accommodation_final", { setValueAs: decimalNumber })}
         />
         <MoneyField
           id="booking-cleaning"
           label="Limpieza"
-          help="Se cobra al huésped y forma parte del pago a la gestora."
+          help={commissionModel === "booking_split_fees"
+            ? "Booking cobra 70 € al huésped; a la gestora se le asignan 60 € de limpieza."
+            : "Se cobra al huésped y forma parte del pago a la gestora."}
           error={errors.cleaning_fee?.message}
           register={register("cleaning_fee", { setValueAs: decimalNumber })}
         />

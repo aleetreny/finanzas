@@ -25,6 +25,7 @@ export type RentalCalculationInput = {
   checkOutDate: string;
   accommodationFinal: number;
   cleaning: number;
+  managerCleaning?: number | null;
   platformRate: number;
   managerRate: number;
   platformCommissionOverride?: number | null;
@@ -42,6 +43,7 @@ export type RentalCalculation = {
   netAfterPlatform: number;
   managerCommissionBase: number;
   managerCommissionCalculated: number;
+  managerCleaningUsed: number;
   managerPaymentCalculated: number;
   managerPaymentUsed: number;
   payoutAdjustmentCalculated: number;
@@ -58,16 +60,18 @@ export const RENTAL_COMMISSION_PROFILES: Record<
     managerRate: number;
     payoutAdjustmentRate: number;
     deductPayoutAdjustmentBeforeManager: boolean;
+    guestCleaningDefault: number;
+    managerCleaningFixed: number | null;
   }
 > = {
-  airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
-  airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
-  // Legacy rows keep the former all-in 18.15% snapshot. Never use this as the default for new Booking reservations.
-  booking_standard: { platform: "booking", platformRate: 0.15 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
-  // New Booking reservations: 15% commission + 1.3% bank charge, both before the manager's 18% base.
-  booking_split_fees: { platform: "booking", platformRate: 0.15, managerRate: 0.18, payoutAdjustmentRate: 0.013, deductPayoutAdjustmentBeforeManager: true },
-  direct: { platform: "direct", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
-  other: { platform: "other", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
+  airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false, guestCleaningDefault: 60, managerCleaningFixed: null },
+  airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false, guestCleaningDefault: 60, managerCleaningFixed: null },
+  // Legacy rows keep the former all-in 18.15% snapshot and their own cleaning amount.
+  booking_standard: { platform: "booking", platformRate: 0.15 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false, guestCleaningDefault: 60, managerCleaningFixed: null },
+  // New Booking reservations: guest pays 70 cleaning, manager receives 60; 15% commission + 1.3% bank charge.
+  booking_split_fees: { platform: "booking", platformRate: 0.15, managerRate: 0.18, payoutAdjustmentRate: 0.013, deductPayoutAdjustmentBeforeManager: true, guestCleaningDefault: 70, managerCleaningFixed: 60 },
+  direct: { platform: "direct", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false, guestCleaningDefault: 60, managerCleaningFixed: null },
+  other: { platform: "other", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false, guestCleaningDefault: 60, managerCleaningFixed: null },
 };
 
 export function defaultCommissionModel(platform: RentalPlatform): RentalCommissionModel {
@@ -143,7 +147,10 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
       - (input.deductPayoutAdjustmentBeforeManager ? payoutAdjustment : 0),
   );
   const managerCommissionCalculated = roundMoney(managerCommissionBase * Number(input.managerRate));
-  const managerPaymentCalculated = roundMoney(Number(input.cleaning) + managerCommissionCalculated);
+  const managerCleaningUsed = roundMoney(
+    input.managerCleaning == null ? Number(input.cleaning) : Number(input.managerCleaning),
+  );
+  const managerPaymentCalculated = roundMoney(managerCleaningUsed + managerCommissionCalculated);
   const managerPaymentUsed = roundMoney(
     hasOverride(input.managerPaymentOverride)
       ? Number(input.managerPaymentOverride)
@@ -159,6 +166,7 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
     netAfterPlatform,
     managerCommissionBase,
     managerCommissionCalculated,
+    managerCleaningUsed,
     managerPaymentCalculated,
     managerPaymentUsed,
     payoutAdjustmentCalculated,
@@ -216,7 +224,7 @@ export function allocateRentalBooking(booking: RentalBooking): RentalMonthAlloca
   const discounts = splitMoney(Number(booking.discount_amount), weights);
   const platform = splitMoney(Number(booking.platform_commission_amount), weights);
   const managerPaymentTotal = Number(booking.amount_payable_to_manager);
-  const cleaningTotal = Math.min(Number(booking.cleaning_fee), managerPaymentTotal);
+  const cleaningTotal = Math.min(Number(booking.manager_cleaning_amount), managerPaymentTotal);
   const managerCommissionTotal = managerPaymentTotal - cleaningTotal;
   const manager = splitMoney(managerCommissionTotal, weights);
   const cleaning = splitMoney(cleaningTotal, weights);
