@@ -164,6 +164,9 @@ export function RentalBookingForm({
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
       manager_payment_override_amount: formValues.manager_payment_override_amount,
+      manager_cleaning_amount: initial
+        ? Number(initial.manager_cleaning_amount)
+        : submitCalculation.managerCleaningUsed,
       payout_adjustment_amount: formValues.payout_adjustment_amount ?? submitCalculation.payoutAdjustment,
       allocation_method: initial?.allocation_method ?? "daily",
       notes: formValues.notes?.trim() || null,
