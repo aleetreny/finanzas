@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   allocateRentalBooking,
   calculateRentalBooking,
+  defaultCommissionModel,
   RENTAL_COMMISSION_PROFILES,
   recurringOccurrencesForYear,
   rentalNights,
@@ -119,8 +120,44 @@ describe("rental commission models", () => {
     expect(calculation.ownerNet).toBe(expectedNet);
   });
 
-  it("applies 21% VAT to Booking's 15% commission", () => {
+  it("keeps the legacy Booking 18.15% profile unchanged for existing reservations", () => {
     expect(RENTAL_COMMISSION_PROFILES.booking_standard.platformRate).toBeCloseTo(0.1815, 10);
+  });
+
+  it("defaults new Booking reservations to 15% commission plus a 1.3% bank charge", () => {
+    expect(defaultCommissionModel("booking")).toBe("booking_split_fees");
+    const profile = RENTAL_COMMISSION_PROFILES.booking_split_fees;
+    const calculation = calculateRentalBooking({
+      ...base,
+      platformRate: profile.platformRate,
+      payoutAdjustmentRate: profile.payoutAdjustmentRate,
+      deductPayoutAdjustmentBeforeManager: profile.deductPayoutAdjustmentBeforeManager,
+    });
+
+    expect(calculation.platformCommissionUsed).toBe(165);
+    expect(calculation.payoutAdjustment).toBe(14.3);
+    expect(calculation.managerPaymentUsed).toBe(247.73);
+    expect(calculation.ownerNet).toBe(672.97);
+  });
+
+  it("reconstructs the 656.17 Booking breakdown without touching legacy rules", () => {
+    const profile = RENTAL_COMMISSION_PROFILES.booking_split_fees;
+    const calculation = calculateRentalBooking({
+      checkInDate: "2026-09-22",
+      checkOutDate: "2026-09-26",
+      accommodationFinal: 586.17,
+      cleaning: 70,
+      platformRate: profile.platformRate,
+      managerRate: profile.managerRate,
+      payoutAdjustmentRate: profile.payoutAdjustmentRate,
+      deductPayoutAdjustmentBeforeManager: profile.deductPayoutAdjustmentBeforeManager,
+    });
+
+    expect(calculation.totalGross).toBe(656.17);
+    expect(calculation.platformCommissionUsed).toBe(98.43);
+    expect(calculation.payoutAdjustment).toBe(8.53);
+    expect(calculation.managerPaymentUsed).toBe(156.26);
+    expect(calculation.ownerNet).toBe(392.95);
   });
 
   it("uses real platform and cohost payments as exact overrides", () => {
