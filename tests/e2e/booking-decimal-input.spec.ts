@@ -25,6 +25,8 @@ test.describe("booking decimal input", () => {
     await dialog.getByLabel("Concepto").fill("Booking con coma");
     await dialog.getByLabel("Plataforma", { exact: true }).selectOption("booking");
     await expect(dialog.getByLabel("Porcentaje de plataforma")).toHaveValue("15");
+    await expect(dialog.getByLabel("Limpieza")).toHaveValue("70");
+    await expect(dialog.getByText(/gestora se le asignan 60 €/)).toBeVisible();
 
     await dialog.getByLabel("Alojamiento final").fill("720,50");
     await dialog.getByLabel("Limpieza").fill("60,25");
