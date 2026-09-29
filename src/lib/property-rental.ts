@@ -30,6 +30,8 @@ export type RentalCalculationInput = {
   platformCommissionOverride?: number | null;
   managerPaymentOverride?: number | null;
   payoutAdjustment?: number | null;
+  payoutAdjustmentRate?: number | null;
+  deductPayoutAdjustmentBeforeManager?: boolean;
 };
 
 export type RentalCalculation = {
@@ -42,6 +44,7 @@ export type RentalCalculation = {
   managerCommissionCalculated: number;
   managerPaymentCalculated: number;
   managerPaymentUsed: number;
+  payoutAdjustmentCalculated: number;
   payoutAdjustment: number;
   payoutReceived: number;
   ownerNet: number;
@@ -49,18 +52,27 @@ export type RentalCalculation = {
 
 export const RENTAL_COMMISSION_PROFILES: Record<
   RentalCommissionModel,
-  { platform: RentalPlatform; platformRate: number; managerRate: number }
+  {
+    platform: RentalPlatform;
+    platformRate: number;
+    managerRate: number;
+    payoutAdjustmentRate: number;
+    deductPayoutAdjustmentBeforeManager: boolean;
+  }
 > = {
-  airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18 },
-  airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18 },
-  booking_standard: { platform: "booking", platformRate: 0.15 * 1.21, managerRate: 0.18 },
-  direct: { platform: "direct", platformRate: 0, managerRate: 0.18 },
-  other: { platform: "other", platformRate: 0, managerRate: 0.18 },
+  airbnb_shared_legacy: { platform: "airbnb", platformRate: 0.03 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
+  airbnb_host_only: { platform: "airbnb", platformRate: 0.155 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
+  // Legacy rows keep the former all-in 18.15% snapshot. Never use this as the default for new Booking reservations.
+  booking_standard: { platform: "booking", platformRate: 0.15 * 1.21, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
+  // New Booking reservations: 15% commission + 1.3% bank charge, both before the manager's 18% base.
+  booking_split_fees: { platform: "booking", platformRate: 0.15, managerRate: 0.18, payoutAdjustmentRate: 0.013, deductPayoutAdjustmentBeforeManager: true },
+  direct: { platform: "direct", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
+  other: { platform: "other", platformRate: 0, managerRate: 0.18, payoutAdjustmentRate: 0, deductPayoutAdjustmentBeforeManager: false },
 };
 
 export function defaultCommissionModel(platform: RentalPlatform): RentalCommissionModel {
   if (platform === "airbnb") return "airbnb_host_only";
-  if (platform === "booking") return "booking_standard";
+  if (platform === "booking") return "booking_split_fees";
   if (platform === "direct") return "direct";
   return "other";
 }
@@ -119,7 +131,17 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
       : platformCommissionCalculated,
   );
   const netAfterPlatform = roundMoney(totalGross - platformCommissionUsed);
-  const managerCommissionBase = roundMoney(netAfterPlatform - Number(input.cleaning));
+  const payoutAdjustmentCalculated = roundMoney(totalGross * Number(input.payoutAdjustmentRate ?? 0));
+  const payoutAdjustment = roundMoney(
+    hasOverride(input.payoutAdjustment)
+      ? Number(input.payoutAdjustment)
+      : payoutAdjustmentCalculated,
+  );
+  const managerCommissionBase = roundMoney(
+    netAfterPlatform
+      - Number(input.cleaning)
+      - (input.deductPayoutAdjustmentBeforeManager ? payoutAdjustment : 0),
+  );
   const managerCommissionCalculated = roundMoney(managerCommissionBase * Number(input.managerRate));
   const managerPaymentCalculated = roundMoney(Number(input.cleaning) + managerCommissionCalculated);
   const managerPaymentUsed = roundMoney(
@@ -127,7 +149,6 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
       ? Number(input.managerPaymentOverride)
       : managerPaymentCalculated,
   );
-  const payoutAdjustment = roundMoney(Number(input.payoutAdjustment ?? 0));
   const payoutReceived = roundMoney(netAfterPlatform - payoutAdjustment);
 
   return {
@@ -140,6 +161,7 @@ export function calculateRentalBooking(input: RentalCalculationInput): RentalCal
     managerCommissionCalculated,
     managerPaymentCalculated,
     managerPaymentUsed,
+    payoutAdjustmentCalculated,
     payoutAdjustment,
     payoutReceived,
     ownerNet: roundMoney(payoutReceived - managerPaymentUsed),

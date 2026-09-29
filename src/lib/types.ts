@@ -107,6 +107,7 @@ export type RentalCommissionModel =
   | "airbnb_shared_legacy"
   | "airbnb_host_only"
   | "booking_standard"
+  | "booking_split_fees"
   | "direct"
   | "other";
 

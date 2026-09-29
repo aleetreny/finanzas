@@ -24,7 +24,7 @@ const bookingSchema = z.object({
   check_in_date: z.string().min(10, "Indica la entrada."),
   check_out_date: z.string().min(10, "Indica la salida."),
   platform: z.enum(["airbnb", "booking", "direct", "other"]),
-  commission_model: z.enum(["airbnb_shared_legacy", "airbnb_host_only", "booking_standard", "direct", "other"]),
+  commission_model: z.enum(["airbnb_shared_legacy", "airbnb_host_only", "booking_standard", "booking_split_fees", "direct", "other"]),
   notes: z.string().trim().max(2_000, "Las notas no pueden superar los 2.000 caracteres.").optional(),
   accommodation_final: z.number().min(0, "El alojamiento no puede ser negativo."),
   cleaning_fee: z.number().min(0, "La limpieza no puede ser negativa."),
@@ -76,7 +76,7 @@ function defaultValues(initial?: RentalBooking): BookingValues {
     manager_payment_override_amount: initial?.manager_payment_override_amount == null
       ? null
       : Number(initial.manager_payment_override_amount),
-    payout_adjustment_amount: Number(initial?.payout_adjustment_amount ?? 0) || undefined,
+    payout_adjustment_amount: initial ? Number(initial.payout_adjustment_amount) : undefined,
     platform_rate_percent: Number(initial?.platform_commission_rate ?? profile.platformRate) * 100,
     manager_rate_percent: Number(initial?.manager_rate ?? profile.managerRate) * 100,
   };
@@ -103,6 +103,8 @@ export function RentalBookingForm({
 
   const values = useWatch({ control });
   const platform = values.platform ?? "airbnb";
+  const commissionModel = values.commission_model ?? defaultCommissionModel(platform);
+  const activeProfile = RENTAL_COMMISSION_PROFILES[commissionModel];
   const calculation = calculateRentalBooking({
     checkInDate: values.check_in_date ?? "",
     checkOutDate: values.check_out_date ?? "",
@@ -113,6 +115,8 @@ export function RentalBookingForm({
     platformCommissionOverride: values.platform_commission_override_amount,
     managerPaymentOverride: values.manager_payment_override_amount,
     payoutAdjustment: values.payout_adjustment_amount,
+    payoutAdjustmentRate: activeProfile.payoutAdjustmentRate,
+    deductPayoutAdjustmentBeforeManager: activeProfile.deductPayoutAdjustmentBeforeManager,
   });
 
   function applyProfile(model: RentalCommissionModel) {
@@ -131,6 +135,20 @@ export function RentalBookingForm({
 
   async function submit(formValues: BookingValues) {
     setSubmitError(null);
+    const submitProfile = RENTAL_COMMISSION_PROFILES[formValues.commission_model];
+    const submitCalculation = calculateRentalBooking({
+      checkInDate: formValues.check_in_date,
+      checkOutDate: formValues.check_out_date,
+      accommodationFinal: Number(formValues.accommodation_final),
+      cleaning: Number(formValues.cleaning_fee),
+      platformRate: Number(formValues.platform_rate_percent) / 100,
+      managerRate: Number(formValues.manager_rate_percent) / 100,
+      platformCommissionOverride: formValues.platform_commission_override_amount,
+      managerPaymentOverride: formValues.manager_payment_override_amount,
+      payoutAdjustment: formValues.payout_adjustment_amount,
+      payoutAdjustmentRate: submitProfile.payoutAdjustmentRate,
+      deductPayoutAdjustmentBeforeManager: submitProfile.deductPayoutAdjustmentBeforeManager,
+    });
     const input: RentalBookingInput = {
       name: formValues.name.trim(),
       check_in_date: formValues.check_in_date,
@@ -143,7 +161,7 @@ export function RentalBookingForm({
       platform_commission_override_amount: formValues.platform_commission_override_amount,
       manager_rate: formValues.manager_rate_percent / 100,
       manager_payment_override_amount: formValues.manager_payment_override_amount,
-      payout_adjustment_amount: formValues.payout_adjustment_amount ?? 0,
+      payout_adjustment_amount: formValues.payout_adjustment_amount ?? submitCalculation.payoutAdjustment,
       allocation_method: initial?.allocation_method ?? "daily",
       notes: formValues.notes?.trim() || null,
     };
@@ -252,8 +270,10 @@ export function RentalBookingForm({
           />
           <MoneyField
             id="booking-payout-adjustment"
-            label="Gastos o ajustes adicionales"
-            help="Se restan de tu cobro final después de calcular las comisiones (por ejemplo, un ajuste de Airbnb)."
+            label={commissionModel === "booking_split_fees" ? "Cargo bancario / ajuste de Booking" : "Gastos o ajustes adicionales"}
+            help={commissionModel === "booking_split_fees"
+              ? `Vacío: se usará el 1,3 % (${formatCurrency(calculation.payoutAdjustmentCalculated)}). Un importe escrito sustituye ese cálculo.`
+              : "Se restan de tu cobro final después de calcular las comisiones (por ejemplo, un ajuste de Airbnb)."}
             optional
             error={errors.payout_adjustment_amount?.message}
             register={register("payout_adjustment_amount", { setValueAs: optionalUndefinedNumber })}

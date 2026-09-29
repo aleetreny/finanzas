@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { getSupabase } from "@/lib/supabase";
-import { calculateRentalBooking } from "@/lib/property-rental";
+import { calculateRentalBooking, RENTAL_COMMISSION_PROFILES } from "@/lib/property-rental";
 import { todayIso } from "@/lib/format";
 import type {
   Account,
@@ -439,6 +439,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const property = properties.find((item) => item.name === "Piso Málaga") ?? properties[0];
     if (!property) throw new Error("No existe la propiedad Piso Málaga.");
 
+    const commissionProfile = RENTAL_COMMISSION_PROFILES[booking.commission_model];
     const calculation = calculateRentalBooking({
       checkInDate: booking.check_in_date,
       checkOutDate: booking.check_out_date,
@@ -449,6 +450,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       platformCommissionOverride: booking.platform_commission_override_amount,
       managerPaymentOverride: booking.manager_payment_override_amount,
       payoutAdjustment: booking.payout_adjustment_amount,
+      payoutAdjustmentRate: commissionProfile.payoutAdjustmentRate,
+      deductPayoutAdjustmentBeforeManager: commissionProfile.deductPayoutAdjustmentBeforeManager,
     });
     const payload = {
       ...booking,
