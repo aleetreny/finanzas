@@ -147,6 +147,7 @@ describe("rental commission models", () => {
       checkOutDate: "2026-09-26",
       accommodationFinal: 586.17,
       cleaning: 70,
+      managerCleaning: 60,
       platformRate: profile.platformRate,
       managerRate: profile.managerRate,
       payoutAdjustmentRate: profile.payoutAdjustmentRate,
@@ -156,8 +157,19 @@ describe("rental commission models", () => {
     expect(calculation.totalGross).toBe(656.17);
     expect(calculation.platformCommissionUsed).toBe(98.43);
     expect(calculation.payoutAdjustment).toBe(8.53);
-    expect(calculation.managerPaymentUsed).toBe(156.26);
-    expect(calculation.ownerNet).toBe(392.95);
+    expect(calculation.managerCleaning).toBe(60);
+    expect(calculation.managerPaymentUsed).toBe(146.26);
+    expect(calculation.ownerNet).toBe(402.95);
+  });
+
+  it("keeps manager cleaning equal to guest cleaning when no separate amount is supplied", () => {
+    const calculation = calculateRentalBooking({
+      ...base,
+      platformRate: 0,
+    });
+
+    expect(calculation.managerCleaning).toBe(100);
+    expect(calculation.managerPaymentCalculated).toBe(280);
   });
 
   it("uses real platform and cohost payments as exact overrides", () => {
