@@ -78,6 +78,17 @@ describe("property rental allocation", () => {
     expect(rows.every((row) => row.grossIncome === 1200 && row.net === 1200)).toBe(true);
   });
 
+  it("uses the stored manager cleaning amount when allocating a booking", () => {
+    const rows = allocateRentalBooking(booking({
+      cleaning_fee: 70,
+      manager_cleaning_amount: 60,
+      amount_payable_to_manager: 90,
+    }));
+
+    expect(rows.reduce((sum, row) => sum + row.cleaning, 0)).toBe(60);
+    expect(rows.reduce((sum, row) => sum + row.managerCommission, 0)).toBe(30);
+  });
+
   it("keeps every cent when a value cannot divide evenly", () => {
     const rows = allocateRentalBooking(booking({ gross_before_discount: 100.01 }));
     expect(rows.reduce((sum, row) => sum + Math.round(row.grossIncome * 100), 0)).toBe(10_001);
@@ -147,6 +158,7 @@ describe("rental commission models", () => {
       checkOutDate: "2026-09-26",
       accommodationFinal: 586.17,
       cleaning: 70,
+      managerCleaning: profile.managerCleaningFixed,
       platformRate: profile.platformRate,
       managerRate: profile.managerRate,
       payoutAdjustmentRate: profile.payoutAdjustmentRate,
@@ -156,8 +168,9 @@ describe("rental commission models", () => {
     expect(calculation.totalGross).toBe(656.17);
     expect(calculation.platformCommissionUsed).toBe(98.43);
     expect(calculation.payoutAdjustment).toBe(8.53);
-    expect(calculation.managerPaymentUsed).toBe(156.26);
-    expect(calculation.ownerNet).toBe(392.95);
+    expect(calculation.managerCleaningUsed).toBe(60);
+    expect(calculation.managerPaymentUsed).toBe(146.26);
+    expect(calculation.ownerNet).toBe(402.95);
   });
 
   it("uses real platform and cohost payments as exact overrides", () => {
