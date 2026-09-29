@@ -28,7 +28,7 @@ test.describe("booking decimal input", () => {
     await expect(dialog.getByLabel("Limpieza")).toHaveValue("70");
     await expect(dialog.getByText(/gestora se le asignan 60 €/)).toBeVisible();
 
-    await dialog.getByLabel("Alojamiento final").fill("720,50");
+    await dialog.getByLabel("Alojamiento (subtotal antes de limpieza)").fill("720,50");
     await dialog.getByLabel("Limpieza").fill("60,25");
     await dialog.getByText("Ajustes avanzados").click();
     await expect(dialog.getByLabel("Descuento o ajuste")).toHaveCount(0);
