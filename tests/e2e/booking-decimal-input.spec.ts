@@ -21,7 +21,7 @@ test.describe("booking decimal input", () => {
     await page.getByRole("button", { name: "Nueva reserva" }).click();
 
     const dialog = page.getByRole("dialog", { name: "Nueva reserva" });
-    await expect(dialog.getByLabel("Limpieza")).toHaveValue("60");
+    await expect(dialog.getByLabel("Limpieza cobrada al huésped", { exact: true })).toHaveValue("60");
     await dialog.getByLabel("Concepto").fill("Booking con coma");
     await dialog.getByLabel("Plataforma", { exact: true }).selectOption("booking");
     await expect(dialog.getByLabel("Limpieza cobrada al huésped")).toHaveValue("70");
