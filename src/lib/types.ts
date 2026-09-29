@@ -155,6 +155,7 @@ export type RentalBookingInput = Pick<
   | "platform_commission_override_amount"
   | "manager_rate"
   | "manager_payment_override_amount"
+  | "manager_cleaning_amount"
   | "payout_adjustment_amount"
   | "allocation_method"
   | "notes"
