@@ -445,7 +445,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       checkOutDate: booking.check_out_date,
       accommodationFinal: Number(booking.accommodation_final),
       cleaning: Number(booking.cleaning_fee),
-      managerCleaning: commissionProfile.managerCleaningFixed,
+      managerCleaning: Number(booking.manager_cleaning_amount),
       platformRate: Number(booking.platform_commission_rate),
       managerRate: Number(booking.manager_rate),
       platformCommissionOverride: booking.platform_commission_override_amount,
