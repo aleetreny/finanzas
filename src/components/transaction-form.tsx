@@ -9,7 +9,8 @@ import { AppLink } from "@/components/app-link";
 import { DuplicateExpenseWarning } from "@/components/duplicate-expense-warning";
 import { useFinance } from "@/components/finance-provider";
 import { findDuplicateExpense } from "@/lib/duplicate-transactions";
-import { todayIso } from "@/lib/format";
+import { formatCurrency, formatDate, todayIso } from "@/lib/format";
+import { convertGbpToEur, fetchGbpEurRate, type ExchangeRate } from "@/lib/exchange-rate";
 import { navigateToAppRoute } from "@/lib/navigation";
 import type { Transaction, TransactionInput } from "@/lib/types";
 
@@ -87,6 +88,13 @@ export function TransactionForm({
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{ existing: Transaction; values: FormValues } | null>(null);
   const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
+  const [currency, setCurrency] = useState<"EUR" | "GBP">("EUR");
+  const [rateAttempt, setRateAttempt] = useState(0);
+  const [rateState, setRateState] = useState<{
+    key: string;
+    rate?: ExchangeRate;
+    error?: string;
+  } | null>(null);
 
   const {
     register,
@@ -101,6 +109,33 @@ export function TransactionForm({
   const categoryId = useWatch({ control, name: "category_id" });
   const subcategoryId = useWatch({ control, name: "subcategory_id" });
   const transactionDate = useWatch({ control, name: "transaction_date" });
+  const amount = useWatch({ control, name: "amount" });
+  const usesPounds = currency === "GBP" && direction === "expense" && scope === "general";
+  const rateKey = `${transactionDate}:${rateAttempt}`;
+  const activeRate = rateState?.key === rateKey ? rateState.rate : undefined;
+  const rateError = rateState?.key === rateKey ? rateState.error : undefined;
+  const futureDate = transactionDate > todayIso();
+  let convertedAmount: number | null = null;
+  if (usesPounds && activeRate && !futureDate && amount > 0) {
+    try { convertedAmount = convertGbpToEur(amount, activeRate.rate); } catch { /* Validation at submit. */ }
+  }
+
+  useEffect(() => {
+    if (!usesPounds || futureDate || !/^\d{4}-\d{2}-\d{2}$/.test(transactionDate)) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10_000);
+    let cancelled = false;
+    fetchGbpEurRate(transactionDate, controller.signal).then((rate) => {
+      if (!cancelled) setRateState({ key: rateKey, rate });
+    }).catch(() => {
+      if (!cancelled) setRateState({ key: rateKey, error: "No se pudo consultar el cambio. Comprueba tu conexión y vuelve a intentarlo." });
+    }).finally(() => window.clearTimeout(timeout));
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [futureDate, rateKey, transactionDate, usesPounds]);
 
   const activeCategories = useMemo(
     () => categories.filter((category) => category.is_active || category.id === initial?.category_id),
@@ -172,6 +207,20 @@ export function TransactionForm({
 
   async function submit(values: FormValues) {
     setSubmitError(null);
+    // Convertir una sola vez antes de comprobar duplicados o guardar. El aviso
+    // conserva esta misma cifra aunque cambie el formulario mientras está abierto.
+    if (usesPounds) {
+      if (!activeRate || futureDate) {
+        setSubmitError("Espera a que esté disponible el cambio para convertir el gasto.");
+        return;
+      }
+      try {
+        values = { ...values, amount: convertGbpToEur(values.amount, activeRate.rate) };
+      } catch (caught) {
+        setSubmitError(caught instanceof Error ? caught.message : "No se pudo convertir el importe.");
+        return;
+      }
+    }
     if (usesSubcategorySelector && availableSubcategories.length && !values.subcategory_id) {
       setSelectionError(direction === "income" && scope === "general" ? "Elige el tipo de ingreso." : "Elige el tipo de apunte.");
       setFocus("subcategory_id");
@@ -290,13 +339,20 @@ export function TransactionForm({
         </div>
       ) : null}
 
+      {direction === "expense" && scope === "general" ? (
+        <div className="seg currency-selector" role="group" aria-label="Moneda del importe">
+          <button type="button" className={currency === "EUR" ? "active expense" : ""} aria-pressed={currency === "EUR"} onClick={() => { setCurrency("EUR"); setSubmitError(null); }}>€ Euros</button>
+          <button type="button" className={currency === "GBP" ? "active expense" : ""} aria-pressed={currency === "GBP"} onClick={() => { setCurrency("GBP"); setSubmitError(null); }}>£ Libras</button>
+        </div>
+      ) : null}
+
       <div className="amount-hero">
-        <span className="cur">euros</span>
+        <span className="cur">{usesPounds ? "libras" : "euros"}</span>
         <input
           type="text"
           inputMode="decimal"
           placeholder="0"
-          aria-label="Importe en euros"
+          aria-label={usesPounds ? "Importe en libras" : "Importe en euros"}
           aria-invalid={Boolean(errors.amount)}
           autoComplete="off"
           enterKeyHint="done"
@@ -305,6 +361,18 @@ export function TransactionForm({
         />
         <span className="hint">{errors.amount ? errors.amount.message : direction === "expense" ? "¿cuánto te has gastado?" : "¿cuánto has ingresado?"}</span>
       </div>
+
+      {usesPounds ? (
+        <div className="currency-conversion" role="status" aria-live="polite" aria-atomic="true">
+          {futureDate ? <p className="field-error">Elige hoy o una fecha anterior para consultar el cambio.</p>
+            : rateError ? <><p className="field-error">{rateError}</p><button className="button" type="button" onClick={() => setRateAttempt((attempt) => attempt + 1)}>Reintentar cambio</button></>
+              : activeRate ? <>
+                <p className="conversion-total">{convertedAmount !== null ? `Se guardarán ${formatCurrency(convertedAmount)}` : "Introduce el importe en libras"}</p>
+                <p className="conversion-detail">1 £ = {activeRate.rate.toLocaleString("es-ES", { maximumFractionDigits: 6 })} € · {formatDate(activeRate.date)}</p>
+                <p className="conversion-detail">Cambio diario del BCE. Tu banco puede aplicar otro cambio o comisiones.</p>
+              </> : <p className="conversion-detail">Consultando el cambio…</p>}
+        </div>
+      ) : null}
 
       {!availableCategories.length ? (
         <p className="notice error" style={{ marginTop: 20 }}>
@@ -471,7 +539,7 @@ export function TransactionForm({
             ) : null}
           </div>
         ) : null}
-        <button className="button primary" type="submit" disabled={isSubmitting || isDeleting || !availableCategories.length}>
+        <button className="button primary" type="submit" disabled={isSubmitting || isDeleting || !availableCategories.length || (usesPounds && (!activeRate || futureDate))}>
           {isSubmitting ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}
           {initial ? "Guardar cambios" : "Anotar"}
         </button>

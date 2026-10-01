@@ -318,6 +318,13 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
 .amount-hero input::placeholder { color: var(--pencil-faint); }
 .amount-hero .hint { font-family: var(--font-hand), cursive; font-size: 14px; color: var(--pencil); }
 
+.currency-selector { max-width: 300px; margin: 16px auto 0; }
+.currency-selector button { min-height: 44px; font-size: 17px; }
+.currency-conversion { text-align: center; padding: 8px 12px; }
+.currency-conversion p { margin: 4px 0; }
+.conversion-total { font-weight: 700; color: var(--green-pen); }
+.conversion-detail { font-size: 13px; color: var(--pencil); }
+
 .q-label { margin: 22px 2px 8px; font-family: var(--font-hand), cursive; font-size: 15px; font-weight: 700; color: var(--ink-soft); }
 .q-label .opt { color: var(--pencil-faint); font-weight: 400; margin-left: 6px; }
 

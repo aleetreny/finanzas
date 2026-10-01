@@ -21,6 +21,7 @@ Los importes y fechas de los movimientos conservados no se modifican. Los gastos
 
 - Dashboard personal sin mezclar los movimientos del Piso Málaga.
 - Alta rápida, edición, eliminación, búsqueda y filtros de movimientos.
+- Al anotar gastos personales, selector euros/libras con conversión automática a euros usando el cambio diario del BCE para la fecha del gasto (Frankfurter). Se muestra la fecha efectiva del cambio; solo se guarda el importe en euros. Si el cambio no está disponible, el guardado en libras queda bloqueado y se puede reintentar o introducir euros.
 - Aviso de posible duplicado: si un gasto nuevo coincide en importe y categoría con alguno de los diez últimos anotados, se muestra cuál es y se pide confirmación antes de guardarlo.
 - Vista independiente del Piso Málaga con un formulario compacto de reservas, noches automáticas y perfiles de comisión para Airbnb antigua/nueva, Booking, Directa y Otra.
 - Cada reserva conserva su modelo y porcentajes; las comisiones reales de plataforma y gestora pueden sobrescribir el cálculo automático sin perder diferencias de redondeo.
