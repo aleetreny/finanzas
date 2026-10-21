@@ -123,7 +123,7 @@ async function notifyInstinct(eventId: string, merchant: string, amount: number,
     try {
       target = new URL(endpoint);
       if (target.protocol !== "https:" || target.hostname !== "script.google.com" ||
-        !/^\\/macros\\/s\\/[A-Za-z0-9_-]+\\/exec$/.test(target.pathname) ||
+        !new RegExp("^/macros/s/[A-Za-z0-9_-]+/exec$").test(target.pathname) ||
         target.search || target.hash || !/^[a-f0-9]{64}$/.test(sharedSecret)) {
         throw new Error("Invalid Apps Script configuration");
       }
