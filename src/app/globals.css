@@ -3382,3 +3382,36 @@ h1, h2, h3 { font-family: var(--font-display), var(--font-hand), cursive; font-w
   .trip-category-toggle { grid-template-columns: auto minmax(0, 1fr); }
   .trip-category-toggle > .amount { grid-column: 2; justify-self: start; }
 }
+
+
+/* Apple Wallet inbox (independent of the existing dashboard styles). */
+.wallet-page { max-width: 1040px; margin: 0 auto; }
+.wallet-setup, .wallet-inbox { border: 1px solid var(--border, #d2d5db); border-radius: 18px; padding: 22px; margin-bottom: 20px; background: var(--surface, #fff); }
+.wallet-setup h2, .wallet-inbox h2 { font-size: 1.22rem; margin: 0 0 12px; }
+.wallet-setup p { margin: 8px 0 16px; }
+.wallet-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.wallet-token { border: 1px solid #d7a948; padding: 14px; margin: 18px 0; border-radius: 12px; overflow-wrap: anywhere; }
+.wallet-token code { display: block; margin: 12px 0; user-select: all; font-size: 0.87rem; }
+.wallet-guide { margin-top: 18px; border-top: 1px solid #ddd; padding-top: 14px; }
+.wallet-guide summary { cursor: pointer; font-weight: 650; }
+.wallet-guide li { margin: 10px 0; }
+.wallet-guide code { overflow-wrap: anywhere; }
+.wallet-caveat { font-size: 0.87rem; opacity: .72; }
+.wallet-section-head, .wallet-payment-head { display: flex; justify-content: space-between; align-items: start; gap: 18px; }
+.wallet-section-head h2 { margin: 0; }
+.wallet-section-head { margin-bottom: 18px; }
+.wallet-payment { border-top: 1px solid var(--border, #e1e2e5); padding: 22px 0; }
+.wallet-payment-head p { font-size: 0.86rem; opacity: .7; margin: 5px 0 0; }
+.wallet-price { text-align: right; }
+.wallet-price span { display: block; font-size: .84rem; opacity: .72; margin-top: 5px; }
+.wallet-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.wallet-fields label { display: flex; flex-direction: column; font-weight: 600; font-size: .86rem; gap: 7px; }
+.wallet-fields select, .wallet-fields input { border: 1px solid #bbb; padding: 11px 10px; border-radius: 10px; width: 100%; min-width: 0; background: var(--surface, #fff); color: inherit; }
+.wallet-remember { display: flex; align-items: start; gap: 9px; font-size: .9rem; margin-top: 14px; }
+.wallet-remember input { margin-top: 3px; }
+@media(max-width:700px) {
+  .wallet-setup, .wallet-inbox { padding: 15px; border-radius: 12px; }
+  .wallet-fields { grid-template-columns: 1fr; }
+  .wallet-payment-head { flex-wrap: wrap; }
+  .wallet-price { text-align: left; }
+}
