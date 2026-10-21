@@ -85,3 +85,24 @@ No pongas la clave `x-wallet-key` de tu dispositivo en ningún email a Instinct.
 Para las pruebas reales, puedes dejar `remember` desmarcado. Si marcas recordar, siguientes compras de ese comercio se guardan automáticamente sin contactar por WhatsApp (cuando el endpoint ha podido aplicar la regla). El usuario puede desear que se le pregunte por todos los gastos: en ese caso habría que desactivar el auto-guardado por reglas.
 
 **Limitaciones**: la app Mail ha de estar configurada para enviar desde Atajos. El evento Apple Pay en iOS 26 no cubre todos los pagos online ni los del Apple Watch. Si Instinct no consigue navegar el enlace, se necesitará cambiar la estrategia de interfaz o usar otra API verificada.
+
+## Alternativa recomendada: envíos directos desde Supabase (sin Apple Mail)
+
+El flujo anterior utiliza **Enviar correo electrónico** de Apple Mail. Las copias enviadas aparecen en **Todos los enviados**, incluso si seleccionas otra cuenta configurada en la app. Para evitarlo, la función `wallet-ingest` puede enviar directamente el aviso a Instinct mediante **Resend**.
+
+### Habilitar envío automático en servidor
+
+1. Crear cuenta en https://resend.com, verificar un dominio propio en https://resend.com/domains y obtener una API key con permiso de envío. **No funciona enviar a Instinct desde `onboarding@resend.dev` sin verificar dominio**, porque ese remitente de prueba está restringido a la dirección de la cuenta Resend.
+2. Añadir exclusivamente al proyecto Supabase [Edge Function Secrets](https://supabase.com/dashboard/project/lshuotnvmxxvistppuzx/functions/secrets):
+   - `RESEND_API_KEY` = secreto de envío (nunca pegar en GitHub, ni Shortcuts, ni conversación).
+   - `WALLET_EMAIL_FROM` = `Mis gastos <wallet@dominio-verificado.tld>` (cambiar por dominio real).
+3. El endpoint, cuando crea un evento pendiente, envía directamente a `aleinstinct@mail.instinct.com` el importe, comercio e hipervínculo limitado a ese único gasto. Guarda el evento aunque Resend no funcione.
+4. Comprobar una transacción simulada autorizada o un pago real: la respuesta JSON deberá incluir `email_status: "accepted"`. El estado significa que **Resend aceptó el mensaje**, no que Instinct ya lo haya procesado.
+5. Solo una vez verificado, **editar la automatización del iPhone y eliminar las acciones `Get Dictionary Value`, `If`, `Send Email`, `Otherwise` y `End If`**. Mantener únicamente `URL` y `Get Contents of URL (POST)`. Así Apple Mail no interviene nunca.
+
+Resend acepta un identificador de idempotencia por evento `wallet-<event_id>` para reducir avisos duplicados. El correo sale desde Resend, no desde una cuenta añadida a Apple Mail, por lo que no afecta a «Todos los enviados».
+
+Si faltan secretos el backend devuelve `email_status: "not_configured"` y conserva `agent_url` como vía alternativa para la automatización actual. Si Resend rechaza el envío devuelve `email_status: "failed"`; el pago queda **pendiente en /wallet**. Un correo aceptado devuelve `email_status: "accepted"` y `agent_url: null`, para no avisar dos veces mediante Apple Mail si el Atajo antiguo sigue instalado.
+
+**Estado actual:** solo se puede considerar automático en servidor después de configurar ambos secretos y hacer la prueba real. Sin ellos la capacidad está preparada pero inactiva.
+
