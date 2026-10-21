@@ -12,6 +12,7 @@ const navigation = [
   { href: "/movimientos/nuevo", label: "Anotar" },
   { href: "/recurrentes", label: "Recurrentes" },
   { href: "/viajes", label: "Viajes" },
+  { href: "/wallet", label: "Wallet" },
   { href: "/importar-exportar", label: "Importar" },
   { href: "/ajustes", label: "Ajustes" },
 ];
