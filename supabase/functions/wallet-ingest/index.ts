@@ -164,5 +164,21 @@ Deno.serve(async (req: Request) => {
       console.error("Wallet automatic recording failed", txError?.code);
     }
   }
-  return json(201, { ok: true, status: "pending", event_id: event.id, needs_review: true, amount_eur: euros });
+  // Mint an independent 48-hour, one-expense-only link for Instinct.
+  // This link is returned only to the authorised iPhone, which may email it to Instinct.
+  const rawToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((x) => x.toString(16).padStart(2,"0")).join("");
+  const { error: tokenError } = await admin.from("wallet_agent_links").insert({
+    wallet_event_id: event.id,
+    token_hash: await tokenHash(rawToken),
+    expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+  });
+  if (tokenError) {
+    console.error("Unable to create limited agent link", tokenError.code);
+    return json(201, { ok: true, status: "pending", event_id: event.id,
+      needs_review: true, amount_eur: euros, agent_url: null });
+  }
+  return json(201, { ok: true, status: "pending", event_id: event.id,
+    needs_review: true, amount_eur: euros,
+    agent_url: `https://lshuotnvmxxvistppuzx.supabase.co/functions/v1/wallet-agent?token=${rawToken}` });
 });

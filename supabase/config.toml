@@ -416,3 +416,7 @@ enabled = true
 # Device uses an independent long-lived key; the function validates its hash itself.
 [functions.wallet-ingest]
 verify_jwt = false
+
+# Agent review form is protected by a single-payment 48h capability token.
+[functions.wallet-agent]
+verify_jwt = false

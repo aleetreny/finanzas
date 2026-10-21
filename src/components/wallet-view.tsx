@@ -202,6 +202,9 @@ export function WalletView() {
             <li>Obtén «Importe» y «Comercio» de la variable «Entrada de atajo» / «Transacción».</li>
             <li>Añade «Obtener contenido de URL», método POST, cuerpo JSON con merchant, amount y currency=GBP. Si quieres usar un UUID opcional, añade event_id.</li>
             <li>URL: <code>{endpoint}</code>. Cabecera <code>x-wallet-key</code>: pega tu clave secreta.</li>
+            <li>Después del POST, lee el resultado JSON con «Obtener valor del diccionario»: clave <code>agent_url</code>.</li>
+            <li>Añade «Si» <code>agent_url</code> <strong>tiene algún valor</strong>. Dentro, añade «Enviar correo electrónico» a <code>aleinstinct@mail.instinct.com</code>, asunto <code>Wallet: nuevo gasto por clasificar</code>. Cuerpo: <code>Se ha detectado un gasto de Apple Pay. Pregúntame por WhatsApp de qué es, espera mi respuesta y, tras mi confirmación, abre este enlace para registrarlo en Mis gastos: [variable agent_url]. Nunca registres el gasto antes de hablar conmigo.</code></li>
+            <li>En la acción «Enviar correo electrónico», desactiva «Mostrar hoja de redacción» / <code>Show Compose Sheet</code>. El iPhone debe tener una cuenta remitente configurada en la app Mail. Así el correo va <strong>solo a Instinct</strong>, no a tu bandeja.</li>
             <li>Haz una prueba controlada y revisa que el gasto aparece aquí. Cambia la moneda a EUR cuando proceda.</li>
           </ol>
         </details>
