@@ -126,7 +126,7 @@ export function WalletView() {
     setLoading(false);
   }, [session]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   async function rotateKey() {
     const supabase = getSupabase();
