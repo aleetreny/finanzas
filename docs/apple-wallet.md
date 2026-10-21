@@ -10,7 +10,7 @@ Esta integración **no** requiere abrir sesión en Banco Santander, activar corr
 - El importe en GBP se convierte a EUR usando la tasa diaria BCE obtenida por Frankfurter; se guarda también el importe GBP original en el registro del evento y en `transactions.import_metadata`. Esta conversión **no es la liquidación definitiva** de Santander.
 - Funciona con EUR y GBP, pero se debe enviar correctamente `currency`.
 - No capta gastos en efectivo, tarjeta física, Apple Watch ni todas las compras web/in-app en iOS 26.
-- **Instinct/WhatsApp**: no está conectado. El producto no publica una API de entrada o webhook verificado para iniciar un mensaje desde nuestro backend. No decir al usuario que ya recibe mensajes WhatsApp.
+- **Instinct/WhatsApp**: Instinct ha recibido un correo de prueba y ha contactado al propietario por WhatsApp, pero la grabación real de un gasto sigue pendiente de prueba. Para pagos desconocidos, el webhook devuelve un enlace de un solo gasto, caduca a las 48 horas, con formulario de clasificación y sin credenciales generales.
 - Sin `event_id` en el atajo, el backend previene repeticiones idénticas con una ventana aproximada de 20 segundos. No cubre todos los reintentos; con UUID estable por evento la deduplicación es estricta.
 
 ## Configuración que realiza el propietario (una sola vez)
@@ -61,3 +61,27 @@ Ejemplo de prueba (valores ficticios, nunca pegues claves en chats):
 - El frontend está exportado estáticamente por Next.js/GitHub Pages.
 - No desplegar otra función con `verify_jwt=false` sin validación propia.
 - Para pruebas, POST sin `x-wallet-key` debe devolver HTTP 401 y no crear registros.
+
+## Puente autónomo con Instinct (prueba restringida)
+
+Instinct del propietario: `aleinstinct@mail.instinct.com`.
+
+Un pago desconocido procesado con `POST /functions/v1/wallet-ingest` devuelve `agent_url` (un enlace de un solo gasto). Si se ha registrado automáticamente como comercio aprendido, no devuelve `agent_url`. El link lleva un token aleatorio distinto de la clave del teléfono; caduca en **48 horas**, solo puede utilizarse **una vez** y no permite acceder al historial, banco ni otro gasto.
+
+En Atajos, justo después de `Obtener contenido de URL`:
+
+1. **Obtener valor de diccionario**: clave `agent_url` de la salida JSON.
+2. **Si** el valor `agent_url` existe (es decir, el gasto quedó pendiente):
+   - Acción **Enviar correo electrónico** de Apple Mail, para `aleinstinct@mail.instinct.com`.
+   - Asunto: `Gasto de Apple Wallet por clasificar`.
+   - Mensaje: `Nuevo gasto de Apple Wallet que he autorizado a clasificar. Antes de guardar, pregúntame por WhatsApp de qué es este cargo y espera mi confirmación. Después abre este enlace en tu navegador, clasifícalo con la información que te dé y pulsa Registrar. No registres nada sin mi respuesta. [agent_url]` (donde [agent_url] es la variable del atajo).
+   - Desactivar **Mostrar hoja de redacción / Show Compose Sheet** para enviar sin abrir Mail. Debe existir una cuenta remitente configurada en la aplicación Apple Mail.
+3. Fin de condición.
+
+La web para Instinct es `/functions/v1/wallet-agent?token=<token>`: un formulario HTML con categoría/subcategoría, concepto, casilla para recordar y confirmación de haber hablado con el propietario. El agente podrá rellenarlo en un navegador si tiene acceso a esa función de Instinct; no hay garantía hasta probarlo de extremo a extremo.
+
+No pongas la clave `x-wallet-key` de tu dispositivo en ningún email a Instinct. El enlace individual `agent_url` ya está restringido. El agente NO debe recibir la contraseña de Supabase ni Santander.
+
+Para las pruebas reales, puedes dejar `remember` desmarcado. Si marcas recordar, siguientes compras de ese comercio se guardan automáticamente sin contactar por WhatsApp (cuando el endpoint ha podido aplicar la regla). El usuario puede desear que se le pregunte por todos los gastos: en ese caso habría que desactivar el auto-guardado por reglas.
+
+**Limitaciones**: la app Mail ha de estar configurada para enviar desde Atajos. El evento Apple Pay en iOS 26 no cubre todos los pagos online ni los del Apple Watch. Si Instinct no consigue navegar el enlace, se necesitará cambiar la estrategia de interfaz o usar otra API verificada.
