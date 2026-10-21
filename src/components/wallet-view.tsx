@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useFinance } from "@/components/finance-provider";
 import { getSupabase } from "@/lib/supabase";
+import { convertGbpToEur, fetchGbpEurRate } from "@/lib/exchange-rate";
 
 type WalletEvent = {
   id: string;
@@ -53,6 +54,32 @@ function PendingPayment({
     setBusy(false);
   }
 
+  async function retryConversion() {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const date = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(new Date(payment.paid_at));
+      const amount = Number(payment.amount_original);
+      const rate = payment.original_currency === "GBP"
+        ? await fetchGbpEurRate(date, new AbortController().signal)
+        : null;
+      const euros = rate ? convertGbpToEur(amount, rate.rate) : amount;
+      const { error: updateError } = await supabase.from("wallet_events")
+        .update({ amount_eur: euros, fx_rate_date: rate?.date || date })
+        .eq("id", payment.id);
+      if (updateError) throw updateError;
+      await done();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo actualizar el cambio.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function ignore() {
     const supabase = getSupabase();
     if (!supabase || !window.confirm("¿Descartar este pago de Wallet?")) return;
@@ -99,6 +126,7 @@ function PendingPayment({
       <div className="wallet-actions">
         <button className="button primary" type="button" onClick={() => void confirm()}
           disabled={busy || !category || payment.amount_eur === null}>Registrar gasto</button>
+        {payment.amount_eur === null && <button className="button" type="button" onClick={() => void retryConversion()} disabled={busy}>Reintentar conversión</button>}
         <button className="button" type="button" onClick={() => void ignore()} disabled={busy}>Ignorar</button>
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}
