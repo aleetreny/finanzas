@@ -192,6 +192,8 @@ export function SettingsView() {
         description="Gestiona tu clave, la instalación y las categorías de tu libreta."
       />
 
+      <section className="access-setup card"><div className="access-setup-copy"><span className="auth-icon"><Smartphone size={22} /></span><div><h2>Apple Wallet</h2><p>Configura pagos automáticos desde tu tarjeta Santander sin dar acceso al banco.</p><AppLink className="button" href="/wallet">Configurar Wallet</AppLink></div></div></section>
+
       <section className="access-setup card">
         <div className="access-setup-copy">
           <span className="auth-icon"><KeyRound size={22} /></span>
