@@ -49,13 +49,13 @@ Ejemplo de prueba (valores ficticios, nunca pegues claves en chats):
 - Revocar la clave en `/wallet/` inutiliza el atajo hasta generar y configurar otra.
 - Tabla de eventos y reglas con RLS de propietario. `record_wallet_event()` verifica dueño/categoría y realiza la creación contable y marcado de evento de manera transaccional.
 - La llamada HTTP usa `x-wallet-key` y **nunca** una service key de Supabase en el teléfono.
-- Si falla la tasa GBP→EUR, el evento queda pendiente con `amount_eur=null`. Hay que subsanar el cambio antes de registrarlo. No se inventa un tipo de cambio.
+- Si falla la tasa GBP→EUR, el evento queda pendiente con `amount_eur=null`. Usa «Reintentar conversión» en /wallet cuando vuelva a estar disponible la tasa. No se inventa un tipo de cambio.
 - Un comerciante aprendido con auto-guardado nunca vuelve a consultar al usuario hasta que se quite/modifique la regla. Revisa los registros periódicamente.
 - Dado que los apuntes históricos se guardan en EUR, las operaciones Wallet conservan GBP en metadata y el tipo de cambio en `fx_rate_date`. Si Santander liquida un importe distinto, concílialo manualmente.
 
 ## Desarrollo y despliegue
 
-- Migración: `supabase/migrations/20261021190000_wallet_shortcuts_inbox.sql`
+- Migración: `supabase/migrations/20261021201639_wallet_shortcuts_inbox.sql`
 - Edge Function: `supabase/functions/wallet-ingest/index.ts`
 - `supabase/config.toml`: `verify_jwt=false`, **pero el propio handler comprueba una clave de 256 bits** antes de cualquier operación.
 - El frontend está exportado estáticamente por Next.js/GitHub Pages.
