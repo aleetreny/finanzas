@@ -18,12 +18,12 @@ function json(status: number, body: Record<string, unknown>) {
 }
 function normalizedMerchant(s: string) {
   return s.normalize("NFKC").toLocaleLowerCase("en-GB")
-    .replace(/[^\\p{L}\\p{N}]+/gu, " ").trim().slice(0, 200);
+    .replace(/[^\p{L}\p{N}]+/gu, " ").trim().slice(0, 200);
 }
 function amountNumber(v: unknown) {
   if (typeof v !== "number" && typeof v !== "string") return NaN;
-  const s = String(v).trim().replace(/^[£€\\s]+/, "").replace(",", ".");
-  if (!/^\\d+(\\.\\d{1,2})?$/.test(s)) return NaN;
+  const s = String(v).trim().replace(/^[£€\s]+/, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return NaN;
   return Number(s);
 }
 async function tokenHash(key: string) {
@@ -49,7 +49,7 @@ async function convertToEur(amount: number, currency: string, date: string) {
     const data = await response.json();
     const rate = Number(data.rate);
     if (data.base !== "GBP" || data.quote !== "EUR" || !Number.isFinite(rate) || rate <= 0 ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.date) || data.date > date) throw Error("Invalid rate");
+        !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || data.date > date) throw Error("Invalid rate");
     return { euros: Math.round(amount * rate * 100) / 100, fxDate: data.date };
   } finally {
     clearTimeout(timer);
