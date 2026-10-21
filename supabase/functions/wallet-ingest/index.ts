@@ -57,7 +57,7 @@ async function convertToEur(amount: number, currency: string, date: string) {
 }
 // Optional server-side notification: no message in Apple Mail's unified Sent mailbox.
 // No email is attempted until both a Resend API key and verified sender are set.
-async function notifyInstinct(eventId: string, merchant: string, amount: number,
+async function notifyViaResend(eventId: string, merchant: string, amount: number,
   currency: string, agentUrl: string): Promise<"accepted" | "not_configured" | "failed"> {
   const apiKey = Deno.env.get("RESEND_API_KEY")?.trim();
   const from = Deno.env.get("WALLET_EMAIL_FROM")?.trim();
@@ -111,6 +111,58 @@ async function notifyInstinct(eventId: string, merchant: string, amount: number,
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// Gmail relay takes priority when enabled: messages never enter Apple Mail.
+async function notifyInstinct(eventId: string, merchant: string, amount: number,
+  currency: string, agentUrl: string): Promise<"accepted" | "not_configured" | "failed"> {
+  const endpoint = Deno.env.get("WALLET_GAS_WEBAPP_URL")?.trim();
+  const sharedSecret = Deno.env.get("WALLET_GAS_SHARED_SECRET")?.trim();
+  if (endpoint && sharedSecret) {
+    let target: URL;
+    try {
+      target = new URL(endpoint);
+      if (target.protocol !== "https:" || target.hostname !== "script.google.com" ||
+        !new RegExp("^/macros/s/[A-Za-z0-9_-]+/exec$").test(target.pathname) ||
+        target.search || target.hash || !/^[a-f0-9]{64}$/.test(sharedSecret)) {
+        throw new Error("Invalid Apps Script configuration");
+      }
+    } catch {
+      console.error("Mis gastos: invalid Apps Script URL or shared secret");
+      return "failed";
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(target.toString(), {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          shared_secret: sharedSecret, event_id: eventId, merchant,
+          amount, currency, agent_url: agentUrl,
+        }),
+      });
+      // Apps Script ContentService redirects successful JSON to googleusercontent.
+      if (!response.ok) {
+        console.error("Google Apps Script relay rejected request", response.status);
+        return "failed";
+      }
+      const payload = await response.json();
+      if (payload?.ok === true &&
+        (payload?.status === "sent" || payload?.status === "duplicate")) {
+        return "accepted";
+      }
+      console.error("Google Apps Script relay returned unsuccessful response");
+      return "failed";
+    } catch {
+      console.error("Unable to reach Gmail Apps Script relay");
+      return "failed";
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  return await notifyViaResend(eventId, merchant, amount, currency, agentUrl);
 }
 
 Deno.serve(async (req: Request) => {
