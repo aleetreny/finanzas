@@ -79,14 +79,30 @@ Deno.serve(async (req: Request) => {
   const merchantKey = normalizedMerchant(merchant);
   const amount = amountNumber(input.amount);
   const currency = (input.currency || "").trim().toUpperCase();
-  const eventId = (input.event_id || "").trim().toLowerCase();
+  const eventId = (input.event_id || crypto.randomUUID()).trim().toLowerCase();
   const paidAt = input.paid_at ? new Date(input.paid_at) : new Date();
   const validUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-  if (!validUuid.test(eventId)) return json(400, { error: "event_id must be a UUID. Add Generate UUID to Shortcuts." });
+  if (!validUuid.test(eventId)) return json(400, { error: "Invalid event_id UUID" });
   if (!merchantKey || merchant.length > 200 || !Number.isFinite(amount) || amount <= 0 ||
       amount >= 1e9 || !["GBP", "EUR"].includes(currency) || isNaN(paidAt.getTime()) ||
       paidAt.getTime() > Date.now() + 10 * 60_000 || paidAt.getTime() < Date.now() - 31 * 86400_000) {
     return json(400, { error: "Invalid merchant, amount, currency or payment date" });
+  }
+  // Native Shortcuts has no guaranteed built-in UUID action: use a short
+  // best-effort duplicate window when the caller omits event_id.
+  if (!input.event_id) {
+    const { data: recent } = await admin.from("wallet_events")
+      .select("id,status,amount_original,merchant_key,original_currency")
+      .eq("user_id", owner.user_id)
+      .eq("merchant_key", merchantKey)
+      .eq("amount_original", amount)
+      .eq("original_currency", currency)
+      .gte("paid_at", new Date(paidAt.getTime() - 20_000).toISOString())
+      .lte("paid_at", new Date(paidAt.getTime() + 20_000).toISOString())
+      .limit(1);
+    if (recent?.length) return json(200, {
+      ok: true, duplicate: true, status: recent[0].status,
+    });
   }
   const { data: existing } = await admin.from("wallet_events").select("id,status")
     .eq("user_id", owner.user_id).eq("source_event_id", eventId).maybeSingle();
