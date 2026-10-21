@@ -171,9 +171,8 @@ export function WalletView() {
           <ol>
             <li>En Atajos → Automatización → + → Transacción / Wallet, selecciona tu Santander.</li>
             <li>Activa «Ejecutar inmediatamente» y elige «Nueva automatización vacía».</li>
-            <li>Usa «Generar UUID» para el campo event_id (único en cada pago).</li>
             <li>Obtén «Importe» y «Comercio» de la variable «Entrada de atajo» / «Transacción».</li>
-            <li>Añade «Obtener contenido de URL», método POST, cuerpo JSON con event_id, merchant, amount, currency=GBP y paid_at opcional.</li>
+            <li>Añade «Obtener contenido de URL», método POST, cuerpo JSON con merchant, amount y currency=GBP. Si quieres usar un UUID opcional, añade event_id.</li>
             <li>URL: <code>{endpoint}</code>. Cabecera <code>x-wallet-key</code>: pega tu clave secreta.</li>
             <li>Haz una prueba controlada y revisa que el gasto aparece aquí. Cambia la moneda a EUR cuando proceda.</li>
           </ol>
