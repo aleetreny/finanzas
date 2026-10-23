@@ -55,19 +55,36 @@ function londonDate(when: Date) {
 }
 async function convertToEur(amount: number, currency: string, date: string) {
   if (currency === "EUR") return { euros: amount, fxDate: date };
+  // When the current ECB rate is not yet published (or it's a weekend),
+  // fall back to the most recent prior business day's reference rate.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8500);
   try {
-    const response = await fetch(
-      `https://api.frankfurter.dev/v2/rate/GBP/EUR?providers=ecb&date=${encodeURIComponent(date)}`,
-      { signal: controller.signal },
-    );
-    if (!response.ok) throw Error("Exchange rate unavailable");
-    const data = await response.json();
-    const rate = Number(data.rate);
-    if (data.base !== "GBP" || data.quote !== "EUR" || !Number.isFinite(rate) || rate <= 0 ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || data.date > date) throw Error("Invalid rate");
-    return { euros: Math.round(amount * rate * 100) / 100, fxDate: data.date };
+    const requested = new Date(date + "T12:00:00Z");
+    for (let back = 0; back <= 7; back++) {
+      const candidate = new Date(requested.getTime() - back * 86400_000)
+        .toISOString().slice(0, 10);
+      try {
+        const response = await fetch(
+          `https://api.frankfurter.dev/v2/rate/GBP/EUR?providers=ecb&date=${candidate}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) continue;
+        const data = await response.json();
+        const rate = Number(data.rate);
+        if (data.base !== "GBP" || data.quote !== "EUR" ||
+          !Number.isFinite(rate) || rate <= 0 ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
+          data.date > date || data.date < candidate) continue;
+        return {
+          euros: Math.round(amount * rate * 100) / 100,
+          fxDate: data.date as string,
+        };
+      } catch {
+        if (controller.signal.aborted) break;
+      }
+    }
+    throw new Error("ECB rate not available for payment date");
   } finally {
     clearTimeout(timer);
   }
