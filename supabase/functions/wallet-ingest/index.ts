@@ -21,10 +21,27 @@ function normalizedMerchant(s: string) {
     .replace(/[^\p{L}\p{N}]+/gu, " ").trim().slice(0, 200);
 }
 function amountNumber(v: unknown) {
-  if (typeof v !== "number" && typeof v !== "string") return NaN;
-  const s = String(v).trim().replace(/^[£€\s]+/, "").replace(",", ".");
-  if (!/^\d+(\.\d{1,2})?$/.test(s)) return NaN;
-  return Number(s);
+  if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+  if (typeof v !== "string") return NaN;
+  // Wallet/Shortcuts can serialize a currency amount as "£20.00", "20,00 GBP",
+  // or with non-breaking spaces, depending on the iPhone locale.
+  const s = v.normalize("NFKC").trim()
+    .replace(/^(?:GBP|EUR|£|€)\s*/i, "")
+    .replace(/\s*(?:GBP|EUR|£|€)$/i, "")
+    .replace(/[\s\u00a0\u202f]/g, "");
+  if (!/^\d+(?:[,.]\d{1,2})?$/.test(s)) return NaN;
+  return Number(s.replace(",", "."));
+}
+function currencyCode(value: unknown) {
+  const code = String(value ?? "").trim().normalize("NFKC").toUpperCase();
+  if (code === "£" || code === "826") return "GBP";
+  if (code === "€" || code === "978") return "EUR";
+  return code;
+}
+function isTfLTap(merchant: string) {
+  // Not a settled bank payment. TfL journeys are consolidated later;
+  // never turn a contactless gate tap/authorisation into an expense.
+  return /(?:^|\b)(?:tfl|transport for london)(?:\b|$)/i.test(merchant);
 }
 async function tokenHash(key: string) {
   const bytes = new TextEncoder().encode(key);
@@ -38,19 +55,36 @@ function londonDate(when: Date) {
 }
 async function convertToEur(amount: number, currency: string, date: string) {
   if (currency === "EUR") return { euros: amount, fxDate: date };
+  // When the current ECB rate is not yet published (or it's a weekend),
+  // fall back to the most recent prior business day's reference rate.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8500);
   try {
-    const response = await fetch(
-      `https://api.frankfurter.dev/v2/rate/GBP/EUR?providers=ecb&date=${encodeURIComponent(date)}`,
-      { signal: controller.signal },
-    );
-    if (!response.ok) throw Error("Exchange rate unavailable");
-    const data = await response.json();
-    const rate = Number(data.rate);
-    if (data.base !== "GBP" || data.quote !== "EUR" || !Number.isFinite(rate) || rate <= 0 ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || data.date > date) throw Error("Invalid rate");
-    return { euros: Math.round(amount * rate * 100) / 100, fxDate: data.date };
+    const requested = new Date(date + "T12:00:00Z");
+    for (let back = 0; back <= 7; back++) {
+      const candidate = new Date(requested.getTime() - back * 86400_000)
+        .toISOString().slice(0, 10);
+      try {
+        const response = await fetch(
+          `https://api.frankfurter.dev/v2/rate/GBP/EUR?providers=ecb&date=${candidate}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) continue;
+        const data = await response.json();
+        const rate = Number(data.rate);
+        if (data.base !== "GBP" || data.quote !== "EUR" ||
+          !Number.isFinite(rate) || rate <= 0 ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
+          data.date > date || data.date < candidate) continue;
+        return {
+          euros: Math.round(amount * rate * 100) / 100,
+          fxDate: data.date as string,
+        };
+      } catch {
+        if (controller.signal.aborted) break;
+      }
+    }
+    throw new Error("ECB rate not available for payment date");
   } finally {
     clearTimeout(timer);
   }
@@ -185,18 +219,37 @@ Deno.serve(async (req: Request) => {
   let input: Payload;
   try { input = await req.json(); }
   catch { return json(400, { error: "Invalid JSON" }); }
-  const merchant = typeof input.merchant === "string" ? input.merchant.trim() : "";
+  // Some terminals do not expose a merchant name to Wallet at tap time.
+  // Keep a valid payment pending for the user to name, rather than discard it.
+  const merchantProvided = typeof input.merchant === "string" ? input.merchant.trim() : "";
+  const merchant = merchantProvided || "Comercio sin identificar";
   const merchantKey = normalizedMerchant(merchant);
   const amount = amountNumber(input.amount);
-  const currency = (input.currency || "").trim().toUpperCase();
+  const currency = currencyCode(input.currency);
   const eventId = (input.event_id || crypto.randomUUID()).trim().toLowerCase();
   const paidAt = input.paid_at ? new Date(input.paid_at) : new Date();
   const validUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
   if (!validUuid.test(eventId)) return json(400, { error: "Invalid event_id UUID" });
-  if (!merchantKey || merchant.length > 200 || !Number.isFinite(amount) || amount <= 0 ||
-      amount >= 1e9 || !["GBP", "EUR"].includes(currency) || isNaN(paidAt.getTime()) ||
-      paidAt.getTime() > Date.now() + 10 * 60_000 || paidAt.getTime() < Date.now() - 31 * 86400_000) {
-    return json(400, { error: "Invalid merchant, amount, currency or payment date" });
+  // TfL tap-ins/tap-outs and transit pre-authorisations are not final fares.
+  // If the user wants a TfL daily fare, enter its final bank charge separately.
+  if (isTfLTap(merchant)) {
+    return json(200, { ok: true, status: "ignored", reason: "transit_gate_tap" });
+  }
+  const invalidFields: string[] = [];
+  if (!merchantKey || merchant.length > 200) invalidFields.push("merchant");
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e9) invalidFields.push("amount");
+  if (!["GBP", "EUR"].includes(currency)) invalidFields.push("currency");
+  if (isNaN(paidAt.getTime()) || paidAt.getTime() > Date.now() + 10 * 60_000 ||
+    paidAt.getTime() < Date.now() - 31 * 86400_000) invalidFields.push("paid_at");
+  if (invalidFields.length) {
+    // No card data, secrets, merchant names, or monetary amounts in logs.
+    console.warn("Wallet validation rejected fields:", invalidFields.join(","),
+      "types:", typeof input.merchant, typeof input.amount, typeof input.currency);
+    return json(400, {
+      error: "Invalid Apple Wallet transaction data",
+      invalid_fields: invalidFields,
+      hint: "Check Shortcut Input properties and JSON field types; do not manually run a Wallet transaction automation.",
+    });
   }
   // Native Shortcuts has no guaranteed built-in UUID action: use a short
   // best-effort duplicate window when the caller omits event_id.
