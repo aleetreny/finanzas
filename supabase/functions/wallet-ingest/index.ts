@@ -219,7 +219,10 @@ Deno.serve(async (req: Request) => {
   let input: Payload;
   try { input = await req.json(); }
   catch { return json(400, { error: "Invalid JSON" }); }
-  const merchant = typeof input.merchant === "string" ? input.merchant.trim() : "";
+  // Some terminals do not expose a merchant name to Wallet at tap time.
+  // Keep a valid payment pending for the user to name, rather than discard it.
+  const merchantProvided = typeof input.merchant === "string" ? input.merchant.trim() : "";
+  const merchant = merchantProvided || "Comercio sin identificar";
   const merchantKey = normalizedMerchant(merchant);
   const amount = amountNumber(input.amount);
   const currency = currencyCode(input.currency);
