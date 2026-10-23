@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
     }
     const { error } = await admin.rpc("record_wallet_event_from_agent", {
       p_token:token, p_category_id:category, p_subcategory_id:subcategory,
-      p_description:description, p_remember:form.get("remember")==="yes",
+      p_description:description, p_remember:form.get("remember")==="yes" && payment.merchant!=="Comercio sin identificar",
     });
     if (error) {
       return info("No se ha podido registrar","Comprueba que el enlace no haya caducado y que la categoría exista. "+error.message,409);
@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
       <input id="description" type="text" name="description" maxlength="200" required value="${htmlEscape(payment.merchant)}">
       <label for="category">Categoría y subcategoría</label>
       <select id="category" name="category" required><option value="">Seleccionar...</option>${optionItems}</select>
-      <label class="check"><input type="checkbox" name="remember" value="yes"> Recordar este comercio para registrar futuros pagos automáticamente</label>
+      ${payment.merchant==="Comercio sin identificar" ? "" : '<label class="check"><input type="checkbox" name="remember" value="yes"> Recordar este comercio para registrar futuros pagos automáticamente</label>'}
       <label class="check"><input type="checkbox" name="confirmed" value="yes" required> Ya he preguntado al propietario por WhatsApp y confirmado que este gasto y clasificación son correctos</label>
       <button type="submit" ${payment.amount_eur==null?"disabled":""}>Registrar este gasto</button>
       <p class="note">Solo se puede utilizar una vez. Caduca a las 48 horas.
